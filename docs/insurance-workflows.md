@@ -29,7 +29,7 @@ The workflow should explain the insurer's stated decision, request clarification
 
 ## Implementation boundaries
 
-The existing database/UI still starts with a bill and EOB amount. It does not yet have claim-type-specific intake, actual document upload, policy parsing, forms, a claim submission integration, or automatic reply/schedule processing. Existing synthetic tests prove infrastructure, not a workers' compensation claim or successful insurance appeal. Agent instructions are configured for insurer-facing triage while those intake paths are implemented. The user selected the workplace chemical-burn scenario as the first demo; health-insurance disputes remain a related path.
+The database/UI now supports progressive workplace-injury and health-insurance intake. It does not yet have actual document upload, policy parsing, forms, a claim submission integration, or automatic reply/schedule processing. Existing synthetic tests prove infrastructure, not a workers' compensation claim or successful insurance appeal. Agent instructions are configured for insurer-facing triage while those intake paths are implemented. The user selected the workplace chemical-burn scenario as the first demo; health-insurance disputes remain a related path.
 
 
 ## Selected demo: chemical burn at work
@@ -52,3 +52,15 @@ The desired end-to-end operation is:
 The product target is autonomous routine administration after a scoped case authorization, not asking for approval at every trivial follow-up. Settlements, releases, attestations, financial commitments, contested legal positions, and unclear authority require human involvement. Current per-action synthetic test approval is an implementation stage, not the final product experience.
 
 Primary success measures: verified patient out-of-pocket responsibility, documented benefits paid/coverage obtained, claim progress, time to resolution, and human interventions. Do not promise a payout, a successful appeal, a globally lowest price, or a zero balance. Insurer payment to a provider, reimbursement to the claimant, income-replacement benefits, and bill reductions are different outcomes.
+
+## Progressive intake implementation
+
+The app now starts with a workplace injury by default, with a separate health-insurance option. A workplace case needs a title, contact name, email or E.164 phone number, and incident description. Employer, jurisdiction, incident date, insurer, policy/member ID, claim reference/stage, desired outcome, and financial amounts can be added later. This remains synthetic-only; insurance-card/document uploads are not yet implemented.
+
+Unknown bill/EOB amounts are stored as null and shown as unknown. An explicit zero remains zero. Crew output accepts a null potential discrepancy and candidate coverage avenues; it must not convert missing amounts into a zero financial outcome.
+
+Updating details uses an expected revision to prevent lost edits. Each crew request belongs to one immutable case revision; earlier runs and saved reviews are preserved. The current case requires a fresh review after changes. Outreach drafts also belong to a revision and cannot dispatch against changed facts, including a revision check in the atomic database claim. Old receipts remain retained. Gateway analysis similarly cannot overwrite a newer revision.
+
+Files: `backend/claim-input.ts` defines and validates intake; `backend/schema.ts` and migration 0004 add case type/intake/revisions and nullable amounts; `src/CaseForm.tsx` provides creation and editing; `backend/api.ts` handles owner-scoped PATCH, revision-scoped reviews, and sealed Realtime fields. `scripts/claim-input.test.ts` covers null/zero, required data, invalid values, and old billing input compatibility.
+
+The crew can return up to three `next_questions`, shown separately from the longer missing-evidence list. The prepared outreach text uses those next questions when present. This keeps a request for the next necessary facts separate from a comprehensive intake questionnaire. `scripts/injury-app-smoke.ts` tests a live synthetic injury case, review, progressive edit, stale-edit rejection, and stale-draft rejection. `scripts/injury-crew-smoke.ts` separately checks progressive-intake wording against a live capped provider run. Both retain local run IDs rather than restarting on observation timeout.

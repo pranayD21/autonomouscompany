@@ -14,10 +14,10 @@ export type CrewSnapshot = {
 export function completedCrewSnapshot(session: {
   status: string; stop_reason: string | null; consumed_micro_usd: number;
   structured_output: unknown; pending_actions: unknown[];
-}): CrewSnapshot {
+}, expectedDifference?: number | null): CrewSnapshot {
   const parsed = crewOutput.safeParse(session.structured_output);
   const finished = session.status === "completed" || (session.status === "idle" && session.stop_reason === "end_turn");
-  const valid = finished && parsed.success && session.pending_actions.length === 0;
+  const valid = finished && parsed.success && session.pending_actions.length === 0 && (expectedDifference === undefined || parsed.data.potential_discrepancy_cents === expectedDifference);
   return {
     status: session.status, stop_reason: session.stop_reason,
     consumed_micro_usd: session.consumed_micro_usd,

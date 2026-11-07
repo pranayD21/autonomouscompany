@@ -42,9 +42,9 @@ The implementation files below are included with the stack setup. Provider confi
 
 ## Data and API
 
-`advocacy_cases` stores `id`, `owner_id`, `title`, `bill_cents`, `eob_cents`, `notes`, `status`, `analysis`, and `created_at`. It has a primary key and owner index. Local prototype statuses are `new`, `analyzing`, and `reviewed`; none means verified savings.
+`advocacy_cases` stores `id`, `owner_id`, `title`, `case_type`, `intake`, `revision`, nullable `bill_cents`, `eob_cents`, `notes`, `status`, `analysis`, and `created_at`. It has a primary key and owner index. Local prototype statuses are `new`, `analyzing`, and `reviewed`; none means verified savings.
 
-Function routes: `GET /session`, `GET /cases`, `POST /cases`, `POST /cases/live`, `DELETE /cases/:id`, `GET /ai/status`, and `POST /cases/:id/analyze`. Routes require authentication; CORS preflight is handled separately. Writes return a transaction ID for Realtime confirmation. Validate ownership on every route and never accept a client-supplied owner ID.
+Function routes: `GET /session`, `GET /cases`, `POST /cases`, `PATCH /cases/:id`, `POST /cases/live`, `DELETE /cases/:id`, `GET /ai/status`, and `POST /cases/:id/analyze`. Routes require authentication; CORS preflight is handled separately. Writes return a transaction ID for Realtime confirmation. Validate ownership on every route and never accept a client-supplied owner ID.
 
 The prototype accepts manually entered synthetic case details. It does not yet implement document upload, OCR, payments or a complete appeals workflow. Naïve review routes and UI controls now exist, and owner-scoped voice/email draft, authorization, dispatch, and status routes are implemented; see stack.md.
 
@@ -55,3 +55,7 @@ The prototype accepts manually entered synthetic case details. It does not yet i
 Migration `0002_rapid_lizard.sql` adds nullable columns without changing existing runs. `scripts/crew-result.test.ts` covers the completion gates. `scripts/crew-app-smoke.ts --prepare` creates an isolated synthetic operator and writes private session state under ignored `test-results/`. Temporarily add that user's ID to `CREW_ALLOWED_USER_IDS`, deploy, then run the script without flags. It tests the deployed start route, duplicate requests, provider completion, persistence, and UI reload. Restore the original allowlist afterward. Reuse its existing record if a check times out; do not start another case just because observation timed out.
 
 Case outreach is described in [outreach.md](outreach.md), including immutable drafts, approved recipients, and dispatch ambiguity handling.
+
+## Injury intake and revision boundaries
+
+`backend/claim-input.ts` validates the progressive intake JSON and distinguishes unknown amounts from zero. `src/CaseForm.tsx` supplies injury-first creation and revision-aware editing. Migration 0004 preserves legacy cases as health-insurance cases at revision 1. Crew requests are unique per case/revision; output is validated against the supplied financial amounts. Changes clear current analysis and require a new review. Earlier reviews are retained in the database; a user-facing review-history view remains future work. Outreach records carry their source revision and cannot dispatch after case facts change.

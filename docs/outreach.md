@@ -1,6 +1,6 @@
 # Case outreach
 
-The case workspace supports reviewed synthetic calls through AgentPhone and emails through AgentMail. A saved Naïve review is required before drafting outreach. Drafting does not contact anyone.
+The case workspace supports reviewed synthetic calls through AgentPhone and emails through AgentMail. A saved Naïve review for the current case revision is required before drafting outreach. Drafting does not contact anyone.
 
 ## Workflow
 
@@ -20,7 +20,7 @@ The previous one-off phone test does not authorize another call. Leave the lists
 
 ## State and duplicate protection
 
-`advocacy_outreach_actions` holds the immutable request, state, approval record, provider identifiers, status, and check time. A caller-generated UUID makes draft creation idempotent; reusing it for different content returns 409. Only a `draft` can atomically become `dispatching`. Concurrent authorizations have one winner. The dispatch intent commits before the network call.
+`advocacy_outreach_actions` holds the immutable request, state, approval record, provider identifiers, status, and check time. A caller-generated UUID makes draft creation idempotent; reusing it for different content returns 409. Only a `draft` whose source revision still matches its owned case can atomically become `dispatching`. Concurrent authorizations have one winner. The dispatch intent commits before the network call.
 
 Successful acceptance becomes `submitted`. An explicit validation/auth/funding/rate-limit rejection becomes `rejected`. A timeout, malformed successful response, server error, or uncertain outcome becomes `unknown`. A crashed request may remain `dispatching`. Neither state can automatically retry. Reconcile with the provider before preparing another action. No exactly-once delivery guarantee is claimed across the network boundary.
 

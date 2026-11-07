@@ -1,7 +1,7 @@
 import {useEffect,useState,type FormEvent} from "react";
 import {api} from "./services";
 import type {OutreachAction} from "../backend/schema";
-export function Outreach({caseId,userId,enabled,plan}:{caseId:string;userId:string;enabled:boolean;plan:string}) {
+export function Outreach({caseId,userId,enabled,plan,revision}:{caseId:string;userId:string;enabled:boolean;plan:string;revision:number}) {
  const [actions,setActions]=useState<OutreachAction[]>([]);
  const [kind,setKind]=useState<"call"|"email">("email");
  const [requestId,setRequestId]=useState(()=>crypto.randomUUID());
@@ -32,11 +32,11 @@ export function Outreach({caseId,userId,enabled,plan}:{caseId:string;userId:stri
  {error&&<p role="alert">{error}</p>}
  {actions.map(action=><div className="outreach-draft" key={action.id} data-action-id={action.id}>
   <h4>{action.kind==="call"?"AI call":"Email"}: {action.subject}</h4><p>To: {action.destination}</p><p className="outreach-body">{action.body}</p>
-  <p>Status: {action.state}{action.provider_status?` · ${action.provider_status}`:""}{action.duration_seconds!=null?` · ${action.duration_seconds} seconds`:""}</p>
+  <p>Case revision: {action.case_revision}{action.case_revision!==revision?" · Earlier case details":""}</p><p>Status: {action.state}{action.provider_status?` · ${action.provider_status}`:""}{action.duration_seconds!=null?` · ${action.duration_seconds} seconds`:""}</p>
   {action.approved_at&&<small>Authorized {new Date(action.approved_at).toLocaleString()}</small>}
   {["unknown","dispatching"].includes(action.state)&&<p>Do not send again. Check the provider before taking another action; the outcome may be uncertain.</p>}
   {action.error_code&&<p>Provider result: {action.error_code}</p>}
-  <div className="actions">{action.state==="draft"&&<button disabled={busy||!enabled} onClick={()=>void act(action,true)}>{action.kind==="call"?"Review and authorize call":"Review and authorize email"}</button>}
+  <div className="actions">{action.state==="draft"&&<button disabled={busy||!enabled||action.case_revision!==revision} onClick={()=>void act(action,true)}>{action.kind==="call"?"Review and authorize call":"Review and authorize email"}</button>}
   {action.provider_id&&<button className="text-button" disabled={busy} onClick={()=>void act(action,false)}>Check provider status</button>}</div>
  </div>)}
  <small>A sent email or completed call is not evidence of a reduced bill or refund.</small></section>;

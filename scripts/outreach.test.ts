@@ -54,3 +54,9 @@ test("destination and synthetic validation fail closed",()=>{
  assert.equal(actionInput.safeParse({...base,subject:"Hi\r\nBcc: other@example.com"}).success,false);
  assert.equal(destinationAllowed("email","not-configured@example.com"),false);
 });
+
+test("a draft cannot dispatch after its case revision changes",async()=>{
+ const a=await draft();await db.update(cases).set({revision:2}).where(eq(cases.id,item.id));
+ let calls=0;const current=await dispatchOnce(db,a,owner,async()=>{calls++;return{provider_id:"unexpected",provider_status:"sent"}});
+ assert.equal(calls,0);assert.equal(current.state,"draft");
+});

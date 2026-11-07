@@ -15,6 +15,7 @@ try {
   await expect(page.getByText("Live updates connected", {exact:true})).toBeVisible({timeout:45000});
   console.log("PASS Auth signup/session + authenticated Function + Realtime subscription");
   const title = `Synthetic E2E ${randomUUID()}`;
+  await page.getByLabel("Case type",{exact:true}).selectOption("health_insurance");
   await page.getByLabel("Case title").fill(title);
   await page.getByLabel("Bill amount ($)").fill("1200");
   await page.getByLabel("EOB responsibility ($)").fill("400");
@@ -49,13 +50,13 @@ try {
     await other.getByRole("button",{name:"Create account",exact:true}).click();
     await expect(other.getByText("Live updates connected",{exact:true})).toBeVisible({timeout:45000});
     await expect(other.getByText(title,{exact:true})).toHaveCount(0);
-    for(const [method,path] of [["GET",`/cases/${caseId}/crew`],["POST",`/cases/${caseId}/crew`],["DELETE",`/cases/${caseId}`]]) {
+    for(const [method,path] of [["PATCH",`/cases/${caseId}`],["GET",`/cases/${caseId}/crew`],["POST",`/cases/${caseId}/crew`],["DELETE",`/cases/${caseId}`]]) {
       const response=await fetch(apiBase+path,{method,headers:{Authorization:otherAuthorization}});
       expect(response.status).toBe(404);
     }
     const list=await fetch(apiBase+"/cases",{headers:{Authorization:otherAuthorization}});
     expect((await list.json()).some((c:{id:string})=>c.id===caseId)).toBe(false);
-    console.log("PASS second user cannot see, run, or delete first user's case (including Realtime)");
+    console.log("PASS second user cannot see, edit, run, or delete first user's case (including Realtime)");
   } finally {await otherContext.close();}
 
 

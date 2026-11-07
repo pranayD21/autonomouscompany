@@ -31,7 +31,8 @@ try {
   const run=JSON.parse(readFileSync(record,"utf8"));
   await expect(page.getByText("Live updates connected",{exact:true})).toBeVisible({timeout:45000});
   if(!run.caseId) {
-   await page.getByLabel("Case title").fill(run.title);
+   await page.getByLabel("Case type",{exact:true}).selectOption("health_insurance");
+  await page.getByLabel("Case title").fill(run.title);
    await page.getByLabel("Bill amount ($)").fill("1200");
    await page.getByLabel("EOB responsibility ($)").fill("400");
    await page.getByLabel("Case notes").fill("Synthetic test. No itemized bill, payer adjustments or payment records provided. No external actions authorized.");

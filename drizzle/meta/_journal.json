@@ -29,6 +29,13 @@
       "when": 1794092802250,
       "tag": "0003_nifty_black_bolt",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794093437790,
+      "tag": "0004_eager_mockingbird",
+      "breakpoints": true
     }
   ]
 }

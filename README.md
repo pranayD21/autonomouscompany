@@ -2,7 +2,7 @@
 
 # Bill Advocate
 
-A medical-billing advocacy prototype for the Naïve Autonomous Company Hackathon. Users keep synthetic bill/EOB details in a private case workspace; a budgeted Naïve crew prepares an investigation plan. Voice and email accounts are provisioned, but patient advocacy and external follow-up are not yet connected end to end.
+An insurer-facing claims advocacy prototype for the Naïve Autonomous Company Hackathon. Start a synthetic workplace-injury or health-insurance case, add information as it arrives, and ask a budgeted Naïve crew for a claim investigation plan. The selected demo is a chemical burn at work. Authorized outreach has durable records; one case-linked email and a standalone phone test are verified. Full claim submission and resolution are not yet implemented.
 
 Start with [agents.md](agents.md) and the [documentation index](docs/README.md). Every repository change must update the relevant Markdown in `docs/`.
 
