@@ -15,7 +15,7 @@ export default defineProject({
   agents: [
     ...specialists.map(([name, role]) => ({ name: `bill-advocate-${name}`, model: "qwen/qwen3.7-flash", budget, system: `${common}\n${role}`, handoffs: false as const, tools: { default_config: { permission: "deny" as const }, configs: {} } })),
     { name: "bill-advocate-coordinator", model: "qwen/qwen3.7-flash", budget,
-      system: `${common}\nCoordinate intake, investigation, an advocacy draft, and independent verification. Delegate to the appropriate specialists. End with a concise case plan and the exact human intervention required.`,
+      system: `${common}\nCoordinate intake, investigation, an advocacy draft, and independent verification. Delegate to the appropriate specialists. End with a concise case plan and the exact human intervention required. When an output schema is supplied, you MUST call submit_output with all required fields before ending. A prose answer or JSON in a chat message is not a submitted result.`,
       multiagent: { type: "coordinator", agents: names.map(name => ({ type: "agent" as const, name, version: Number(process.env.NAIVE_SPECIALIST_VERSION ?? 1) })) }, handoffs: names,
       tools: { default_config: { permission: "deny" }, configs: { send_to_agent: { enabled: true, permission: "allow" } } },
     },

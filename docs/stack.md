@@ -48,3 +48,11 @@ The crew migration was applied and the case Function redeployed with server-only
 The second smoke run revealed that the blueprint CLI preserved specialist roster version 1 even after updating their models to version 2. The coordinator now explicitly pins all four specialists to version 2. When changing specialist configuration, check the actual published versions and update the roster pins in the same change; a successful apply report alone does not prove delegates use the new model. Cancelled the second stale-version test before rerunning.
 
 Case deletion now rejects cases with crew records so a running request cannot be orphaned and retried under a fresh ID. A complete run cancellation/retention workflow remains future work. `scripts/e2e.ts` also checks missing/invalid bearer tokens, negative amounts, and rejection of spending by unlisted users.
+
+### Structured-output contract
+
+The corrected-roster test completed delegated work but ended with `stop_reason: error` because the coordinator returned prose without calling `submit_output`. Kept `structured_output_required` enabled, so the API never silently treats missing output as success. Updated both the coordinator prompt and the session message to require that tool explicitly. `test:crew` now exits 0 only for a completed, schema-valid result; 1 means terminal failure and 2 means pending/paused. Do not substitute a fabricated result when a provider session fails.
+
+The smoke test also requires the known synthetic discrepancy of 80,000 cents, missing-information entries, and a human-help flag; schema shape alone is insufficient. Provider output remains a draft requiring review, especially any billing/legal generalizations that go beyond supplied evidence.
+
+The operator subsequently authorized funding and a retry to the same test number. Opened AgentPhone Billing in Dia at their request; advised a $10 manual top-up if offered (displayed hosted rate $0.22/min), leaving auto-recharge and the recording add-on off. Top-up minimum is not yet verified because payment-method setup comes first. Wait for confirmed funding before `npx tsx scripts/test-call.ts --retry-funded-test`. This flag accepts only a previous HTTP 402 without a call ID and archives that refusal; it cannot retry a successful or ambiguous request.

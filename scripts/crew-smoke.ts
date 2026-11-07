@@ -13,3 +13,7 @@ if (!run.sessionId) {
 }
 const session=await naiveClient().sessions.get(run.sessionId);
 console.log(JSON.stringify({sessionId:session.id,status:session.status,stop_reason:session.stop_reason,consumed_micro_usd:session.consumed_micro_usd,output_valid:crewOutput.safeParse(session.structured_output).success,result:session.structured_output},null,2));
+const parsed=crewOutput.safeParse(session.structured_output);
+const valid=parsed.success && parsed.data.potential_discrepancy_cents===80000 && parsed.data.missing_information.length>0 && parsed.data.human_help_required;
+if((session.status==="completed" || (session.status==="idle" && session.stop_reason==="end_turn")) && valid) console.log("PASS Naive structured case review");
+else process.exitCode=(session.status==="failed" || session.status==="cancelled" || session.stop_reason==="error") ? 1 : 2;

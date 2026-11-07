@@ -1,11 +1,15 @@
 import {config} from "dotenv";
-import {existsSync, mkdirSync, readFileSync, writeFileSync} from "node:fs";
+import {existsSync, mkdirSync, readFileSync, writeFileSync, renameSync} from "node:fs";
 config({path:[".env.local",".env"],quiet:true});
 mkdirSync("test-results",{recursive:true});
 const record="test-results/agentphone-call.json";
 const headers={Authorization:`Bearer ${process.env.AGENTPHONE_API_KEY}`,"Content-Type":"application/json"};
-if(process.argv.includes("--place-authorized-test")) {
- if(existsSync(record)) throw new Error("A test call was already attempted. Inspect its result before placing another.");
+if(process.argv.includes("--place-authorized-test") || process.argv.includes("--retry-funded-test")) {
+ if(existsSync(record)) {
+  const previous=JSON.parse(readFileSync(record,"utf8"));
+  if(!process.argv.includes("--retry-funded-test") || previous.httpStatus!==402 || previous.result?.id) throw new Error("A call was already attempted. Only a confirmed funding refusal may be retried explicitly.");
+  renameSync(record,`test-results/agentphone-call-refused-${Date.now()}.json`);
+ }
  if(!/^\+[1-9]\d{7,14}$/.test(process.env.AUTHORIZED_TEST_NUMBER??"")) throw new Error("Set AUTHORIZED_TEST_NUMBER to an authorized E.164 destination");
  writeFileSync(record,JSON.stringify({status:"request_started",at:new Date().toISOString()}),{mode:0o600});
  const response=await fetch("https://api.agentphone.ai/v1/calls",{method:"POST",headers,signal:AbortSignal.timeout(25000),body:JSON.stringify({
