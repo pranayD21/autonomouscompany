@@ -25,3 +25,24 @@ export const crewRuns = pgTable("advocacy_crew_runs", {
   completed_at: timestamp("completed_at", { withTimezone: true }),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+// Immutable draft + one dispatch attempt. Unknown outcomes require reconciliation, never auto-redial.
+export const outreachActions = pgTable("advocacy_outreach_actions", {
+  id: uuid("id").primaryKey(),
+  case_id: uuid("case_id").notNull().references(() => cases.id, { onDelete: "restrict" }),
+  kind: text("kind").$type<"call" | "email">().notNull(),
+  destination: text("destination").notNull(),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  state: text("state").$type<"draft" | "dispatching" | "submitted" | "unknown" | "rejected">().notNull().default("draft"),
+  approved_by: text("approved_by"),
+  approved_at: timestamp("approved_at", { withTimezone: true }),
+  provider_id: text("provider_id"),
+  provider_thread_id: text("provider_thread_id"),
+  provider_status: text("provider_status"),
+  duration_seconds: integer("duration_seconds"),
+  error_code: text("error_code"),
+  checked_at: timestamp("checked_at", { withTimezone: true }),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, t => [index("advocacy_outreach_case_idx").on(t.case_id)]);
+export type OutreachAction = typeof outreachActions.$inferSelect;

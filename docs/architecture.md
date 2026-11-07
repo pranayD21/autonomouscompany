@@ -9,7 +9,7 @@ A Naïve coordinator owns a case and delegates to four proposed specialists:
 - Advocate: conducts authorized calls and email follow-up.
 - Verifier: checks revised documents and distinguishes confirmed results from estimates.
 
-The coordinator manages next actions, deadlines, budget, and human escalation. Call tools should return structured status, reference number, documents requested, next action, follow-up date, and whether human help is required. Deduplicate external events to avoid repeated calls/emails. The Naïve crew is now provisioned; see stack.md for its capped configuration, test results, and remaining voice/email wiring.
+The coordinator manages next actions, deadlines, budget, and human escalation. Call tools should return structured status, reference number, documents requested, next action, follow-up date, and whether human help is required. Deduplicate external events to avoid repeated calls/emails. The Naïve crew is now provisioned; see stack.md for its capped configuration, test results, and remaining live delivery and autonomous follow-up verification.
 
 ## Local prototype architecture
 
@@ -46,10 +46,12 @@ The implementation files below are included with the stack setup. Provider confi
 
 Function routes: `GET /session`, `GET /cases`, `POST /cases`, `POST /cases/live`, `DELETE /cases/:id`, `GET /ai/status`, and `POST /cases/:id/analyze`. Routes require authentication; CORS preflight is handled separately. Writes return a transaction ID for Realtime confirmation. Validate ownership on every route and never accept a client-supplied owner ID.
 
-The prototype accepts manually entered synthetic case details. It does not yet implement document upload, OCR, payments or a complete appeals workflow. Naïve review routes and UI controls now exist, while voice/email case actions remain unwired; see stack.md.
+The prototype accepts manually entered synthetic case details. It does not yet implement document upload, OCR, payments or a complete appeals workflow. Naïve review routes and UI controls now exist, and owner-scoped voice/email draft, authorization, dispatch, and status routes are implemented; see stack.md.
 
 ## Durable crew reviews
 
 `advocacy_crew_runs.snapshot` stores the first valid completed result and `completed_at` records when the app saved it. `backend/providers/crew-result.ts` excludes intermediate submissions, errors, and pending approvals. The case-owner-only status route reads a saved result without another provider request; simultaneous refreshes cannot overwrite the first completion. Incomplete runs remain refreshable against the existing session ID. The UI displays missing documents and saved status, and disables starting a saved review again.
 
 Migration `0002_rapid_lizard.sql` adds nullable columns without changing existing runs. `scripts/crew-result.test.ts` covers the completion gates. `scripts/crew-app-smoke.ts --prepare` creates an isolated synthetic operator and writes private session state under ignored `test-results/`. Temporarily add that user's ID to `CREW_ALLOWED_USER_IDS`, deploy, then run the script without flags. It tests the deployed start route, duplicate requests, provider completion, persistence, and UI reload. Restore the original allowlist afterward. Reuse its existing record if a check times out; do not start another case just because observation timed out.
+
+Case outreach is described in [outreach.md](outreach.md), including immutable drafts, approved recipients, and dispatch ambiguity handling.

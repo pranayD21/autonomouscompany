@@ -10,10 +10,12 @@ import { createRealtime, rawSql } from "@neon/realtime/server";
 import { neon } from "@neon/ai-sdk-provider";
 import { generateText } from "ai";
 import { z } from "zod";
-import { cases, crewRuns, type BillCase } from "./schema";
+import { cases, crewRuns, outreachActions, type BillCase } from "./schema";
 
 import { crewConfiguration, naiveClient, startCrew } from "./providers/naive";
 import { completedCrewSnapshot } from "./providers/crew-result";
+import { actionInput, destinationAllowed, outreachEnabled, readOutreach } from "./providers/outreach";
+import { dispatchOnce } from "./outreach-service";
 import { ApiError } from "@usenaive-sdk/managed-agents";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL?.replace("sslmode=require", "sslmode=verify-full"), max: 5 });
@@ -65,6 +67,8 @@ app.post("/cases/live", async (c) => c.json(await realtime.seal({
 })));
 app.delete("/cases/:id", async (c) => {
   if (!z.uuid().safeParse(c.req.param("id")).success) return c.json({ error: "Invalid case ID." }, 400);
+  const [action] = await db.select({id:outreachActions.id}).from(outreachActions).innerJoin(cases,eq(outreachActions.case_id,cases.id)).where(owned(c.req.param("id"),c.get("userId"))).limit(1);
+  if(action) return c.json({error:"This case has an outreach record and must be retained for reconciliation."},409);
   const [existingRun] = await db.select({ id: crewRuns.id }).from(crewRuns).innerJoin(cases, eq(crewRuns.case_id, cases.id)).where(owned(c.req.param("id"), c.get("userId")));
   if (existingRun) return c.json({ error: "This case has an agent-run record. Retain it until the run is reconciled; deletion is not yet supported." }, 409);
   const [removed] = await db.delete(cases).where(owned(c.req.param("id"), c.get("userId"))).returning({ id: cases.id, txid: sql<string>`pg_current_xact_id()::text` });
@@ -75,6 +79,7 @@ app.delete("/cases/:id", async (c) => {
 const crewAllowed = (userId: string) => (process.env.CREW_ALLOWED_USER_IDS ?? "").split(",").includes(userId);
 app.get("/stack/status", (c) => c.json({
   naive: { configured: !!crewConfiguration(), enabledForUser: crewAllowed(c.get("userId")) },
+  outreach: { callConfigured: outreachEnabled("call"), emailConfigured: outreachEnabled("email"), enabledForUser: crewAllowed(c.get("userId")) },
   voice: { enabled: false, reason: "Case-linked calls are not enabled. The standalone synthetic phone test is verified." },
 }));
 app.post("/cases/:id/crew", async (c) => {
@@ -119,6 +124,54 @@ app.get("/cases/:id/crew", async (c) => {
   } catch {
     return c.json({ error: "The team status is temporarily unavailable. Your case and run ID are preserved; refresh to check the same run." }, 502);
   }
+});
+
+// Every outreach route checks case ownership before returning any action or receipt.
+async function ownedCase(id: string, userId: string) {
+  if(!z.uuid().safeParse(id).success) return null;
+  const [item]=await db.select().from(cases).where(owned(id,userId)); return item;
+}
+app.get("/cases/:id/actions",async c=>{
+  const item=await ownedCase(c.req.param("id"),c.get("userId"));
+  if(!item)return c.json({error:"Case not found."},404);
+  return c.json(await db.select().from(outreachActions).where(eq(outreachActions.case_id,item.id)).orderBy(desc(outreachActions.created_at)).limit(100));
+});
+app.post("/cases/:id/actions",async c=>{
+  const item=await ownedCase(c.req.param("id"),c.get("userId"));
+  if(!item)return c.json({error:"Case not found."},404);
+  const input=actionInput.safeParse(await c.req.json().catch(()=>null));
+  if(!input.success)return c.json({error:"Provide a valid destination, subject, and discussion plan or email text. This workflow accepts synthetic details only."},400);
+  const [review]=await db.select().from(crewRuns).where(eq(crewRuns.case_id,item.id));
+  if(!review?.completed_at || !review.snapshot?.output_valid)return c.json({error:"Complete and save the agent review before preparing outreach."},409);
+  const {synthetic,...draft}=input.data;
+  await db.insert(outreachActions).values({...draft,case_id:item.id}).onConflictDoNothing({target:outreachActions.id});
+  const [saved]=await db.select().from(outreachActions).where(and(eq(outreachActions.id,draft.id),eq(outreachActions.case_id,item.id)));
+  if(!saved || ["kind","destination","subject","body"].some(k=>saved[k as keyof typeof saved]!==draft[k as keyof typeof draft]))return c.json({error:"That request ID already belongs to a different draft. Reload and prepare a new action."},409);
+  return c.json(saved,201);
+});
+app.post("/cases/:id/actions/:actionId/authorize",async c=>{
+  const item=await ownedCase(c.req.param("id"),c.get("userId"));
+  if(!item || !z.uuid().safeParse(c.req.param("actionId")).success)return c.json({error:"Action not found."},404);
+  const [action]=await db.select().from(outreachActions).where(and(eq(outreachActions.id,c.req.param("actionId")),eq(outreachActions.case_id,item.id)));
+  if(!action)return c.json({error:"Action not found."},404);
+  if(!crewAllowed(c.get("userId")))return c.json({error:"Only configured test operators may authorize outreach."},403);
+  const consent=z.object({authorize:z.literal(true),synthetic:z.literal(true)}).safeParse(await c.req.json().catch(()=>null));
+  if(!consent.success)return c.json({error:"Explicit authorization for this synthetic action is required."},400);
+  if(!outreachEnabled(action.kind))return c.json({error:"This provider is not configured."},503);
+  if(!destinationAllowed(action.kind,action.destination))return c.json({error:"This destination is not on the operator's approved synthetic test list."},403);
+  return c.json(await dispatchOnce(db,action,c.get("userId")));
+});
+app.post("/cases/:id/actions/:actionId/refresh",async c=>{
+  const item=await ownedCase(c.req.param("id"),c.get("userId"));
+  if(!item || !z.uuid().safeParse(c.req.param("actionId")).success)return c.json({error:"Action not found."},404);
+  const [action]=await db.select().from(outreachActions).where(and(eq(outreachActions.id,c.req.param("actionId")),eq(outreachActions.case_id,item.id)));
+  if(!action)return c.json({error:"Action not found."},404);
+  if(!action.provider_id)return c.json({error:"No provider receipt is available. Do not retry an uncertain dispatch; reconcile it with the provider."},409);
+  try {
+    const result=await readOutreach(action);
+    const [saved]=await db.update(outreachActions).set({...result,checked_at:new Date()}).where(eq(outreachActions.id,action.id)).returning();
+    return c.json(saved);
+  }catch{return c.json({error:"Provider status is unavailable. The saved action and receipt are unchanged."},502);}
 });
 
 type Model = { id: string; enabled?: boolean; unavailable_reason?: string };

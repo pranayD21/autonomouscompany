@@ -5,8 +5,8 @@ Updated November 7, 2026. See [stack operations](stack.md) for account configura
 ## Verified
 
 - Neon CLI authentication and the requested production project setup completed. Postgres, Auth, Functions, Realtime, and AI Gateway credentials are provisioned.
-- All three Drizzle migrations applied. The case Function is deployed with server-only Naïve configuration.
-- `npm run build` passes, including TypeScript checks for backend, frontend, scripts, and provider configuration. Latest build: 262 modules, 525.65 kB JavaScript. The chunk-size warning remains.
+- All four Drizzle migrations applied. The case Function is deployed with server-only Naïve configuration.
+- `npm run build` passes, including TypeScript checks for backend, frontend, scripts, and provider configuration. Latest build: 263 modules, 529.69 kB JavaScript. The chunk-size warning remains.
 - `npm start` serves the preview; use http://localhost:4173.
 - `npm run test:e2e` passes signup/session validation, authenticated Function access, database create/persistence/delete, Realtime delivery, reload, and sign-out. It also verifies 401 for missing/invalid tokens, 400 for negative amounts, and 403 for unlisted users trying to spend crew credits.
 - Live authorized app crew test passed: signup, case creation, duplicate-start deduplication, Naïve completion, saved Postgres review, and UI reload. Four focused tests reject intermediate/error/approval-pending output. Saved review records remain readable without another provider call.
@@ -20,12 +20,12 @@ Updated November 7, 2026. See [stack operations](stack.md) for account configura
 - AgentPhone initially rejected the test with HTTP 402. The operator added $25, then the authorized retry completed (46 seconds; no recording URL), and the user confirmed receipt. SIP access request remains pending; ElevenLabs routing is not verified.
 - ElevenLabs free-plan UI limits use to personal/non-commercial purposes. No paid commercial license selected.
 - Crew runs are restricted by `CREW_ALLOWED_USER_IDS`, currently empty. Configure actual test operators before trying the dashboard's run action.
-- Voice/email are not attached to case actions. Document upload/OCR, consent, evidence-backed outcomes, appeal submission, follow-up scheduling, payments, and public frontend hosting remain incomplete.
+- Case-linked outreach drafts, explicit authorization, dispatch records, and provider status reads are implemented. New case-linked live delivery remains unverified; approved-recipient lists are empty. Document upload/OCR, consent, evidence-backed outcomes, appeal submission, follow-up scheduling, payments, and public frontend hosting remain incomplete.
 - Two-user isolation is verified for case listing, Realtime, crew routes, and deletion. Case analysis crash recovery and broader spend/rate controls need work.
 - Four moderate development dependency findings remain in Drizzle Kit/esbuild; no forced breaking upgrade performed. Migration driver printed a future SSL-mode semantics warning; API uses verify-full.
 
 ## Next work
 
-Connect authorized external actions with durable state and consent. Resolve AgentPhone SIP and gateway credits with the operator before paid operations. Publish a frontend only after configuring its exact Auth/CORS/Realtime origin.
+Verify a newly authorized synthetic email/call through the case workflow, then add agent-driven proposals, inbound replies, and scheduled follow-ups. Resolve AgentPhone SIP and gateway credits with the operator before paid operations. Publish a frontend only after configuring its exact Auth/CORS/Realtime origin.
 
 The team still needs a real interview participant. No customer savings or testimonial has been established. See [demo and research](demo-and-research.md).

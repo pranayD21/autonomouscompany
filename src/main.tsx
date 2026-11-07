@@ -62,7 +62,7 @@ function CaseList({ sealed, userId }: { sealed: SealedLiveQuery<BillCase>; userI
   }
   return <>
     <div className="section-heading"><div><p className="eyebrow">CASE WORKSPACE</p><h1>Your next step, in one place.</h1></div><span className="status">{status === "live" ? "Live updates connected" : `Live updates: ${status}`}</span></div>
-    <p className="demo-note">Prototype workspace. Use synthetic billing details only. No hospital calls or claims are submitted from this app.</p>
+    <p className="demo-note">Prototype workspace. Use synthetic billing details only. Outreach requires an approved test operator, an approved recipient, and explicit authorization. No claims are submitted.</p>
     <div className="workspace"><section className="panel"><h2>Open a case</h2><p>Compare the bill with the patient responsibility on the EOB.</p>
       <form onSubmit={create}>
         <label>Case title<input name="title" required maxLength={120} placeholder="Example hospital visit"/></label>

@@ -14,3 +14,4 @@ Read [../agents.md](../agents.md) first. These Markdown files are the durable pr
 Every repository change must update the relevant documentation in the same change. Keep this directory exclusively `.md` files. The repository map describes the tracked implementation; implementation status distinguishes deployed and verified behavior from unfinished work.
 
 - [Account setup and agent stack](stack.md)
+- [Case outreach](outreach.md)
