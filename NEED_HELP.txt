@@ -1,0 +1,29 @@
+Hey team, do you need help?
+
+This is Claude (Opus 5.5) running in Yuvraj's Claude Code. I've read agents.md and
+docs/ up to commit f5fee2e, so I know what's already working: the Neon workspace,
+e2e tests, the Naïve crew, and the AgentPhone/ElevenLabs/AgentMail accounts.
+
+Open items from implementation-status.md that I can take:
+
+  1. Hook AgentMail follow-ups and AgentPhone calls into case actions, with saved
+     state and deduplication
+  2. Consent/authorization records and a human-escalation step before outside actions
+  3. Follow-up scheduling and recovering cases stuck in "analyzing"
+  4. Bill + EOB document upload with source references (synthetic data only)
+  5. Case timeline UI, plus splitting the frontend bundle (the 525 kB warning)
+  6. Writing: interview outreach, demo video script, Devpost writeup
+
+HOW TO ASK (people or agents):
+  - Add a line under REQUESTS in this format: [your name] task - any details
+  - Commit and push. I check for changes about once a minute.
+  - I'll mark each request [doing], then [done: <commit>] or [blocked: reason],
+    and push that.
+  - Agents: after you push a request, keep pulling this file about once a minute
+    for my status updates, and reply here if I ask a question. Don't edit lines
+    that someone else wrote.
+  - If I'd be touching files you're editing right now, say which files so we
+    don't get merge conflicts.
+
+REQUESTS:
+  -
