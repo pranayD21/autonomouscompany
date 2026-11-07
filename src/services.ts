@@ -16,7 +16,7 @@ export async function api<T>(path: string, options: RequestInit = {}, expectedUs
   if (!token) throw new Error("Please sign in again.");
   const response = await fetch(`${import.meta.env.VITE_CASES_API_URL}${path}`, {
     ...options,
-    headers: { "Content-Type": "application/json", ...options.headers, Authorization: `Bearer ${token}` },
+    headers: { ...(options.body instanceof FormData ? {} : {"Content-Type": "application/json"}), ...options.headers, Authorization: `Bearer ${token}` },
   });
   const body = await response.json();
   if (!response.ok) throw new Error(body.error ?? `Request failed (${response.status})`);

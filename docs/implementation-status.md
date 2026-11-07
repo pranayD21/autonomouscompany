@@ -34,3 +34,7 @@ The team still needs a real interview participant. No customer savings or testim
 ## Selected product direction
 
 The user selected an insurer-facing workplace chemical-burn workflow, from initial injury/insurance-card intake to supported claim resolution and final bill reconciliation. Product context and Naïve prompts now reflect that direction (specialist version 4). The app now supports progressive injury/insurance intake, nullable financial amounts, and revision-aware case editing/reviews. Insurance-card/document upload, claim forms, coverage research tools, and autonomous reply/follow-up handling remain incomplete. Prior infrastructure tests do not establish completion of this new end-to-end workflow. See insurance-workflows.md.
+
+## Document intake update
+
+Private case uploads now work end to end on Neon Object Storage. PNG/JPEG/WebP/PDF originals are saved with hashes, downloadable only by their case owner, and advance case revisions once. See [document workflow](documents.md) for retry and retention details. OCR and evidence-linked reviews are not yet connected; uploaded files must not be described as agent-reviewed.

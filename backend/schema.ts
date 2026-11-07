@@ -52,3 +52,18 @@ export const outreachActions = pgTable("advocacy_outreach_actions", {
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, t => [index("advocacy_outreach_case_idx").on(t.case_id)]);
 export type OutreachAction = typeof outreachActions.$inferSelect;
+
+// The row reserves immutable bytes before storage writes. A ready transition advances the case once.
+export const documents = pgTable("advocacy_documents", {
+  id: uuid("id").primaryKey(),
+  case_id: uuid("case_id").notNull().references(() => cases.id, { onDelete: "restrict" }),
+  object_key: text("object_key").notNull(),
+  filename: text("filename").notNull(),
+  mime: text("mime").notNull(),
+  byte_size: integer("byte_size").notNull(),
+  sha256: text("sha256").notNull(),
+  kind: text("kind").notNull(),
+  state: text("state").$type<"uploading" | "ready">().notNull().default("uploading"),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, t => [index("advocacy_documents_case_idx").on(t.case_id)]);
+export type CaseDocument = typeof documents.$inferSelect;

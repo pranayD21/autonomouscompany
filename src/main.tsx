@@ -7,6 +7,7 @@ import { api, auth, realtime, sealCases } from "./services";
 import "./style.css";
 import {CaseForm} from "./CaseForm";
 import type {CaseInput} from "../backend/claim-input";
+import {Documents} from "./Documents";
 import {CrewReview} from "./CrewReview";
 
 const message = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Please try again.";
@@ -83,6 +84,7 @@ function CaseList({ sealed, userId }: { sealed: SealedLiveQuery<BillCase>; userI
           <small>This is an amount to investigate, not verified savings.</small>
           {item.notes && <p>{item.notes}</p>}
           {item.analysis && <div className="analysis"><h4>Questions for the insurer</h4><p>{item.analysis}</p></div>}
+          <Documents key={`documents-${item.id}`} caseId={item.id} userId={userId} revision={item.revision}/>
           <CrewReview key={`${item.id}-${item.revision}`} revision={item.revision} id={item.id} userId={userId} enabled={crewEnabled}/><div className="actions"><button disabled={busy !== null || item.status === "analyzing"} onClick={() => act(item.id, "analyze")}>{busy === item.id ? "Working…" : "Review with AI"}</button><button className="text-button" disabled={busy !== null} onClick={() => { if (window.confirm("Delete this case?")) void act(item.id, "delete"); }}>Delete</button></div>
         </article>)}
       </section></div>

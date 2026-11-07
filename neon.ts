@@ -5,6 +5,7 @@ export default defineConfig({
   preview: {
     realtime: { allowedOrigins: ["http://localhost:5173", "http://localhost:4173"] },
   },
+  buckets: { "case-documents": { access: "private" } },
   auth: true,
   aiGateway: true,
   functions: {

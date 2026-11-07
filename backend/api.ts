@@ -10,13 +10,14 @@ import { createRealtime, rawSql } from "@neon/realtime/server";
 import { neon } from "@neon/ai-sdk-provider";
 import { generateText } from "ai";
 import { z } from "zod";
-import { cases, crewRuns, outreachActions, type BillCase } from "./schema";
+import { cases, crewRuns, outreachActions, documents, type BillCase } from "./schema";
 
 import { crewConfiguration, naiveClient, startCrew } from "./providers/naive";
 import { completedCrewSnapshot } from "./providers/crew-result";
 import { actionInput, destinationAllowed, outreachEnabled, readOutreach } from "./providers/outreach";
 import { dispatchOnce } from "./outreach-service";
 import {caseInput, potentialDifference} from "./claim-input";
+import { documentRoutes } from "./document-routes";
 import { ApiError } from "@usenaive-sdk/managed-agents";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL?.replace("sslmode=require", "sslmode=verify-full"), max: 5 });
@@ -42,7 +43,8 @@ app.use("*", async (c, next) => {
   c.header("Cache-Control", "no-store");
   await next();
 });
-app.use("*", bodyLimit({ maxSize: 16_384 }));
+app.use("*", async (c,next) => bodyLimit({ maxSize: /^\/cases\/[^/]+\/documents\/?$/.test(c.req.path) ? 5*1024*1024+16384 : 16_384 })(c,next));
+app.route("/cases/:id/documents", documentRoutes(pool));
 app.onError((error, c) => {
   console.error("Case API failure", error.name);
   return c.json({ error: "The service could not complete the request. Try again." }, 500);
@@ -75,6 +77,8 @@ app.post("/cases/live", async (c) => c.json(await realtime.seal({
 })));
 app.delete("/cases/:id", async (c) => {
   if (!z.uuid().safeParse(c.req.param("id")).success) return c.json({ error: "Invalid case ID." }, 400);
+  const [document] = await db.select({id:documents.id}).from(documents).innerJoin(cases,eq(documents.case_id,cases.id)).where(owned(c.req.param("id"),c.get("userId"))).limit(1);
+  if(document)return c.json({error:"This case has retained documents. Document deletion is not yet supported."},409);
   const [action] = await db.select({id:outreachActions.id}).from(outreachActions).innerJoin(cases,eq(outreachActions.case_id,cases.id)).where(owned(c.req.param("id"),c.get("userId"))).limit(1);
   if(action) return c.json({error:"This case has an outreach record and must be retained for reconciliation."},409);
   const [existingRun] = await db.select({ id: crewRuns.id }).from(crewRuns).innerJoin(cases, eq(crewRuns.case_id, cases.id)).where(owned(c.req.param("id"), c.get("userId")));
