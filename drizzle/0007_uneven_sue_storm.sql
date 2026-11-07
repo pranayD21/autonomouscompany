@@ -1,0 +1,2 @@
+ALTER TABLE "advocacy_crew_runs" ADD COLUMN "repair_requested_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "advocacy_crew_runs" ADD COLUMN "repair_sent_at" timestamp with time zone;

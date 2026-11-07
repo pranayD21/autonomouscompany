@@ -29,7 +29,7 @@ The workflow should explain the insurer's stated decision, request clarification
 
 ## Implementation boundaries
 
-The database/UI now supports progressive workplace-injury and health-insurance intake. It does not yet have actual document upload, policy parsing, forms, a claim submission integration, or automatic reply/schedule processing. Existing synthetic tests prove infrastructure, not a workers' compensation claim or successful insurance appeal. Agent instructions are configured for insurer-facing triage while those intake paths are implemented. The user selected the workplace chemical-burn scenario as the first demo; health-insurance disputes remain a related path.
+The database/UI now supports progressive workplace-injury and health-insurance intake. Private document upload, image/PDF-text extraction, and confirmed source-linked reviews are implemented. Policy interpretation, forms, a claim submission integration, and automatic reply/schedule processing remain incomplete. Existing synthetic tests prove infrastructure, not a workers' compensation claim or successful insurance appeal. Agent instructions are configured for insurer-facing triage while those intake paths are implemented. The user selected the workplace chemical-burn scenario as the first demo; health-insurance disputes remain a related path.
 
 
 ## Selected demo: chemical burn at work
@@ -55,7 +55,7 @@ Primary success measures: verified patient out-of-pocket responsibility, documen
 
 ## Progressive intake implementation
 
-The app now starts with a workplace injury by default, with a separate health-insurance option. A workplace case needs a title, contact name, email or E.164 phone number, and incident description. Employer, jurisdiction, incident date, insurer, policy/member ID, claim reference/stage, desired outcome, and financial amounts can be added later. This remains synthetic-only; insurance-card/document uploads are not yet implemented.
+The app now starts with a workplace injury by default, with a separate health-insurance option. A workplace case needs a title, contact name, email or E.164 phone number, and incident description. Employer, jurisdiction, incident date, insurer, policy/member ID, claim reference/stage, desired outcome, and financial amounts can be added later. This remains synthetic-only. Insurance-card/document uploads, reading, and confirmation are implemented; see documents.md.
 
 Unknown bill/EOB amounts are stored as null and shown as unknown. An explicit zero remains zero. Crew output accepts a null potential discrepancy and candidate coverage avenues; it must not convert missing amounts into a zero financial outcome.
 
@@ -64,3 +64,7 @@ Updating details uses an expected revision to prevent lost edits. Each crew requ
 Files: `backend/claim-input.ts` defines and validates intake; `backend/schema.ts` and migration 0004 add case type/intake/revisions and nullable amounts; `src/CaseForm.tsx` provides creation and editing; `backend/api.ts` handles owner-scoped PATCH, revision-scoped reviews, and sealed Realtime fields. `scripts/claim-input.test.ts` covers null/zero, required data, invalid values, and old billing input compatibility.
 
 The crew can return up to three `next_questions`, shown separately from the longer missing-evidence list. The prepared outreach text uses those next questions when present. This keeps a request for the next necessary facts separate from a comprehensive intake questionnaire. `scripts/injury-app-smoke.ts` tests a live synthetic injury case, review, progressive edit, stale-edit rejection, and stale-draft rejection. `scripts/injury-crew-smoke.ts` separately checks progressive-intake wording against a live capped provider run. Both retain local run IDs rather than restarting on observation timeout.
+
+## Source-backed guidance
+
+New reviews automatically retrieve a configured set of official sources before agent work. California workplace cases use DWC guidance; health-plan disputes use a general HealthCare.gov appeal overview. Missing and unsupported jurisdictions are explicit research gaps. Reviews retain source text, hashes, and retrieval times, and output exact-quote citations with applicability limitations. This is not nationwide coverage discovery or a policy eligibility determination. See [research implementation](research.md).

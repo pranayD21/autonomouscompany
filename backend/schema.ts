@@ -28,6 +28,8 @@ export const crewRuns = pgTable("advocacy_crew_runs", {
   session_id: text("session_id"),
   snapshot: jsonb("snapshot").$type<CrewSnapshot>(),
   completed_at: timestamp("completed_at", { withTimezone: true }),
+  repair_requested_at: timestamp("repair_requested_at", { withTimezone: true }),
+  repair_sent_at: timestamp("repair_sent_at", { withTimezone: true }),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, t => [uniqueIndex("advocacy_crew_case_revision_idx").on(t.case_id,t.case_revision)]);
 

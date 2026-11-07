@@ -37,6 +37,8 @@ try {
   expect(invalid.status).toBe(400);
   const crew=await fetch(`${apiBase}/cases/${caseId}/crew`,{method:"POST",headers:{Authorization:authorization}});
   expect(crew.status).toBe(403);
+  const repair=await fetch(`${apiBase}/cases/${caseId}/crew/repair`,{method:"POST",headers:{Authorization:authorization}});
+  expect(repair.status).toBe(403);
   console.log("PASS missing/invalid authentication, invalid amounts, and unauthorized crew spend rejected");
   const otherContext=await browser.newContext();
   try {
@@ -50,7 +52,7 @@ try {
     await other.getByRole("button",{name:"Create account",exact:true}).click();
     await expect(other.getByText("Live updates connected",{exact:true})).toBeVisible({timeout:45000});
     await expect(other.getByText(title,{exact:true})).toHaveCount(0);
-    for(const [method,path] of [["PATCH",`/cases/${caseId}`],["GET",`/cases/${caseId}/crew`],["POST",`/cases/${caseId}/crew`],["DELETE",`/cases/${caseId}`]]) {
+    for(const [method,path] of [["PATCH",`/cases/${caseId}`],["GET",`/cases/${caseId}/crew`],["POST",`/cases/${caseId}/crew`],["POST",`/cases/${caseId}/crew/repair`],["DELETE",`/cases/${caseId}`]]) {
       const response=await fetch(apiBase+path,{method,headers:{Authorization:otherAuthorization}});
       expect(response.status).toBe(404);
     }

@@ -82,3 +82,9 @@ The first explicitly authorized case-linked AgentMail test email was sent once a
 ### Assurance naming update
 
 The product is now Assurance. App branding, source voice prompts, and new-call greetings use Assurance. The existing AgentPhone agent was updated in place and read back as `Assurance Demo`; no number was replaced and no call was placed. The ElevenLabs setup script now updates the existing agent's name and greeting in place, preserving its conversation settings. Its update endpoint follows the [official agent update API](https://elevenlabs.io/docs/api-reference/agents/update). Stable `bill-advocate` resource identifiers and prior test receipts retain their original names.
+
+### Research-aware coordinator
+
+The coordinator instructions now keep delegations under 6,000 characters and send relevant source text primarily to the investigator and verifier. This addresses the malformed/truncated handoff observed in the previous live test while retaining the same five agents, specialist versions, tool permissions, and approved caps. Official page retrieval happens in the case Function; no arbitrary browsing permission was added to agents.
+
+Following a rejected live quotation result, the coordinator was changed to `openai/gpt-5.4-mini`. Other specialists retain `qwen/qwen3.7-flash`. A one-time same-session correction uses the same GPT model and the existing task budget; no budget increase or subscription purchase was made. Exact-source validation remains mandatory.

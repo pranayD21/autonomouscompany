@@ -18,3 +18,4 @@ Every repository change must update the relevant documentation in the same chang
 - [Insurer-first workflows](insurance-workflows.md)
 
 - [Private case documents](documents.md): upload, storage, ownership, retry behavior, and extraction limitations.
+- [Official-source research](research.md): source selection, retrieval, immutable snapshots, citations, and coverage limits.
