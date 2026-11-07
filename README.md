@@ -1,6 +1,6 @@
 <img src="assets/icon.svg" width="64" height="64" alt="">
 
-# Bill Advocate
+# Assurance
 
 An insurer-facing claims advocacy prototype for the Naïve Autonomous Company Hackathon. Start a synthetic workplace-injury or health-insurance case, add information as it arrives, and ask a budgeted Naïve crew for a claim investigation plan. The selected demo is a chemical burn at work. Authorized outreach has durable records; one case-linked email and a standalone phone test are verified. Full claim submission and resolution are not yet implemented.
 

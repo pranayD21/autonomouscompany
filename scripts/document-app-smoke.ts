@@ -29,6 +29,6 @@ try{
  const deletion=await fetch(`${base}/cases/${caseId}`,{method:"DELETE",headers});expect(deletion.status).toBe(409);
  const otherContext=await browser.newContext();const other=await otherContext.newPage();let otherAuth="";other.on("request",r=>{if(r.url().endsWith("/stack/status"))otherAuth=r.headers().authorization;});
  await other.goto("http://localhost:4173");await other.getByRole("button",{name:"New here? Create an account"}).click();await other.getByLabel("Name",{exact:true}).fill("Synthetic document isolation");await other.getByLabel("Email",{exact:true}).fill(`docs-${randomUUID()}@example.com`);await other.getByLabel("Password",{exact:true}).fill(randomUUID()+"aA1!");await other.getByRole("button",{name:"Create account",exact:true}).click();await expect(other.getByText("Live updates connected",{exact:true})).toBeVisible({timeout:45000});
- for(const [method,url]of [["GET",path],["POST",path],["GET",`${path}/${doc.id}/download`]]){const response=await fetch(url,{method,headers:{Authorization:otherAuth}});expect(response.status).toBe(404);}
- console.log("PASS persisted document listing, retained-case deletion guard, and second-user list/upload/download isolation");
+ for(const [method,url]of [["GET",path],["POST",path],["GET",`${path}/${doc.id}/download`],["POST",`${path}/${doc.id}/extraction`],["POST",`${path}/${doc.id}/extraction/refresh`],["POST",`${path}/${doc.id}/extraction/confirm`]]){const response=await fetch(url,{method,headers:{Authorization:otherAuth}});expect(response.status).toBe(404);}
+ console.log("PASS persisted document listing, retained-case deletion guard, and second-user list/upload/download/extraction/confirmation isolation");
 }finally{await browser.close();}

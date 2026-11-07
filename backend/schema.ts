@@ -67,3 +67,15 @@ export const documents = pgTable("advocacy_documents", {
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, t => [index("advocacy_documents_case_idx").on(t.case_id)]);
 export type CaseDocument = typeof documents.$inferSelect;
+
+export const documentExtractions = pgTable("advocacy_document_extractions", {
+ document_id:uuid("document_id").primaryKey().references(()=>documents.id,{onDelete:"restrict"}),
+ state:text("state").notNull().default("preparing"),
+ file_id:text("file_id"),
+ source_text:text("source_text"),
+ session_id:text("session_id"),
+ result:jsonb("result").$type<import("./providers/document-reader").DocumentExtraction>(),
+ error_code:text("error_code"),
+ confirmed_at:timestamp("confirmed_at",{withTimezone:true}),
+ created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
+});

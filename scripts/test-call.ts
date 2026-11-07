@@ -15,7 +15,7 @@ if(process.argv.includes("--place-authorized-test") || process.argv.includes("--
  const response=await fetch("https://api.agentphone.ai/v1/calls",{method:"POST",headers,signal:AbortSignal.timeout(25000),body:JSON.stringify({
    agentId:process.env.AGENTPHONE_AGENT_ID,fromNumberId:process.env.AGENTPHONE_NUMBER_ID,toNumber:process.env.AUTHORIZED_TEST_NUMBER,
    disableRecording:true,ringTimeoutSeconds:25,
-   initialGreeting:"Hi, this is Bill Advocate's AI assistant calling for the demo test you requested. This uses fictional billing details only. Is now a good time?",
+   initialGreeting:"Hi, this is Assurance's AI assistant calling for the demo test you requested. This uses fictional billing details only. Is now a good time?",
  })});
  const result=await response.json();writeFileSync(record,JSON.stringify({httpStatus:response.status,result}),{mode:0o600});
  console.log(JSON.stringify({httpStatus:response.status,id:result.id,status:result.status,error:result.error?.code}));

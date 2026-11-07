@@ -1,5 +1,8 @@
 # Product and business direction
 
+Product name: **Assurance**. Selected by the user on November 7, 2026.
+
+
 ## Customer problem and direction
 
 An injured person or policyholder needs someone to keep their insurance claim moving: organize evidence, submit the right information, explain insurer responses, and follow up without repeatedly telling the same story. The product is a communication and case-management layer between that person and the insurer or claims administrator.

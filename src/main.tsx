@@ -84,7 +84,7 @@ function CaseList({ sealed, userId }: { sealed: SealedLiveQuery<BillCase>; userI
           <small>This is an amount to investigate, not verified savings.</small>
           {item.notes && <p>{item.notes}</p>}
           {item.analysis && <div className="analysis"><h4>Questions for the insurer</h4><p>{item.analysis}</p></div>}
-          <Documents key={`documents-${item.id}`} caseId={item.id} userId={userId} revision={item.revision}/>
+          <Documents key={`documents-${item.id}`} caseId={item.id} userId={userId} revision={item.revision} enabled={crewEnabled}/>
           <CrewReview key={`${item.id}-${item.revision}`} revision={item.revision} id={item.id} userId={userId} enabled={crewEnabled}/><div className="actions"><button disabled={busy !== null || item.status === "analyzing"} onClick={() => act(item.id, "analyze")}>{busy === item.id ? "Working…" : "Review with AI"}</button><button className="text-button" disabled={busy !== null} onClick={() => { if (window.confirm("Delete this case?")) void act(item.id, "delete"); }}>Delete</button></div>
         </article>)}
       </section></div>
@@ -106,9 +106,9 @@ function App() {
     try { const result = await auth.signOut(); if (result.error) throw new Error(result.error.message); realtime.close(); window.location.assign("/"); }
     catch (err) { setSignOutError(message(err)); }
   }
-  return <><header><a href="/" className="brand"><span className="brand-mark">b</span>Bill Advocate</a>{session?.user && <div className="account"><span>{session.user.name}</span><button className="text-button" onClick={signOut}>Sign out</button></div>}</header>
+  return <><header><a href="/" className="brand"><span className="brand-mark">a</span>Assurance</a>{session?.user && <div className="account"><span>{session.user.name}</span><button className="text-button" onClick={signOut}>Sign out</button></div>}</header>
     <main>{signOutError && <p role="alert" className="error">{signOutError}</p>}{isPending ? <p>Loading your session…</p> : error ? <p role="alert" className="error">Authentication is unavailable. Please reload and try again.</p> : session?.user ? <Dashboard key={session.user.id} userId={session.user.id}/> : <SignIn/>}</main>
-    <footer>Bill Advocate · Insurance claim prototype</footer></>;
+    <footer>Assurance · Insurance claim prototype</footer></>;
 }
 
 createRoot(document.getElementById("root")!).render(<StrictMode><RealtimeProvider client={realtime}><App/></RealtimeProvider></StrictMode>);

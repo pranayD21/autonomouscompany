@@ -17,6 +17,8 @@ export default defineConfig({
         REALTIME_SECRET: { value: process.env.NEON_REALTIME_SECRET, required: true },
         APP_ORIGINS: "http://localhost:5173,http://localhost:4173",
         NAIVE_API_KEY: { value: process.env.NAIVE_API_KEY, required: true },
+        NAIVE_FILES_API_KEY: process.env.NAIVE_FILES_API_KEY ?? "",
+        NAIVE_INTAKE_ID: process.env.NAIVE_INTAKE_ID ?? "",
         NAIVE_COORDINATOR_ID: { value: process.env.NAIVE_COORDINATOR_ID, required: true },
         NAIVE_RUN_BUDGET_MICRO_USD: { value: process.env.NAIVE_RUN_BUDGET_MICRO_USD, required: true },
         AGENTPHONE_API_KEY: process.env.AGENTPHONE_API_KEY ?? "",

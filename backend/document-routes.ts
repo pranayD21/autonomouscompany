@@ -1,3 +1,4 @@
+import {extractionRoutes} from "./document-extraction-routes";
 import { Hono } from "hono";
 import type { Pool } from "pg";
 import { z } from "zod";
@@ -13,8 +14,9 @@ export function documentRoutes(pool: Pool) {
     if(!result.rowCount)return c.json({error:"Case not found."},404);
     await next();
   });
+  app.route("/:documentId/extraction",extractionRoutes(pool));
   app.get("/",async c=>{
-    const result=await pool.query<CaseDocument>("SELECT * FROM advocacy_documents WHERE case_id=$1 ORDER BY created_at",[c.req.param("id")]);
+    const result=await pool.query<CaseDocument>("SELECT d.*, e.state AS extraction_state, e.result AS extraction_result, e.error_code AS extraction_error, e.confirmed_at FROM advocacy_documents d LEFT JOIN advocacy_document_extractions e ON e.document_id=d.id WHERE d.case_id=$1 ORDER BY d.created_at",[c.req.param("id")]);
     return c.json(result.rows.map(({object_key,...doc})=>doc));
   });
   app.post("/",async c=>{

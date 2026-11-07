@@ -43,6 +43,13 @@
       "when": 1794094442831,
       "tag": "0005_funny_silver_sable",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794094686903,
+      "tag": "0006_romantic_pandemic",
+      "breakpoints": true
     }
   ]
 }
