@@ -1,4 +1,5 @@
-import { index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import type { CrewSnapshot } from "./providers/crew-result";
 
 export const cases = pgTable("advocacy_cases", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -20,5 +21,7 @@ export const crewRuns = pgTable("advocacy_crew_runs", {
   case_id: uuid("case_id").notNull().unique().references(() => cases.id, { onDelete: "cascade" }),
   message: text("message").notNull(),
   session_id: text("session_id"),
+  snapshot: jsonb("snapshot").$type<CrewSnapshot>(),
+  completed_at: timestamp("completed_at", { withTimezone: true }),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

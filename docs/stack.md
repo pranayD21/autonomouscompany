@@ -12,7 +12,7 @@ A dedicated `bill-advocate-runtime` key has agents:read/write and sessions:read/
 
 Run `node --env-file=.env.local node_modules/.bin/naive up --dry-run` before applying. Initial apply created four specialists but refused the coordinator because the CLI sets the roster in a second phase and `handoffs: "team"` requires it at creation. Explicit specialist-name handoffs fix this; the second apply created the coordinator and reported all four specialists unchanged.
 
-`backend/providers/naive.ts` uses the official SDK and validates structured output. `advocacy_crew_runs` stores one immutable request per case with an idempotency key, so retry after a timeout uses the same request. POST `/cases/:id/crew` starts or retrieves that request; GET reads provider status/output. Both check case ownership. Runs additionally require `CREW_ALLOWED_USER_IDS`, `NAIVE_COORDINATOR_ID`, and `NAIVE_RUN_BUDGET_MICRO_USD`. The run result is a plan, never verified savings. These endpoints still need deployment and a live test.
+`backend/providers/naive.ts` uses the official SDK and validates structured output. `advocacy_crew_runs` stores one immutable request per case with an idempotency key, so retry after a timeout uses the same request. POST `/cases/:id/crew` starts or retrieves that request; GET reads provider status/output and persists a validated final review; subsequent reads use the stored snapshot. Both check case ownership. Runs additionally require `CREW_ALLOWED_USER_IDS`, `NAIVE_COORDINATOR_ID`, and `NAIVE_RUN_BUDGET_MICRO_USD`. The run result is a plan, never verified savings. These endpoints are deployed; the live application check is documented in implementation-status.md.
 
 ## Voice and email
 

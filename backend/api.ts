@@ -12,7 +12,8 @@ import { generateText } from "ai";
 import { z } from "zod";
 import { cases, crewRuns, type BillCase } from "./schema";
 
-import { crewConfiguration, crewOutput, naiveClient, startCrew } from "./providers/naive";
+import { crewConfiguration, naiveClient, startCrew } from "./providers/naive";
+import { completedCrewSnapshot } from "./providers/crew-result";
 import { ApiError } from "@usenaive-sdk/managed-agents";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL?.replace("sslmode=require", "sslmode=verify-full"), max: 5 });
@@ -74,7 +75,7 @@ app.delete("/cases/:id", async (c) => {
 const crewAllowed = (userId: string) => (process.env.CREW_ALLOWED_USER_IDS ?? "").split(",").includes(userId);
 app.get("/stack/status", (c) => c.json({
   naive: { configured: !!crewConfiguration(), enabledForUser: crewAllowed(c.get("userId")) },
-  voice: { enabled: false, reason: "Provider and authorized test number pending." },
+  voice: { enabled: false, reason: "Case-linked calls are not enabled. The standalone synthetic phone test is verified." },
 }));
 app.post("/cases/:id/crew", async (c) => {
   if (!z.uuid().safeParse(c.req.param("id")).success) return c.json({ error: "Invalid case ID." }, 400);
@@ -103,14 +104,21 @@ app.get("/cases/:id/crew", async (c) => {
   if (!item) return c.json({ error: "Case not found." }, 404);
   const [run] = await db.select().from(crewRuns).where(eq(crewRuns.case_id, item.id));
   if (!run?.session_id) return c.json({ status: run ? "start_pending" : "not_started" });
-  const session = await naiveClient().sessions.get(run.session_id);
-  const parsed = crewOutput.safeParse(session.structured_output);
-  return c.json({ status: session.status, stop_reason: session.stop_reason,
-    consumed_micro_usd: session.consumed_micro_usd,
-    result: parsed.success ? parsed.data : null,
-    output_valid: parsed.success,
-    approval_required: session.pending_actions.length > 0,
-  });
+  if (run.completed_at && run.snapshot) return c.json({ ...run.snapshot, saved_at: run.completed_at });
+  try {
+    const session = await naiveClient().sessions.get(run.session_id);
+    const snapshot = completedCrewSnapshot(session);
+    if (snapshot.output_valid) {
+      // First valid completion wins even if simultaneous refreshes finish out of order.
+      await db.update(crewRuns).set({ snapshot, completed_at: new Date() })
+        .where(and(eq(crewRuns.id, run.id), sql`${crewRuns.completed_at} IS NULL`));
+      const [saved] = await db.select().from(crewRuns).where(eq(crewRuns.id, run.id));
+      return c.json({ ...saved.snapshot!, saved_at: saved.completed_at });
+    }
+    return c.json({ ...snapshot, saved_at: null });
+  } catch {
+    return c.json({ error: "The team status is temporarily unavailable. Your case and run ID are preserved; refresh to check the same run." }, 502);
+  }
 });
 
 type Model = { id: string; enabled?: boolean; unavailable_reason?: string };

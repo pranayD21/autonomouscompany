@@ -54,3 +54,5 @@ AI Gateway reported that no models were available until the organization adds a 
 Before frontend deployment, merge the actual frontend origin into Function CORS, Realtime allowed origins, and Auth trusted domains. Preserve existing entries. The local preview command uses `127.0.0.1`, while the allowlists contain `localhost`; test with `http://localhost:4173` or deliberately reconcile the origin mismatch.
 
 Official references: https://neon.com/docs/llms.txt and the installed Neon service-specific skills. Preserve existing provider choices, project linkage, env files, and service settings when continuing setup.
+
+Deployment verification: the CLI can report a completed deployment before requests reach the new Function version. Verify an affected authenticated route after deployment, including permission changes. During the crew review test, the old response persisted briefly; waiting and rechecking the same case avoided duplicate work. Migration 0002 was tested on a temporary branch before production; that temporary branch was then deleted.

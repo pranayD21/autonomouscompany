@@ -1,0 +1,28 @@
+import { crewOutput } from "./naive";
+import type { z } from "zod";
+
+export type CrewSnapshot = {
+  status: string;
+  stop_reason: string | null;
+  consumed_micro_usd: number;
+  result: z.infer<typeof crewOutput> | null;
+  output_valid: boolean;
+  approval_required: boolean;
+};
+
+// Never expose an intermediate submit_output as a completed review.
+export function completedCrewSnapshot(session: {
+  status: string; stop_reason: string | null; consumed_micro_usd: number;
+  structured_output: unknown; pending_actions: unknown[];
+}): CrewSnapshot {
+  const parsed = crewOutput.safeParse(session.structured_output);
+  const finished = session.status === "completed" || (session.status === "idle" && session.stop_reason === "end_turn");
+  const valid = finished && parsed.success && session.pending_actions.length === 0;
+  return {
+    status: session.status, stop_reason: session.stop_reason,
+    consumed_micro_usd: session.consumed_micro_usd,
+    result: valid ? parsed.data : null,
+    output_valid: valid,
+    approval_required: session.pending_actions.length > 0,
+  };
+}
