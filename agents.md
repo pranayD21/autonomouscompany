@@ -39,7 +39,7 @@ The event requires the Naïve SDK. Judges emphasize what the company actually ac
 
 ## Current handoff status
 
-The repository now contains the React/Neon case workspace, migrations, provider setup scripts, and Naïve crew configuration. Auth, database, Function, Realtime, and two-user isolation checks pass. Provider accounts and synthetic voice agents are provisioned. Gateway inference and outbound calls remain blocked by provider funding; SIP approval is pending. Complete case advocacy is not yet verified. See [implementation status](docs/implementation-status.md) and [stack operations](docs/stack.md) before making readiness claims.
+The repository now contains the React/Neon case workspace, migrations, provider setup scripts, and Naïve crew configuration. Auth, database, Function, Realtime, and two-user isolation checks pass. Provider accounts and synthetic voice agents are provisioned. Gateway inference remains blocked by gateway credits; SIP approval is pending. A user-authorized AgentPhone hosted-voice test completed successfully. Complete case advocacy is not yet verified. See [implementation status](docs/implementation-status.md) and [stack operations](docs/stack.md) before making readiness claims.
 
 ## Documentation map
 

@@ -2,11 +2,11 @@ import { createClient } from "@usenaive-sdk/managed-agents";
 import { z } from "zod";
 
 export const crewOutput = z.object({
-  summary: z.string(),
+  summary: z.string().max(1600),
   potential_discrepancy_cents: z.number().int().nonnegative(),
-  evidence: z.array(z.string()),
+  evidence: z.array(z.enum(["bill_amount", "eob_patient_responsibility", "user_notes"])),
   missing_information: z.array(z.string()),
-  next_actions: z.array(z.string()),
+  next_actions: z.array(z.string().max(400)).max(5),
   human_help_required: z.boolean(),
   human_help_reason: z.string(),
 });

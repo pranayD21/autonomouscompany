@@ -10,13 +10,13 @@ Updated November 7, 2026. See [stack operations](stack.md) for account configura
 - `npm start` serves the preview; use http://localhost:4173.
 - `npm run test:e2e` passes signup/session validation, authenticated Function access, database create/persistence/delete, Realtime delivery, reload, and sign-out. It also verifies 401 for missing/invalid tokens, 400 for negative amounts, and 403 for unlisted users trying to spend crew credits.
 - Frontend bundle checked against configured secret values: no provider secrets found.
-- Five Naïve agents provisioned, with capped budgets and explicit specialist versions. Coordinator delegates to specialists; complete structured-output verification is still in progress.
+- Five Naïve agents provisioned, with capped budgets and explicit specialist versions. Live smoke test passed: all four version-3 specialists ended normally and the coordinator returned schema-valid output, identifying the synthetic $800 difference as unverified and requiring documents/human authorization.
 - AgentPhone account, API key, hosted synthetic-demo agent and number configured. ElevenLabs account, restricted key, authenticated demo agent, recording-off setting and duration cap verified through its API. AgentMail free account, inbox, scoped API key and message-read access verified.
 
 ## Blocked or incomplete
 
 - Neon AI Gateway has no enabled models because gateway credits are missing. E2E verifies the unavailable message, not successful inference.
-- AgentPhone rejected the one authorized outbound test with HTTP 402, requiring added funds. SIP access request accepted but pending provider enablement. No completed voice call or SIP connection verified.
+- AgentPhone initially rejected the test with HTTP 402. The operator added $25, then the authorized retry completed (46 seconds; no recording URL), and the user confirmed receipt. SIP access request remains pending; ElevenLabs routing is not verified.
 - ElevenLabs free-plan UI limits use to personal/non-commercial purposes. No paid commercial license selected.
 - Crew runs are restricted by `CREW_ALLOWED_USER_IDS`, currently empty. Configure actual test operators before trying the dashboard's run action.
 - Voice/email are not attached to case actions. Document upload/OCR, consent, evidence-backed outcomes, appeal submission, follow-up scheduling, payments, and public frontend hosting remain incomplete.
@@ -25,6 +25,6 @@ Updated November 7, 2026. See [stack operations](stack.md) for account configura
 
 ## Next work
 
-Finish the corrected Naïve crew smoke test, test the enabled crew through the app, and connect authorized external actions with durable state and consent. Resolve AgentPhone funding/SIP and gateway credits with the operator before paid operations. Publish a frontend only after configuring its exact Auth/CORS/Realtime origin.
+Test the enabled crew through the app, and connect authorized external actions with durable state and consent. Resolve AgentPhone SIP and gateway credits with the operator before paid operations. Publish a frontend only after configuring its exact Auth/CORS/Realtime origin.
 
 The team still needs a real interview participant. No customer savings or testimonial has been established. See [demo and research](demo-and-research.md).

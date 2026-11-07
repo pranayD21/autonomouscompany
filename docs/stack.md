@@ -45,7 +45,7 @@ The crew migration was applied and the case Function redeployed with server-only
 
 ### Versioned roster correction
 
-The second smoke run revealed that the blueprint CLI preserved specialist roster version 1 even after updating their models to version 2. The coordinator now explicitly pins all four specialists to version 2. When changing specialist configuration, check the actual published versions and update the roster pins in the same change; a successful apply report alone does not prove delegates use the new model. Cancelled the second stale-version test before rerunning.
+The second smoke run revealed that the blueprint CLI preserved specialist roster version 1 even after updating their models to version 2. The coordinator initially pinned all four specialists to version 2; the latest prompt revision pins version 3. When changing specialist configuration, check the actual published versions and update the roster pins in the same change; a successful apply report alone does not prove delegates use the new model. Cancelled the second stale-version test before rerunning.
 
 Case deletion now rejects cases with crew records so a running request cannot be orphaned and retried under a fresh ID. A complete run cancellation/retention workflow remains future work. `scripts/e2e.ts` also checks missing/invalid bearer tokens, negative amounts, and rejection of spending by unlisted users.
 
@@ -55,4 +55,20 @@ The corrected-roster test completed delegated work but ended with `stop_reason: 
 
 The smoke test also requires the known synthetic discrepancy of 80,000 cents, missing-information entries, and a human-help flag; schema shape alone is insufficient. Provider output remains a draft requiring review, especially any billing/legal generalizations that go beyond supplied evidence.
 
-The operator subsequently authorized funding and a retry to the same test number. Opened AgentPhone Billing in Dia at their request; advised a $10 manual top-up if offered (displayed hosted rate $0.22/min), leaving auto-recharge and the recording add-on off. Top-up minimum is not yet verified because payment-method setup comes first. Wait for confirmed funding before `npx tsx scripts/test-call.ts --retry-funded-test`. This flag accepts only a previous HTTP 402 without a call ID and archives that refusal; it cannot retry a successful or ambiguous request.
+The operator subsequently authorized funding and a retry to the same test number. Opened AgentPhone Billing in Dia at their request; advised a $10 manual top-up if offered (displayed hosted rate $0.22/min), leaving auto-recharge and the recording add-on off. Top-up minimum is not yet verified because payment-method setup comes first. Funding and the single retry have since completed; do not run another outbound test under this authorization. This flag accepts only a previous HTTP 402 without a call ID and archives that refusal; it cannot retry a successful or ambiguous request.
+
+### First complete crew result and content review
+
+The corrected `submit_output` run completed with all four specialist outputs and a schema-valid 80,000-cent discrepancy. Coordinator cost: 1,549 micro-USD (reported session consumption; delegated threads share the coordinator budget). Human review found unsupported deadlines, exposure claims, and escalation advice in the draft. This is a provider integration success, not production-quality medical billing advice. Strengthened every agent's instructions to prohibit invented deadlines, fraud/legal conclusions, exposure/overcharge ceilings, and unsupported escalation. Evidence output now uses only three supplied-field identifiers, not agent opinions as evidence; summary and action lengths are bounded. The updated specialists are version 3 and the local roster pin is updated accordingly. Smoke assertions reject those unsupported patterns.
+
+The operator completed a $25 AgentPhone top-up; the displayed balance became $27. Retried the authorized call once: HTTP 200, call ID `cmw7006zuahsurqhj8kjihh2x`, initial status ringing. No additional outbound call is authorized by this test. The completed result is recorded below.
+
+### Completed phone test
+
+The user confirmed the call went through. Provider readback: `status: completed`, `durationSeconds: 46`, no recording URL. This verifies the native AgentPhone hosted-voice path to the authorized test recipient. It does not verify ElevenLabs SIP routing or autonomous hospital contact. No hospital/insurer was called and no email was sent.
+
+Neon sponsor-credit check: the hackathon claim link showed $250 waiting, but the console requires selecting a paid plan and updating billing information. No plan change or billing submission was made. The offer was not claimed; AI Gateway remains unavailable. Naïve inference uses its separate existing hackathon credits.
+
+The coordinator explicitly allows `wait_for_agents` alongside `send_to_agent`. Naïve delegation dispatch returns immediately; the coordinator must park before submitting its final output. Earlier tests submitted before delegates finished and lost the result on wake-up. The prompt now requires all four results before final submission.
+
+Final crew verification passed after allowing `wait_for_agents`: session `ses_nsvsww22q9pbsc4gygychc1rff` ended `idle/end_turn`, `output_valid: true`, with all four version-3 members ending normally. `npm run test:crew` exited 0 with `PASS Naive structured case review`. Output reports an unverified $800 variance and requires source documents/human authorization; it is not a verified saving. `npm run build` passed (262 modules; existing chunk-size warning). `npm run stack:check` connects to Postgres, Auth, Naïve, ElevenLabs, AgentPhone, and scoped AgentMail messages, but exits 1 because Neon AI Gateway has no enabled model. App-level authorized crew execution remains unverified because the operator allowlist is empty.
