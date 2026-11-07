@@ -1,0 +1,12 @@
+import {config} from "dotenv";
+import {appendFileSync, readFileSync} from "node:fs";
+import {agentPhoneConfig} from "../backend/providers/voice-config";
+config({path:[".env.local",".env"],quiet:true});
+const id=process.env.AGENTPHONE_AGENT_ID;
+if(!id || !process.env.AGENTPHONE_API_KEY) throw new Error("AGENTPHONE_AGENT_ID and AGENTPHONE_API_KEY required");
+const response=await fetch(`https://api.agentphone.ai/v1/agents/${encodeURIComponent(id)}`,{method:"PATCH",headers:{Authorization:`Bearer ${process.env.AGENTPHONE_API_KEY}`,"Content-Type":"application/json"},body:JSON.stringify(agentPhoneConfig)});
+if(!response.ok) throw new Error(`AgentPhone update HTTP ${response.status}`);
+const agent=await response.json();
+console.log(JSON.stringify({id:agent.id,name:agent.name,voiceMode:agent.voiceMode,messaging:agent.enableMessaging,numbers:agent.numbers}));
+const number=agent.numbers?.[0];
+if(number && !/^AGENTPHONE_NUMBER_ID=/m.test(readFileSync('.env.local','utf8'))) appendFileSync('.env.local',`\nAGENTPHONE_NUMBER_ID=${number.id}\nAGENTPHONE_NUMBER=${number.phoneNumber}\n`);

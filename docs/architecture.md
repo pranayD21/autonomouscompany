@@ -9,7 +9,7 @@ A Naïve coordinator owns a case and delegates to four proposed specialists:
 - Advocate: conducts authorized calls and email follow-up.
 - Verifier: checks revised documents and distinguishes confirmed results from estimates.
 
-The coordinator manages next actions, deadlines, budget, and human escalation. Call tools should return structured status, reference number, documents requested, next action, follow-up date, and whether human help is required. Deduplicate external events to avoid repeated calls/emails. These agent integrations remain future work in this workspace.
+The coordinator manages next actions, deadlines, budget, and human escalation. Call tools should return structured status, reference number, documents requested, next action, follow-up date, and whether human help is required. Deduplicate external events to avoid repeated calls/emails. The Naïve crew is now provisioned; see stack.md for its capped configuration, test results, and remaining voice/email wiring.
 
 ## Local prototype architecture
 
@@ -21,7 +21,7 @@ AI review discovers the available gateway model catalog and selects an enabled s
 
 ## Files
 
-At this documentation handoff, the application files below are local and uncommitted. They may not exist in another clone until an implementation commit is published.
+The implementation files below are included with the stack setup. Provider configuration and scripts are documented in stack.md.
 
 | Path | Purpose |
 | --- | --- |
@@ -46,4 +46,4 @@ At this documentation handoff, the application files below are local and uncommi
 
 Function routes: `GET /session`, `GET /cases`, `POST /cases`, `POST /cases/live`, `DELETE /cases/:id`, `GET /ai/status`, and `POST /cases/:id/analyze`. Routes require authentication; CORS preflight is handled separately. Writes return a transaction ID for Realtime confirmation. Validate ownership on every route and never accept a client-supplied owner ID.
 
-The prototype accepts manually entered synthetic case details. It does not yet implement document upload, OCR, Naïve coordination, Agent Phone, ElevenLabs, AgentMail, payments, or a complete appeals workflow.
+The prototype accepts manually entered synthetic case details. It does not yet implement document upload, OCR, payments or a complete appeals workflow. Naïve review routes and UI controls now exist, while voice/email case actions remain unwired; see stack.md.

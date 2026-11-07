@@ -12,3 +12,5 @@ Read [../agents.md](../agents.md) first. These Markdown files are the durable pr
 | [change-log.md](change-log.md) | Reviewing changes and their validation |
 
 Every repository change must update the relevant documentation in the same change. Keep this directory exclusively `.md` files. The repository map describes both tracked assets and a local, uncommitted prototype; implementation status explicitly distinguishes them.
+
+- [Account setup and agent stack](stack.md)

@@ -30,7 +30,7 @@ The event requires the Naïve SDK. Judges emphasize what the company actually ac
 ## Decisions and boundaries
 
 - Naïve owns coordination, specialist delegation, budgets, and tool permissions. Public docs call the relevant primitive a coordinator/team; verify current SDK APIs before implementation.
-- The user selected Agent Phone for telephony or ElevenLabs for voice handling. Their exact combination and interoperability remain unverified. Do not silently replace them with Twilio/OpenAI voice.
+- The user selected Agent Phone for telephony or ElevenLabs for voice handling. AgentPhone is agentphone.ai. Its hosted demo is configured; SIP access for ElevenLabs was requested and remains pending. Do not silently replace them with Twilio/OpenAI voice.
 - AgentMail is the proposed written follow-up channel. Neon was explicitly selected and provisioned for backend services.
 - Separate potential discrepancies, verified reductions in patient responsibility, and refunds actually received. Never present estimates or simulations as money saved.
 - Obtain appropriate authorization before external case actions. Do not impersonate the patient or commit them to settlements or payments without authorization.
@@ -39,7 +39,7 @@ The event requires the Naïve SDK. Judges emphasize what the company actually ac
 
 ## Current handoff status
 
-The context/documentation commit does not publish the unfinished local application scaffold. At handoff, application files were untracked, the production build passed, a database migration was applied, and Neon Functions were deployed. Full end-to-end service verification was not completed. AI Gateway reported no available models because gateway credits were missing. See [implementation status](docs/implementation-status.md) before making any claims about readiness.
+The repository now contains the React/Neon case workspace, migrations, provider setup scripts, and Naïve crew configuration. Auth, database, Function, Realtime, and two-user isolation checks pass. Provider accounts and synthetic voice agents are provisioned. Gateway inference and outbound calls remain blocked by provider funding; SIP approval is pending. Complete case advocacy is not yet verified. See [implementation status](docs/implementation-status.md) and [stack operations](docs/stack.md) before making readiness claims.
 
 ## Documentation map
 
@@ -48,6 +48,7 @@ The context/documentation commit does not publish the unfinished local applicati
 - [Neon setup and operations](docs/neon.md)
 - [Demo, interviews, and storytelling](docs/demo-and-research.md)
 - [Implementation status and next steps](docs/implementation-status.md)
+- [Account setup and agent stack](docs/stack.md)
 - [Change log](docs/change-log.md)
 
 ## Working preferences

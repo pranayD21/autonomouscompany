@@ -1,39 +1,30 @@
 # Implementation status and next steps
 
-Status captured November 7, 2026. This separates verified work from plans and incomplete work.
+Updated November 7, 2026. See [stack operations](stack.md) for account configuration and test details.
 
-## Verified during this session
+## Verified
 
-- Neon CLI installed successfully.
-- Requested project and production branch linked; browser authentication completed.
-- Postgres, Auth, Functions, AI Gateway credentials, and Realtime provisioned/configured.
-- Drizzle generated and applied the `advocacy_cases` migration successfully.
-- `npm run build` passed after correcting the installed Auth SDK integration to read `session.data.session.token`; `auth.token()` was not available on that client.
-- The last successful build reported 261 transformed modules and `built in 324ms`.
-- Functions `hello` and `cases` deployed successfully.
-- `npm start` launched Vite preview and printed `Local: http://127.0.0.1:4173/`.
-- Neon skills and the enabled Codex plugin's MCP configuration were inspected.
+- Neon CLI authentication and the requested production project setup completed. Postgres, Auth, Functions, Realtime, and AI Gateway credentials are provisioned.
+- Both Drizzle migrations applied. The case Function is deployed with server-only Naïve configuration.
+- `npm run build` passes, including TypeScript checks for backend, frontend, scripts, and provider configuration. Latest build: 262 modules, 525.42 kB JavaScript. The chunk-size warning remains.
+- `npm start` serves the preview; use http://localhost:4173.
+- `npm run test:e2e` passes signup/session validation, authenticated Function access, database create/persistence/delete, Realtime delivery, reload, and sign-out. It also verifies 401 for missing/invalid tokens, 400 for negative amounts, and 403 for unlisted users trying to spend crew credits.
+- Frontend bundle checked against configured secret values: no provider secrets found.
+- Five Naïve agents provisioned, with capped budgets and explicit specialist versions. Coordinator delegates to specialists; complete structured-output verification is still in progress.
+- AgentPhone account, API key, hosted synthetic-demo agent and number configured. ElevenLabs account, restricted key, authenticated demo agent, recording-off setting and duration cap verified through its API. AgentMail free account, inbox, scoped API key and message-read access verified.
 
-## Not verified or not implemented
+## Blocked or incomplete
 
-No complete end-to-end test suite ran. Sign-up/sign-in/sign-out, persistence across reload, JWT acceptance by the deployed Function, owner isolation, database writes through the UI, live updates, and AI inference must still be exercised. The `test:e2e` script points to `scripts/e2e.ts`, which had not been created at handoff. Do not report it as a working test command.
+- Neon AI Gateway has no enabled models because gateway credits are missing. E2E verifies the unavailable message, not successful inference.
+- AgentPhone rejected the one authorized outbound test with HTTP 402, requiring added funds. SIP access request accepted but pending provider enablement. No completed voice call or SIP connection verified.
+- ElevenLabs free-plan UI limits use to personal/non-commercial purposes. No paid commercial license selected.
+- Crew runs are restricted by `CREW_ALLOWED_USER_IDS`, currently empty. Configure actual test operators before trying the dashboard's run action.
+- Voice/email are not attached to case actions. Document upload/OCR, consent, evidence-backed outcomes, appeal submission, follow-up scheduling, payments, and public frontend hosting remain incomplete.
+- Two-user isolation is verified for case listing, Realtime, crew routes, and deletion. Case analysis crash recovery and broader spend/rate controls need work.
+- Four moderate development dependency findings remain in Drizzle Kit/esbuild; no forced breaking upgrade performed. Migration driver printed a future SSL-mode semantics warning; API uses verify-full.
 
-AI inference is blocked by missing gateway credits. A build warning reported a frontend JavaScript chunk above 500 kB. npm audit reported four moderate vulnerabilities in the Drizzle Kit/esbuild dependency chain. No force upgrade was applied. Migrations printed an SSL-mode compatibility warning; the API pool explicitly requests verify-full, but migration configuration had not been adjusted.
+## Next work
 
-The local application scaffold was untracked when this documentation commit was prepared. Only original README/icon and this context documentation are published by this commit. Infrastructure is already deployed independently of that Git status. Another clone will need a later implementation commit before it can run the prototype.
+Finish the corrected Naïve crew smoke test, test the enabled crew through the app, and connect authorized external actions with durable state and consent. Resolve AgentPhone funding/SIP and gateway credits with the operator before paid operations. Publish a frontend only after configuring its exact Auth/CORS/Realtime origin.
 
-The user's statement that the team has a working product may refer to work outside this workspace. Ask for or inspect that implementation before duplicating it or making readiness claims.
-
-## Next engineering work
-
-1. Reconcile the local scaffold with the team's actual product and publish the intended implementation separately.
-2. Add and run meaningful end-to-end tests for all requested Neon services, including unauthorized requests, a second user's access, mutation persistence, and live updates across two sessions.
-3. Resolve origin configuration for local and hosted frontends; do not weaken authentication to make a test pass.
-4. Enable gateway credits through the owner and verify a real inference request; preserve an honest unavailable state until then.
-5. Add Naïve orchestration, document intake/evidence, and Agent Phone/ElevenLabs plus AgentMail only after confirming their contracts.
-6. Add durable case events, external-action deduplication, follow-up scheduling, consent scope, and human escalation. Recover cases left in analyzing after process interruption.
-7. Complete the original requested report with actual command output for build and end-to-end checks, including every failure and unverified path.
-
-## Next product work
-
-Find an interview participant through warm introductions. The team has no confirmed participant or real customer outcome in this conversation and can drive around SF. Interviewing can proceed without collecting medical documents; see demo-and-research.md.
+The team still needs a real interview participant. No customer savings or testimonial has been established. See [demo and research](demo-and-research.md).

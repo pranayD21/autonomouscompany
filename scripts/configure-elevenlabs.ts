@@ -1,0 +1,29 @@
+import { config } from "dotenv";
+import { appendFileSync } from "node:fs";
+import { agentPhoneConfig, voicePrompt } from "../backend/providers/voice-config";
+config({path:[".env.local",".env"],quiet:true});
+if(!process.env.ELEVENLABS_API_KEY) throw new Error("ELEVENLABS_API_KEY required");
+const headers={"xi-api-key":process.env.ELEVENLABS_API_KEY,"Content-Type":"application/json"};
+let id=process.env.ELEVENLABS_AGENT_ID;
+if(!id) {
+ const r=await fetch("https://api.elevenlabs.io/v1/convai/agents",{headers});
+ if(!r.ok) throw new Error(`List HTTP ${r.status}`);
+ const data=await r.json();
+ const matches=data.agents.filter((a:{name:string})=>a.name==="Bill Advocate Demo");
+ if(matches.length>1) throw new Error("Multiple matching agents; select ID explicitly");
+ id=matches[0]?.agent_id;
+}
+if(!id) {
+ const r=await fetch("https://api.elevenlabs.io/v1/convai/agents/create",{method:"POST",headers,body:JSON.stringify({
+  name:"Bill Advocate Demo",tags:["synthetic-demo"],
+  conversation_config:{agent:{first_message:agentPhoneConfig.beginMessage,language:"en",prompt:{prompt:voicePrompt,llm:"gpt-4o-mini",max_tokens:300}},conversation:{max_duration_seconds:180},turn:{silence_end_call_timeout:30}},
+  platform_settings:{auth:{enable_auth:true},privacy:{record_voice:false,retention_days:7},call_limits:{agent_concurrency_limit:1,daily_limit:10,bursting_enabled:false}},
+ })});
+ if(!r.ok) {console.error(`Create HTTP ${r.status}`,await r.text());process.exit(1);}
+ id=(await r.json()).agent_id;
+}
+if(!process.env.ELEVENLABS_AGENT_ID) appendFileSync('.env.local',`\nELEVENLABS_AGENT_ID=${id}\n`);
+const r=await fetch(`https://api.elevenlabs.io/v1/convai/agents/${id}`,{headers});
+if(!r.ok) throw new Error(`Readback HTTP ${r.status}`);
+const a=await r.json();
+console.log(JSON.stringify({id,name:a.name,auth_required:a.platform_settings?.auth?.enable_auth,record_voice:a.platform_settings?.privacy?.record_voice,max_duration_seconds:a.conversation_config?.conversation?.max_duration_seconds}));

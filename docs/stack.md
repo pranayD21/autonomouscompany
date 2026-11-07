@@ -1,0 +1,50 @@
+# Account setup and agent stack
+
+The operator selected agentphone.ai and the existing Naïve company. Account setup uses the operator's Dia session through Playwriter. Never put passwords or API keys in this document.
+
+## Naïve
+
+The hackathon portal confirmed $250 awarded credits and Pro free through November 30, 2026. Studio showed $251 available before testing. No plan purchase or top-up was performed.
+
+Installed `@usenaive-sdk/managed-agents`, `@usenaive-sdk/cli`, and `@usenaive-sdk/blueprints`. `naive.config.ts` declares five agents: coordinator, intake, investigator, advocate, verifier. Each has a $2 monthly cap and $0.25 task cap. The user directed use of the hackathon credits after these proposed limits were presented. Tools default to deny; the coordinator can delegate only to the named specialists. Specialists draft and investigate; none has a calling or sending tool enabled.
+
+A dedicated `bill-advocate-runtime` key has agents:read/write and sessions:read/write scopes. It is in ignored `.env.local`, mode 0600. The existing CEO and company configuration were preserved.
+
+Run `node --env-file=.env.local node_modules/.bin/naive up --dry-run` before applying. Initial apply created four specialists but refused the coordinator because the CLI sets the roster in a second phase and `handoffs: "team"` requires it at creation. Explicit specialist-name handoffs fix this; the second apply created the coordinator and reported all four specialists unchanged.
+
+`backend/providers/naive.ts` uses the official SDK and validates structured output. `advocacy_crew_runs` stores one immutable request per case with an idempotency key, so retry after a timeout uses the same request. POST `/cases/:id/crew` starts or retrieves that request; GET reads provider status/output. Both check case ownership. Runs additionally require `CREW_ALLOWED_USER_IDS`, `NAIVE_COORDINATOR_ID`, and `NAIVE_RUN_BUDGET_MICRO_USD`. The run result is a plan, never verified savings. These endpoints still need deployment and a live test.
+
+## Voice and email
+
+AgentPhone means **agentphone.ai**, not agentphone.app. Its native hosted voice and ElevenLabs over SIP are alternative call paths. SIP needs AgentPhone account enablement and a supported trunk configuration. Never attach one number to both call paths. Account setup is in progress; no number purchase or external call has happened.
+
+ElevenLabs and AgentMail accounts/credentials are pending. No messages have been sent. Use synthetic test cases until consent and production data handling are implemented.
+
+## Setup checks
+
+`npm run stack:check` performs read-only account and connectivity checks, printing no secret values. An exit code of 1 means one or more required providers are missing or blocked. It does not prove calls or inference work.
+
+`npm run test:e2e` runs a headless Chromium check against the preview at localhost:4173. It creates a synthetic example.com auth account and a synthetic case, deletes the case, and signs out. The test account remains; it sends no patient communications. Install the browser with `npx playwright install chromium` if needed. The current AI assertion checks the unavailable state because the gateway has no enabled model; successful inference remains unverified.
+
+## Account setup results
+
+- AgentPhone: account created through the operator's Google session; default agent and number provisioned. Demo number **+1 (412) 448-2627**, agent `cmw6zfr0z9qznrqhjo8i7mg3w`, number ID `cmw6zftbq9r37rqhjhzucl2b7`. Number provisioning consumed $3 of the $5 free credit, leaving $2. Hosted agent renamed Bill Advocate Demo and configured using `scripts/configure-agentphone.ts` and `backend/providers/voice-config.ts`. Messaging is disabled, prompt requires synthetic details and AI disclosure. SIP access requested; the service says it will email when enabled.
+- ElevenLabs: Google account onboarding completed after the operator confirmed age eligibility. Free plan shows 10,000 credits. Created `bill-advocate-runtime-v2`, restricted to ElevenAgents write and Voices read, with a 1,000-credit refresh-period cap. Created agent `agent_7301m6w2sn52fehvcmb6vkx4rw9h` through `scripts/configure-elevenlabs.ts`; readback verifies authentication required, audio recording off, and 180-second maximum duration. Daily limit 10, concurrency 1, bursting off, retention 7 days. Free plan UI states personal/non-commercial use only: commercial use needs an appropriate license. No paid plan was selected.
+- AgentMail: free account and `bill-advocate-pranay@agentmail.to` inbox created. Onboarding key is scoped: it can read that inbox's messages but cannot list/read inbox metadata. The check therefore uses the messages endpoint; do not broaden permissions merely to make a generic check pass. `backend/providers/agentmail.ts` is a server-side read adapter, not yet exposed in the case workflow. No email sent.
+- Credentials: saved in ignored `.env.local`, never in committed source. Two initial keys (one AgentPhone, one ElevenLabs) appeared in browser tool output during setup. AgentPhone's initial key was revoked; ElevenLabs' initial key was disabled and replaced. Only replacement keys are configured. Browser snapshots must always redact all key prefixes, including during closing animations.
+
+## Voice verification and blockers
+
+The operator authorized a synthetic outbound test to their supplied number. `scripts/test-call.ts --place-authorized-test` made exactly one request with recording disabled. AgentPhone returned HTTP 402: “Add funds on the Billing page to place outbound calls.” No call ID was returned and no dial was confirmed. The script records attempts under ignored `test-results/` and refuses automatic duplicate attempts. Do not clear that guard or retry until the rejection is resolved and the intended test is confirmed. Outbound calling, SIP-to-ElevenLabs routing, and audio quality remain unverified. The operator can call the demo number inbound; inspect that resulting call before claiming success.
+
+## Application wiring
+
+The crew migration was applied and the case Function redeployed with server-only Naïve credentials, coordinator ID, and run budget. `src/CrewReview.tsx` provides start/refresh controls and structured next actions. `CREW_ALLOWED_USER_IDS` is intentionally empty until specific signed-in test operators are enabled; possession of a public signup account does not authorize spending company credits. Voice and mail credentials are local only; the app does not yet invoke those channels.
+
+`npm run test:crew` starts one synthetic provider session, stores its ID in `test-results/crew-smoke.json`, and checks it on subsequent runs. The initial auto-model session completed three specialist turns but paused the verifier at a preflight budget check before any verifier spend. Cancelled that root session and changed the crew model to the live-catalog `qwen/qwen3.7-flash`, keeping all budgets unchanged, then reapplied and started a fresh test. The initial record is retained in `test-results/crew-smoke-initial.json`. A running session is not a pass; require valid final structured output and inspect delegated threads.
+
+### Versioned roster correction
+
+The second smoke run revealed that the blueprint CLI preserved specialist roster version 1 even after updating their models to version 2. The coordinator now explicitly pins all four specialists to version 2. When changing specialist configuration, check the actual published versions and update the roster pins in the same change; a successful apply report alone does not prove delegates use the new model. Cancelled the second stale-version test before rerunning.
+
+Case deletion now rejects cases with crew records so a running request cannot be orphaned and retried under a fresh ID. A complete run cancellation/retention workflow remains future work. `scripts/e2e.ts` also checks missing/invalid bearer tokens, negative amounts, and rejection of spending by unlisted users.
