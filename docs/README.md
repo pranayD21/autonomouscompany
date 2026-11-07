@@ -15,3 +15,4 @@ Every repository change must update the relevant documentation in the same chang
 
 - [Account setup and agent stack](stack.md)
 - [Case outreach](outreach.md)
+- [Insurer-first workflows](insurance-workflows.md)

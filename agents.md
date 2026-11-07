@@ -15,9 +15,11 @@ Whenever you change anything in this repository, update or add the corresponding
 
 ## Product direction
 
-Build an agent-run medical billing advocacy company. A user supplies a medical bill and ideally an explanation of benefits (EOB), or an insurance claim/denial. Agents investigate discrepancies, contact hospital billing and insurance representatives, collect missing documents, follow up, and report a documented outcome.
+Build an agent-run insurance claim advocacy service for an injured person or policyholder. The primary communication relationship is claimant ↔ insurer/claims administrator, not patient ↔ hospital billing office. Agents organize claim evidence, prepare submissions or disputes, contact the insurer within authorization, follow up on missing information and decisions, and explain documented outcomes to the person.
 
-The proposed first focus is hospital bill/EOB reconciliation. Denied-claim appeals are a later expansion because they can require more formal documentation and clinical judgment. This is a recommendation from planning, not a completed product capability.
+The selected first demo is a workplace chemical burn at a pharmaceutical office. The person begins with contact details, an injury description, and an insurance card; agents progressively gather missing information, research coverage, manage claims and insurer exchanges, and reconcile final bills to minimize verified out-of-pocket responsibility. The target is end-to-end routine administration within scoped authorization, with truthful human-required interventions rather than guaranteed payouts.
+
+The user explicitly named two use cases: workplace injury claims involving an employer and its insurer/claims administrator, and disputes about a health insurer's claim decision or patient responsibility after medical care. Keep separate intake and workflow paths for these; do not assume workers' compensation uses ordinary health-plan appeal rules. The injured person is the primary beneficiary. Whether an employer is the paying customer or filing party is not yet settled. Hospitals/clinicians may supply supporting evidence, but hospital bill negotiation is no longer the core product.
 
 The user says the team has a working product. The local scaffold described in these docs is only the implementation visible in this workspace; do not assume it includes the team's entire working system.
 
@@ -43,6 +45,7 @@ The repository now contains the React/Neon case workspace, migrations, provider 
 
 ## Documentation map
 
+- [Insurer-first workflow](docs/insurance-workflows.md)
 - [Product and business direction](docs/product.md)
 - [Architecture and repository map](docs/architecture.md)
 - [Neon setup and operations](docs/neon.md)

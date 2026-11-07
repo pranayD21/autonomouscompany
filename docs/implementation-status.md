@@ -20,12 +20,16 @@ Updated November 7, 2026. See [stack operations](stack.md) for account configura
 - AgentPhone initially rejected the test with HTTP 402. The operator added $25, then the authorized retry completed (46 seconds; no recording URL), and the user confirmed receipt. SIP access request remains pending; ElevenLabs routing is not verified.
 - ElevenLabs free-plan UI limits use to personal/non-commercial purposes. No paid commercial license selected.
 - Crew runs are restricted by `CREW_ALLOWED_USER_IDS`, currently empty. Configure actual test operators before trying the dashboard's run action.
-- Case-linked outreach drafts, explicit authorization, dispatch records, and provider status reads are implemented. New case-linked live delivery remains unverified; approved-recipient lists are empty. Document upload/OCR, consent, evidence-backed outcomes, appeal submission, follow-up scheduling, payments, and public frontend hosting remain incomplete.
+- Case-linked outreach drafts, explicit authorization, dispatch records, and provider status reads are implemented. One explicitly authorized case-linked AgentMail email was sent and independently found in the operator’s Gmail inbox. Case-linked live calling remains unverified; approved-recipient lists are restored after testing. Document upload/OCR, consent, evidence-backed outcomes, appeal submission, follow-up scheduling, payments, and public frontend hosting remain incomplete.
 - Two-user isolation is verified for case listing, Realtime, crew routes, and deletion. Case analysis crash recovery and broader spend/rate controls need work.
 - Four moderate development dependency findings remain in Drizzle Kit/esbuild; no forced breaking upgrade performed. Migration driver printed a future SSL-mode semantics warning; API uses verify-full.
 
 ## Next work
 
-Verify a newly authorized synthetic email/call through the case workflow, then add agent-driven proposals, inbound replies, and scheduled follow-ups. Resolve AgentPhone SIP and gateway credits with the operator before paid operations. Publish a frontend only after configuring its exact Auth/CORS/Realtime origin.
+Add inbound reply handling, agent-driven outreach proposals, and scheduled follow-ups; verify a newly authorized case-linked call when a recipient agrees. Resolve AgentPhone SIP and gateway credits with the operator before paid operations. Publish a frontend only after configuring its exact Auth/CORS/Realtime origin.
 
 The team still needs a real interview participant. No customer savings or testimonial has been established. See [demo and research](demo-and-research.md).
+
+## Selected product direction
+
+The user selected an insurer-facing workplace chemical-burn workflow, from initial injury/insurance-card intake to supported claim resolution and final bill reconciliation. Product context and Naïve prompts now reflect that direction (specialist version 4). The app still requires bill/EOB amounts and lacks claim-specific intake, insurance-card/document upload, claim forms, coverage research tools, and autonomous reply/follow-up handling. Prior infrastructure tests do not establish completion of this new end-to-end workflow. See insurance-workflows.md.

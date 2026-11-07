@@ -72,3 +72,9 @@ Neon sponsor-credit check: the hackathon claim link showed $250 waiting, but the
 The coordinator explicitly allows `wait_for_agents` alongside `send_to_agent`. Naïve delegation dispatch returns immediately; the coordinator must park before submitting its final output. Earlier tests submitted before delegates finished and lost the result on wake-up. The prompt now requires all four results before final submission.
 
 Final crew verification passed after allowing `wait_for_agents`: session `ses_nsvsww22q9pbsc4gygychc1rff` ended `idle/end_turn`, `output_valid: true`, with all four version-3 members ending normally. `npm run test:crew` exited 0 with `PASS Naive structured case review`. Output reports an unverified $800 variance and requires source documents/human authorization; it is not a verified saving. `npm run build` passed (262 modules; existing chunk-size warning). `npm run stack:check` connects to Postgres, Auth, Naïve, ElevenLabs, AgentPhone, and scoped AgentMail messages, but exits 1 because Neon AI Gateway has no enabled model. App-level authorized crew execution remains unverified because the operator allowlist is empty.
+
+### Insurer-facing revision
+
+The primary demo is now a workplace chemical-burn claim. All five Naïve prompts were updated for insurer/claims-administrator triage, coverage research questions, insurer correspondence, and distinct verified outcomes. Specialists are pinned to version 4; budgets are unchanged. This revision is configured, but has not yet been exercised through claim-specific app intake. See insurance-workflows.md for the selected scope and implementation gaps.
+
+The first explicitly authorized case-linked AgentMail test email was sent once and confirmed in the operator's Gmail inbox. The saved action refreshes as `sent`; temporary operator and recipient permissions were restored. Case-linked calling, inbound replies, and scheduled follow-up remain unverified.

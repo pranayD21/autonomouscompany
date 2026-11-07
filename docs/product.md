@@ -1,22 +1,28 @@
 # Product and business direction
 
-## Customer problem
+## Customer problem and direction
 
-People facing confusing medical bills and insurance claims must compare documents, repeat information over calls, obtain missing records, and remember follow-up dates. The proposed service takes on those administrative tasks and reports evidence-backed outcomes.
+An injured person or policyholder needs someone to keep their insurance claim moving: organize evidence, submit the right information, explain insurer responses, and follow up without repeatedly telling the same story. The product is a communication and case-management layer between that person and the insurer or claims administrator.
 
-The initial customer may be the patient or a caregiver handling the patient's paperwork. We have not established a validated customer segment, pricing model, conversion rate, savings rate, or market size in this conversation.
+The user selected insurer-facing advocacy over hospital-facing bill negotiation. Two intended use cases are workplace injury claims and health-insurance claim disputes after medical care. Keep their intake, documents, and procedural steps distinct; share authorization, communication, evidence tracking, and updates. The primary beneficiary is the injured person. Employer purchasing or employer-assisted filing remains an open business-model question.
 
-## Proposed first workflow
+We have not validated pricing, conversion, claim success rates, or market size.
 
-1. Receive a bill and EOB; request missing documents.
-2. Extract amounts and relevant fields with source references.
-3. Investigate apparent discrepancies without declaring every mismatch an error.
-4. Contact billing or the insurer within the person's authorization.
-5. Record the reference number, requested documents, promised action, and follow-up date.
-6. Resume the case when a reply or document arrives.
-7. Verify the revised documents and report the actual outcome.
+## Selected first demo
 
-Suggested case states: uploaded, needs information, investigating, contacting, awaiting response, verifying, resolved, or human help needed. The current local prototype has a much smaller state model; see architecture.md.
+A worker suffers a chemical burn at a pharmaceutical office. Starting with contact details, injury description, and an insurance card, the company progressively collects evidence, researches relevant employer/personal coverage, manages supported claims and insurer follow-up, and reconciles final bills. The aim is benefits the person is entitled to and the lowest verified responsibility supported by their coverage and corrected billing. Do not guarantee payment or a zero balance. See insurance-workflows.md for the complete sequence and authorization model.
+
+## Intended workflow
+
+1. Identify the claim type, insurer/claims administrator, current stage, and the person's requested outcome.
+2. Collect the relevant claim documents and record source references; ask for missing evidence.
+3. Explain the insurer's stated decision or outstanding request without guessing coverage or entitlement.
+4. Prepare the submission, document request, status inquiry, or evidence-backed dispute for review.
+5. Obtain authorization for the exact recipient and external action, then communicate with the insurer.
+6. Record receipt/reference number, outstanding documents, stated next action, and a source-backed follow-up date.
+7. Resume on a response and verify the actual claim decision, payment, or revised responsibility.
+
+Report claim acceptance, payment to a provider, benefits paid to the person, and reduced patient responsibility separately. None should be invented from a bill/EOB mismatch. See [insurance workflows](insurance-workflows.md) for the two paths and current implementation gaps.
 
 ## Company operations
 
@@ -45,4 +51,4 @@ The supplied event page uses inconsistent names for some prize categories. Confi
 - OpenRouter: optional alternative models; avoid redundant routing.
 - Luxor: no immediate need for custom compute in this prototype.
 
-Except Neon, these are planning choices, not verified integrations in the local scaffold.
+Naïve, Neon, AgentPhone, AgentMail, and ElevenLabs accounts are configured. Core case/crew and selected communication paths are verified; see implementation-status.md for exact scope. The other sponsors remain optional.
