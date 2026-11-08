@@ -1,5 +1,9 @@
 # Change log
 
+## November 8, 2026 — Landing steps as numbered rows on phones
+
+The user said the three "How it works" steps looked generic on their iPhone (rounded cards with blue circle badges). On phones they are now numbered rows on hairline rules: a small blue monospace number and the step title, the same pattern as the desktop list and the in-app case list. The wording is unchanged. Only `src/mobile.css` changed. Verification: WebKit screenshots with the iPhone 15 and iPhone SE profiles were inspected, and `npm run build` passed.
+
 ## November 8, 2026 — Onboarding status as a quiet pill, with "I don’t need this"
 
 From their iPhone the user said the onboarding notice still looked heavy: an amber bordered box with a two-line message, opening to a paragraph, a big blue call button, a stop link and the transcript. They asked for something much quieter, a status dot and a word or two that opens details, and for a way to delete the case when they no longer want it. The overview also greeted the phone account as "Good morning, Assurance".
