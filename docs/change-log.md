@@ -2,7 +2,7 @@
 
 ## 2026-11-08 — New logo and settling hero wordmark
 
-Replaced the asterisk mark with the new two-stroke "A" logo (blue, rounded corners) across the app, README icon and a new favicon. The hero animation now finishes by dropping the handwritten "as" into line with "surance", centred on its x-height, while the struck "in" slides behind the heading below and fades out. The handwritten "as" is larger and heavier. See frontend.md.
+Replaced the asterisk mark with the new two-stroke "A" logo (blue, rounded corners) across the app, README icon and a new favicon. The hero animation now finishes by dropping the handwritten "as" onto the same line as "surance" (bottoms level), while the struck "in" slides behind the heading below and fades out. The heading and call to action sit lower to give the dropped "in" more room. The handwritten "as" is larger and heavier. See frontend.md.
 
 Verification: `tsc --noEmit` passed. Real-time Chrome frame captures of a local Vite server (placeholder service URLs) at 1440px and 390px wide, plus reduced motion, confirmed the start, mid and settled states. The full `npm run build` needs the three `VITE_*` service URLs and was not run. The settled layout during live window resizing was not checked.
 

@@ -31,8 +31,8 @@ function inkBox(el: Element, text: string) {
 }
 
 // Phase 1 (CSS): strike through `from` and write `to` above it.
-// Phase 2 (settle): `to` drops into line, vertically centred on the rest of the
-// word, and the struck `from` slides down behind the content below, fading out
+// Phase 2 (settle): `to` drops into line, sitting on the rest of the word's
+// baseline, and the struck `from` slides down behind the content below, fading out
 // before it reaches it. Offsets are in em so they follow the viewport-based font size.
 export function StrikethroughReplace({ from, to, lineColor = "currentColor", speed = 1, className = "", fadeBelow }: StrikethroughReplaceProps) {
   const durationMs = 1400 / Math.max(0.01, speed);
@@ -53,9 +53,10 @@ export function StrikethroughReplace({ from, to, lineColor = "currentColor", spe
       // offsetTop/offsetLeft ignore transforms, so these are the untransformed positions.
       const fromBaseline = f.offsetTop + fb.offsetTop;
       const toBaseline = t.offsetTop + tb.offsetTop;
-      // Centre the replacement's ink on the rest of the word's x-height band.
+      // Sit the replacement's ink on the same line as the rest of the word: its
+      // lowest point lands where the rest of the word's letters bottom out.
       const rest = r.nextElementSibling, restInk = rest && inkBox(rest, rest.textContent || "x"), toInk = inkBox(t, to);
-      const centring = restInk && toInk ? ((toInk.asc - toInk.desc) - (restInk.asc - restInk.desc)) / 2 : 0;
+      const inLine = restInk && toInk ? toInk.desc - restInk.desc : 0;
       const fromInk = inkBox(f, from);
       const base = fb.offsetTop;
       const inDy = (fromInk?.asc ?? 0.74 * em) + FROM_DROP_GAP * em;
@@ -65,7 +66,7 @@ export function StrikethroughReplace({ from, to, lineColor = "currentColor", spe
       const belowGap = below ? below.getBoundingClientRect().top - (rootTop + fromBaseline) : 0.45 * em;
       setGeo({
         fromW: f.offsetWidth / em - FROM_PAD * 2, toW: tb.offsetLeft / em + TO_GAP, dx: -t.offsetLeft / em,
-        dy: (fromBaseline - toBaseline + centring) / em, inDy: inDy / em,
+        dy: (fromBaseline - toBaseline + inLine) / em, inDy: inDy / em,
         // Mask stops in the struck word's resting box; CSS offsets them by its
         // current slide so the fade stays fixed on the page while it moves.
         fadeStart: (base + FROM_DROP_GAP * em) / em, fadeEnd: (base + Math.max(belowGap, 0.2 * em)) / em,
