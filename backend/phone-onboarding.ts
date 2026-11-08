@@ -19,8 +19,17 @@ Ask one question at a time. If someone sincerely asks whether you are an AI or a
 
 // Inbound hosted calls take the agent's default script, so the callback line cannot use the per-call prompt above.
 export const ONBOARDING_CALLBACK_NUMBER='+14124482627';
-export const CALLBACK_GREETING="Hi, you've reached Assurance. I'll save a transcript of this call to the account verified with this phone number. Is this new case a workplace injury or a health insurance claim?";
-export const CALLBACK_PROMPT=ONBOARDING_PROMPT.replace("the verified account owner who explicitly requested this one call and accepted the standard handling scope on the website.","a person calling to open a new case, or calling back after a missed or incomplete onboarding call. Their transcript only reaches an account if this phone number was verified on the website. If they are calling about a case that already exists, tell them updates are in the website conversation and that this call will not open another case.").replace(" A transcript is saved to your account; audio recording is disabled."," A transcript is saved to the account verified with this phone number.").replace(" Standard handling scope previously accepted on the website:"," Standard handling scope accepted on the website by verified account owners:");
+export const CALLBACK_GREETING="Hi, this is Assurance. This call is transcribed and saved to the account verified with this phone number. How can I help you today?";
+const CALLBACK_INTAKE=ONBOARDING_PROMPT.replace("the verified account owner who explicitly requested this one call and accepted the standard handling scope on the website.","a person calling to open a new case, or calling back after a missed or incomplete onboarding call. Their transcript only reaches an account if this phone number was verified on the website.").replace(" A transcript is saved to your account; audio recording is disabled."," A transcript is saved to the account verified with this phone number.").replace(" Standard handling scope previously accepted on the website:"," Standard handling scope accepted on the website by verified account owners:");
+
+export const CALLBACK_PROMPT=`Call flow, which comes before every other instruction: when the caller first speaks, call get_open_cases before you reply.
+- If caller_known is true and count is 0, this is onboarding. Do not ask whether it is a new or existing case. Go straight to the intake below.
+- If count is 1 or more, name their open cases by title and ask whether they are calling about one of those or want to open a new case.
+- For an existing case, call get_case_details with its case_number. Tell them where it stands using only what the tool returned, then ask whether there is anything new. Save what they tell you with save_case_update, and say it was saved only if the tool returned saved true. No new case opens from this call. If they also want a new case, ask them to call back for it.
+- For a new case, or if caller_known is false, use the intake below. If caller_known is false, say a case opens only if this phone number was verified on the website.
+If a tool fails, do not guess. Never state a case detail, status, or outcome that a tool did not return.
+
+${CALLBACK_INTAKE}`;
 
 type Attempt={id:string;owner_id:string;phone:string;state:string;provider_id:string|null;provider_status:string|null;agent_id:string;number_id:string;consent:string;intended_case_id:string;case_id:string|null;transcript:CallTurn[];transcript_sha256:string|null;reason:string|null;created_at:Date;updated_at:Date};
 type Options={request?:typeof fetch};

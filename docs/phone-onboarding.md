@@ -44,6 +44,18 @@ Phone accounts open every later case by calling, with no form. The New case page
 
 The transcript is only linked through caller ID, so a spoofed caller could open a false case and start its advocate on a verified account. Fix this before wider use.
 
+## Calling about open cases
+
+Inbound hosted calls cannot take a per-call prompt, and the fixed greeting plays first, so the agent looks up the caller when they first speak. `scripts/configure-agentphone-callback.ts` registers three AgentPhone custom tools, served by `backend/voice-tools.ts` at `/voice-tools/:tool` on the cases Function and protected by the `AGENTPHONE_TOOL_SECRET` header:
+
+- `get_open_cases` returns the caller's cases with a live authority. With none, the agent goes straight to intake without asking whether the case is new.
+- `get_case_details` returns the title, type, reported account, advocate state and goal, and the last five conversation messages. Member IDs, claim numbers, and documents are left out.
+- `save_case_update` posts "By phone: ..." to the case conversation through `sendCaseMessage`, so the advocate receives it. Retries of the same text on a call save one message.
+
+A call that reaches a specific case gets an `about_existing` row in `advocacy_phone_call_cases`, so it cannot also open a new case. AgentPhone does not document a caller number in tool requests, so the server reads its live inbound calls. If it cannot single out one caller, the caller is unknown and no case data is returned.
+
+Limitations: caller ID is the only proof of identity, so a spoofed number could hear the returned case details and add updates. Two simultaneous callers on this line are treated as unknown unless a request names one. Run `OUTREACH_TEST_DATABASE_URL=... npx tsx --test --test-concurrency=1 scripts/voice-tools.test.ts` against a disposable database. After changing the prompt or tools, rerun the configure script.
+
 ## Outreach restriction
 
 Set `OUTREACH_RESTRICT_TO_ALLOWLIST=true` on the `firm`, `tools`, `autopoll`, and `cases` Functions to limit outside contact to `OUTREACH_ALLOWED_EMAILS` and `OUTREACH_ALLOWED_PHONES`. `takeOpenCaseAction` refuses other recipients before recording an action, and `sendOutreach` refuses them again at the send. Portals and `open_email_lead` are refused while it is on. Email-address verification mail and requested onboarding calls use separate paths and are unaffected. New advocate sessions are told the allowed address and that it is the owner's inbox, not an insurer. Authenticated `GET /stack/status` reports `outreach.restricted`. To lift it, set the flag to `false` and redeploy.

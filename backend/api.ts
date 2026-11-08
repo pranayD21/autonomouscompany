@@ -7,6 +7,7 @@ import {submitCase,addOwnerUpdate} from "./intake-service";
 import {isNaiveCapacityError,naiveRetryAt} from "./naive-retry";
 import {requestIdentity} from "./request-identity";
 import {phoneRoutes} from "./phone-routes";
+import {voiceToolRoutes} from "./voice-tools";
 import {readCaseApprovals,confirmCaseApproval} from "./case-agent-approval";
 import {readCaseOutcomes} from "./case-outcome";
 import {queueCaseAgentEvent} from "./case-agent-events";
@@ -48,6 +49,7 @@ const realtime = createRealtime({
 const origins = (process.env.APP_ORIGINS ?? "").split(",");
 const app = new Hono<{ Variables: { userId: string } }>();
 app.use("*", cors({ origin: (origin) => origins.includes(origin) ? origin : undefined, allowHeaders: ["Authorization", "Content-Type"], allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"] }));
+app.route("/voice-tools",voiceToolRoutes(pool));
 app.get("/firm/contact",c=>{const email=process.env.AGENTMAIL_PUBLIC_EMAIL;return c.json({email:email&&z.email().safeParse(email).success?email:null});});
 app.use("*", async (c, next) => {
   const authorization = c.req.header("authorization");

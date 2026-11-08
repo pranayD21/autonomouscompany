@@ -1078,3 +1078,7 @@ The user confirmed their phone case is real and asked that it contact no insurer
 ## 2026-11-08 — Open new cases by calling
 
 The user asked that a new case work like onboarding: call, say what happened, and the case opens without manual input. Added `reconcileNewCaseCalls`, migration `0031_phone_call_cases.sql`, the call panel in place of the form for phone accounts, and an updated hosted greeting. See [phone onboarding](phone-onboarding.md). Verification is recorded in that release's commit message.
+
+## 2026-11-08 — Voice agent knows the caller's open cases
+
+The user asked that the phone agent know a caller's open cases: skip the new-or-existing question when there are none, otherwise ask, and fetch details for an existing case. Added `backend/voice-tools.ts`, hosted-agent custom tools, and `AGENTPHONE_TOOL_SECRET`. Calls that reach a case are recorded so they do not open another. See [phone onboarding](phone-onboarding.md). Verification and limits are recorded in that release's commit message.

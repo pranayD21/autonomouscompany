@@ -128,6 +128,7 @@ export default defineConfig({
       name: "Medical bill case API",
       source: "./backend/api.ts",
       env: {
+        AGENTPHONE_TOOL_SECRET:process.env.AGENTPHONE_TOOL_SECRET??"",
         ASSURANCE_FIRM_ENABLED:process.env.ASSURANCE_FIRM_ENABLED??"false",
         NAIVE_SETUP_API_KEY:{value:process.env.NAIVE_SETUP_API_KEY,required:false,onUndefined:"skip"},
         NAIVE_GMAIL_AUTH_CONFIG_ID:process.env.NAIVE_GMAIL_AUTH_CONFIG_ID??"",
