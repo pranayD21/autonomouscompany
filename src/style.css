@@ -25,6 +25,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .sidebar[data-open="true"] { box-shadow: 18px 0 40px -28px rgba(24, 27, 24, .35); border-right: 1px solid var(--rule); }
 .sidebar-brand { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 10px; margin-bottom: 18px; font-size: 22px; font-weight: 800; letter-spacing: -1.1px; white-space: nowrap; }
 .sidebar-brand-mark { display: grid; place-items: center; flex-shrink: 0; width: 24px; }
+.sidebar-brand-mark svg { position: relative; top: .09em; }
 .sidebar-brand-word .brand-period { margin-left: 0; }
 .sidebar-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; display: grid; align-content: start; gap: 2px; scrollbar-width: none; }
 .sidebar-text { display: inline-block; white-space: nowrap; }
