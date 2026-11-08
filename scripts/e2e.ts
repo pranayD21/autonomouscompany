@@ -93,7 +93,7 @@ try {
     await other.getByRole("button",{name:"Create account",exact:true}).click();
     await expect(other.getByText("Live updates connected",{exact:true})).toBeVisible({timeout:45000});
     await expect(other.getByText(title,{exact:true})).toHaveCount(0);
-    for(const [method,path] of [["GET",`/cases/${caseId}/outcomes`],["GET",`/cases/${caseId}/autonomy`],["POST",`/cases/${caseId}/autonomy`],["POST",`/cases/${caseId}/autonomy/${randomUUID()}/revoke`],["GET",`/cases/${caseId}/reply-monitors`],["GET",`/cases/${caseId}/replies`],["PATCH",`/cases/${caseId}`],["GET",`/cases/${caseId}/crew`],["POST",`/cases/${caseId}/crew`],["POST",`/cases/${caseId}/crew/repair`],["DELETE",`/cases/${caseId}`]]) {
+    for(const [method,path] of [["GET",`/cases/${caseId}/sessions/${randomUUID()}/approvals`],["POST",`/cases/${caseId}/sessions/${randomUUID()}/approvals`],["GET",`/cases/${caseId}/outcomes`],["GET",`/cases/${caseId}/autonomy`],["POST",`/cases/${caseId}/autonomy`],["POST",`/cases/${caseId}/autonomy/${randomUUID()}/revoke`],["GET",`/cases/${caseId}/reply-monitors`],["GET",`/cases/${caseId}/replies`],["PATCH",`/cases/${caseId}`],["GET",`/cases/${caseId}/crew`],["POST",`/cases/${caseId}/crew`],["POST",`/cases/${caseId}/crew/repair`],["DELETE",`/cases/${caseId}`]]) {
       const response=await fetch(apiBase+path,{method,headers:{Authorization:otherAuthorization}});
       expect(response.status).toBe(404);
     }
