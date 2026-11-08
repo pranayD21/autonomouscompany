@@ -77,3 +77,9 @@ The supplied replacement deployment token was rejected with HTTP 403 Not authori
 Deployment dpl_B2grMLravUcMQWyucSQDavtzsg6M is Ready and aliased to https://assurance.claims. Hosted E2E passed signup/sign-in, persistence, Realtime, owner outcome/session-history access, cross-user denial, and explicit synthetic UI fixtures for outcome amounts, stale evidence, unknown refunds, supporting quotes, session status, and human-help questions. AI Gateway inference remains unavailable. The temporary deployment token was revoked successfully and subsequent project access returned 403; its private file and the earlier rejected token file were removed. This supersedes the pending-publication entries above.
 
 The hosted E2E test also reads authenticated `/stack/status`: it requires AgentPhone as the call provider, configured call/email transports, and disabled spending for the fresh unlisted test user. This is configuration/readiness evidence, not a live call or email dispatch test.
+
+## Review-only permission UI published
+
+Deployment `dpl_CtEPHTMqgKq2SCy59QXppS1mHTNC` is Ready and aliased to https://assurance.claims. Hosted E2E passed fresh signup/sign-in, authenticated provider readiness, Realtime, case persistence/deletion, and cross-user isolation. The explicit mocked authorization UI check verified review-only sends zero contacts/zero outbound allowance, email retains its limits, and switching permission clears consent; it did not create a live grant.
+
+The one-hour project-scoped token authorizes deployments only; its expiry does not expire the website. It was revoked after publication (HTTP 200), subsequent project access returned 403, and its local secret file was deleted. A browser snapshot briefly included the token before revocation; it is no longer usable. The browser setup tab was closed. Gateway inference remains unavailable because no model is enabled.

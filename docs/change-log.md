@@ -415,3 +415,8 @@ Added a database-backed request lease and shared cooldown to the Naïve SDK tran
 - Found and fixed a conflict between the new single-request governor and parallel case-binding reads. Preflight now reads version, identity, and attachment sequentially; all eight binding/transport/config tests passed.
 - The side chat applied migration 0018 and deployed the governor and idle-session optimization to all six Functions, then verified a real coordinator GET with lease release and zero failures. This controls HTTP traffic, not model concurrency. No external capacity report was sent, per the user's cancellation.
 - Deployed the integration fix successfully to all six Neon Functions with `--no-env-pull`. The review-only frontend remains pending Vercel publication.
+
+### Review-only UI deployed to assurance.claims
+
+- Published deployment `dpl_CtEPHTMqgKq2SCy59QXppS1mHTNC` and passed hosted E2E, including mocked permission payload/consent checks plus real Auth, database, Functions, Realtime, and isolation checks.
+- Revoked the temporary deployment token, verified access was rejected, and removed its local file. Token expiry does not affect site availability. No live grant, email, or call was created by the authorization UI check.
