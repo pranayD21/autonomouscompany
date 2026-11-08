@@ -10,6 +10,7 @@ import {Landing} from "./Landing";
 import {Workspace} from "./Workspace";
 import {Logo} from "./Icons";
 import {MotionConfig} from "motion/react";
+import "./mobile.css";
 
 const message = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Please try again.";
 

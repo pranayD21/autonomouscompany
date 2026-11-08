@@ -1,7 +1,7 @@
 // Adapted from Aceternity UI "Sidebar" (ui.aceternity.com/components/sidebar, MIT):
 // collapses to an icon rail on desktop and expands on hover or keyboard focus;
 // becomes a slide-in sheet on mobile. Restyled for Assurance with plain CSS.
-import {createContext, useContext, useEffect, useState, type ReactNode} from "react";
+import {createContext, useContext, useEffect, useId, useRef, useState, type ReactNode} from "react";
 import {AnimatePresence, motion, useReducedMotion} from "motion/react";
 import {Logo, Close, Menu} from "../Icons";
 
@@ -24,21 +24,43 @@ export function Sidebar({children, footer}: {children: ReactNode; footer?: React
   const mobile = useIsMobile();
   const [hover, setHover] = useState(false);
   const [sheet, setSheet] = useState(false);
+  const sheetId = useId();
+  const sheetRef = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
   useEffect(() => {
-    if (!sheet) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSheet(false); };
+    if (!mobile) setSheet(false);
+    if (!sheet || !mobile) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusable = () => Array.from(sheetRef.current?.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), [tabindex="0"]') ?? []);
+    focusable()[0]?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSheet(false);
+      if (e.key !== "Tab") return;
+      const elements = focusable();
+      const first = elements[0], last = elements.at(-1);
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+    };
+    const close = () => setSheet(false);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [sheet]);
+    window.addEventListener("hashchange", close);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("hashchange", close);
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  }, [sheet, mobile]);
 
   const brand = <a href="#home" className="sidebar-brand" aria-label="Assurance home"><span className="sidebar-brand-mark"><Logo size={24} aria-hidden="true"/></span><SidebarText className="sidebar-brand-word">assurance<span className="brand-period">.</span></SidebarText></a>;
 
   if (mobile) return <SidebarContext.Provider value={{open: true, mobile: true, close: () => setSheet(false)}}>
-    <div className="mobile-bar">{brand}<button className="icon-button" aria-label="Open navigation" aria-expanded={sheet} onClick={() => setSheet(true)}><Menu/></button></div>
+    <div className="mobile-bar">{brand}<button className="icon-button" aria-label="Open navigation" aria-expanded={sheet} aria-controls={sheet ? sheetId : undefined} onClick={() => setSheet(true)}><Menu/></button></div>
     <AnimatePresence>{sheet && <>
       <motion.div className="sheet-scrim" initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} onClick={() => setSheet(false)}/>
-      <motion.nav className="sheet" aria-label="Workspace navigation" initial={{x: "-100%"}} animate={{x: 0}} exit={{x: "-100%"}} transition={reduce ? {duration: 0} : {duration: 0.3, ease: "easeInOut"}}>
+      <motion.nav ref={sheetRef} id={sheetId} className="sheet" role="dialog" aria-modal="true" aria-label="Workspace navigation" initial={{x: "-100%"}} animate={{x: 0}} exit={{x: "-100%"}} transition={reduce ? {duration: 0} : {duration: 0.3, ease: "easeInOut"}}>
         <div className="sheet-top">{brand}<button className="icon-button" aria-label="Close navigation" onClick={() => setSheet(false)}><Close/></button></div>
         <div className="sidebar-scroll">{children}</div>
         {footer && <div className="sidebar-footer">{footer}</div>}

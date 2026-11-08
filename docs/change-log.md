@@ -1,5 +1,11 @@
 # Change log
 
+## November 8, 2026 — Mobile-only layout and navigation improvements
+
+Added `src/mobile.css`, imported last in `src/main.tsx`, to adapt landing, authentication, intake, overview, case details, documents and chat at 820px and below, with additional narrow-phone adjustments at 480px. Existing desktop styles remain unchanged. Changes include 44px touch targets, 16px form inputs, single-column forms, wrapped long content, viewport-aware chat scrolling, safe-area spacing, full-width phone CTAs and less crowded activity/document rows. `src/ui/Sidebar.tsx` adds mobile-only modal semantics, focus cycling/restoration, Escape/hash-navigation close, body-scroll locking and resize cleanup. No service, authorization, calling or message-send behavior changed. See [frontend.md](frontend.md).
+
+Verification: TypeScript and Vite passed via `npm run build` with non-production placeholder public service URLs; the initial build without those required URLs failed configuration validation. All 15 focused composer, progress and activation-state tests passed. A PostCSS AST check confirmed every one of the 110 new style rules is inside a max-width media query of 820px or 480px. `git diff --check` passed. Existing large-bundle and mixed static/dynamic import warnings remain. No browser/device visual comparison, production deployment or live provider actions were performed; real-device keyboard/safe-area behavior and desktop pixel parity remain unverified.
+
 ## November 8, 2026 — Restore the landing design
 
 Reverted only the landing-page portion of the phone-first snapshot and merge, at the user's request before redesigning the integration together. `src/Landing.tsx` restores the original three-step copy and animated **Open a case** workspace link instead of embedding phone sign-in. Removed landing-only phone layout overrides from `src/style.css`, restoring the existing wordmark proportions and hero spacing in `src/landing.css`. Phone authentication, onboarding services, case chat, and other workspace changes remain intact. Updated `scripts/phone-ui-check.ts` to assert the landing CTA and navigate through it before testing phone entry. See [frontend.md](frontend.md).

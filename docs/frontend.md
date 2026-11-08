@@ -2,7 +2,17 @@
 
 The browser app is a React/Vite single page (`src/`). Signed-out visitors see the landing page (`src/Landing.tsx`); signed-in users get the case workspace (`src/Workspace.tsx`). Styling is plain CSS in `src/style.css` and `src/landing.css`; animation uses the `motion` package. Several components are adapted from Aceternity UI (MIT): the hover-expand sidebar (`src/ui/Sidebar.tsx`; its link grid uses a `minmax(0, 1fr)` column so the active tile stays inside the collapsed 76px rail), the upload pill (`src/ui/FileDrop.tsx`, a shrunk file-upload drop zone) and the number ticker (`src/ui/motion.tsx`).
 
-## Routes
+## Mobile layout
+
+`src/mobile.css` is imported last by `src/main.tsx` and contains only `max-width: 820px` and `max-width: 480px` overrides. The existing desktop styles in `src/style.css`, `src/landing.css`, and `src/overview.css` are unchanged. The 820px boundary matches the existing workspace navigation breakpoint; narrower phones receive additional spacing and full-width primary actions at 480px.
+
+The overrides cover the landing header, hero CTA, explanatory steps and credits; phone/email entry and case-intake fields; overview cards, filters and case rows; case status, activity, outcomes, evidence and document uploads; and the shared conversation composer. Inputs use 16px text to avoid focus zoom on mobile browsers, primary controls provide at least 44px touch targets, long identifiers and text can wrap, and forms collapse to a single column. The conversation log has a viewport-aware height. Safe-area padding and small/dynamic viewport units accommodate device edges and browser chrome without disabling pinch zoom or hiding page overflow.
+
+The mobile drawer in `src/ui/Sidebar.tsx` exposes a named modal dialog, moves focus inside on open, cycles Tab/Shift+Tab within its links and buttons, closes on Escape or hash navigation, restores focus to the trigger when available, and restores the previous body scroll setting on close/unmount. Resizing to desktop clears the sheet; the desktop hover rail is unchanged. Drawer contents scroll independently, with space for the close and sign-out controls.
+
+Verification: run `npm run build` with the normal three public `VITE_*` service URLs, and `npx tsx --test scripts/claim-composer.test.tsx scripts/progress.test.ts scripts/activation-state.test.ts`. On November 8, 2026, TypeScript/Vite and all 15 focused tests passed using non-production placeholder public service URLs for the build. A PostCSS AST check confirmed all 110 new style rules are enclosed by the two mobile-only queries. Browser/device layout and keyboard checks have not been run for this change. Before release, check 320/390/480/768/820px widths, landscape, long filenames/case titles, open details, the software keyboard and drawer focus/scroll behavior, then compare desktop at 821px and wider against the existing design. The isolated UI fixture scripts that import only `src/style.css` do not automatically include the new app-entry stylesheet; include `src/mobile.css` when using those fixtures for mobile acceptance.
+
+## Hash navigation
 
 Hash routes keep the open view across reloads: `#home` (landing), `#workspace` (overview), `#new` (intake form), `#case/<id>` (one case). While the session check is pending, `#home` renders the landing page immediately and other non-workspace URLs render nothing (plain paper); only `#workspace` and `#case/...` show the "Loading your session…" shell. This stops the shell's header and footer divider lines flashing before the landing page.
 

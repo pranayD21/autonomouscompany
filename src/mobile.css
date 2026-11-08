@@ -1,0 +1,119 @@
+@media (max-width: 820px) {
+  html { scroll-padding-top: 88px; }
+  .shell { min-height: 100svh; }
+  .surface { min-height: calc(100svh - 64px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .view, .page-head > div, .case-section, .status-panel, .phone-entry, .ov-head > div, .ov-card-slot { min-width: 0; }
+  .surface h1, .surface h2, .surface h3, .surface p, .app-main p, .surface summary, .surface strong, .surface a, .app-main a { overflow-wrap: anywhere; }
+  .surface h1 { font-size: clamp(30px, 6vw, 46px); line-height: 1.12; letter-spacing: -1.2px; }
+  .surface input, .surface textarea, .surface select, .app-main input, .app-main textarea, .app-main select, .phone-entry input { font-size: 16px; max-width: 100%; }
+  .surface input:not([type="checkbox"]):not([type="radio"]), .surface select, .app-main input, .app-main select { min-height: 48px; }
+  .surface button, .app-main button, .icon-button, .surface .back-link, .surface .text-link, .surface .pill-link, .sidebar-link { min-height: 44px; }
+  .icon-button, .surface .icon-button { width: 44px; height: 44px; }
+  .surface button, .app-main button { white-space: normal; }
+  .surface button svg, .app-main button svg { flex-shrink: 0; }
+  .surface form, .app-main form { min-width: 0; }
+  .surface form > button, .app-main form > button { max-width: 100%; }
+  .surface input[type="file"] { padding: 10px; font-size: 13px; }
+  .surface input[type="file"]::file-selector-button { min-height: 36px; max-width: 100%; margin-right: 8px; }
+  .surface .amounts { grid-template-columns: minmax(0, 1fr); }
+  .surface pre { max-width: 100%; overflow-x: auto; }
+  .surface img { max-width: 100%; height: auto; }
+  .surface table { display: block; max-width: 100%; overflow-x: auto; }
+  .surface .app-footer { flex-wrap: wrap; gap: 12px; padding-bottom: max(24px, env(safe-area-inset-bottom, 0px)); }
+  .page-head { gap: 12px; margin-bottom: 22px; }
+  .page-head > .actions { width: 100%; justify-content: space-between; gap: 12px; }
+  .page-head .back-link { margin-bottom: 8px; }
+  .intake-card { max-width: 100%; }
+  .case-section, .status-panel { scroll-margin-top: 88px; }
+  .case-section-head, .case-section-head h3, .activity-head { flex-wrap: wrap; }
+  .case-section-head { gap: 8px; }
+  .case-section-head h3 { row-gap: 6px; }
+  .activity-head { gap: 4px 12px; }
+  .activity li { padding-left: 20px; }
+  .status-head h2 { flex-shrink: 1; }
+  .status-detail, .status-goal, .status-panel > form, .status-panel > p[role], .status-panel > .ask { margin-left: 0; }
+  .claim-conversation .status-head .claim-orb { flex-shrink: 0; }
+  .savings { padding: 20px; }
+  .savings-main strong, .ov-savings-value { max-width: 100%; overflow-wrap: anywhere; }
+  .savings-row-head { flex-wrap: wrap; gap: 4px 12px; }
+  .file-drop { min-height: 48px; }
+  .file-drop-label { min-width: 0; }
+  .doc-head { gap: 8px 12px; }
+  .doc-head strong { min-width: 0; flex-basis: calc(100% - 40px); }
+  .doc-head .text-button { margin-left: auto; }
+  .empty { padding: 24px 18px; }
+  .onboarding-call-notice { padding: 16px; }
+  .floating-error { max-width: calc(100% - 32px); }
+
+  .mobile-bar { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
+  .sheet { max-height: 100dvh; padding: max(14px, env(safe-area-inset-top, 0px)) 14px max(14px, env(safe-area-inset-bottom, 0px)); }
+  .sheet-top, .sheet .sidebar-footer { flex-shrink: 0; }
+  .sheet-top .sidebar-brand { padding: 0 6px; gap: 8px; font-size: 21px; }
+  .sheet .sidebar-scroll { overscroll-behavior: contain; }
+  .sheet .sidebar-link { height: auto; min-height: 48px; padding-block: 10px; }
+  .sheet .sidebar-link > .sidebar-text { flex: 1; min-width: 0; }
+  .sheet .sidebar-label { max-width: none; }
+
+  .case-chat-header { flex-wrap: wrap; gap: 8px 10px; padding: 14px; }
+  .case-chat-header > div { flex: 1; min-width: 0; }
+  .case-chat-header > button { margin-left: 28px; }
+  .case-chat-log { padding: 16px 12px; max-height: min(460px, 55svh); }
+  .case-chat-bubble { max-width: 94%; padding: 12px 14px; }
+  .case-chat-compose { padding: 12px; }
+  .claim-composer { padding: 7px; border-radius: 20px; }
+  .claim-composer-toolbar { flex-wrap: wrap; gap: 4px; }
+  .surface .claim-document-link, .app-main .claim-document-link { padding-inline: 6px; font-size: 11px; }
+  .surface .claim-send, .app-main .claim-send { width: 44px; height: 44px; }
+  .claim-composer-count { font-size: 9px; }
+  .claim-composer-hint { flex-direction: column; }
+
+  .ov { padding-bottom: 32px; }
+  .ov-head-side { width: 100%; }
+  .ov-cta { min-height: 56px; }
+  .ov-list-head { align-items: flex-start; flex-direction: column; gap: 14px; }
+  .ov-filters { max-width: 100%; }
+  .ov-card { min-width: 0; }
+  .ov-row-kind { white-space: normal; }
+  .ov-row-side { min-width: 0; }
+  .surface .ov-filter { min-height: 44px; }
+  .ov-new { min-height: 48px; }
+
+  .site-header { height: auto; min-height: 76px; padding: 16px 6%; flex-wrap: wrap; gap: 8px 16px; }
+  .site-header nav { gap: 16px; }
+  .site-header nav a { min-height: 44px; display: inline-flex; align-items: center; }
+  .hero-bottom { align-items: flex-start; flex-direction: column; gap: 28px; }
+  .hero-message { min-width: 0; }
+  .hero-message h2 { font-size: clamp(26px, 5.2vw, 40px); letter-spacing: -1.2px; line-height: 1.2; }
+  .hero-action { max-width: 100%; }
+  .hero-action .primary-button { min-height: 64px; padding: 9px 9px 9px 26px; font-size: 19px; gap: 32px; }
+  .hero-action .button-arrow { width: 46px; height: 46px; flex-shrink: 0; }
+  .how-section { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .step-row > div { min-width: 0; }
+  .site-footer { flex-wrap: wrap; gap: 16px 24px; padding-bottom: max(28px, env(safe-area-inset-bottom, 0px)); }
+  .site-footer .photo-credit { flex-basis: 100%; line-height: 1.8; overflow-wrap: anywhere; }
+}
+
+@media (max-width: 480px) {
+  .surface { padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+  .phone-entry form > button, .intake-card form > button { width: 100%; justify-self: stretch; }
+  .auth-card h1 { font-size: 36px; }
+  .surface .facts { grid-template-columns: minmax(0, 1fr) !important; }
+  .surface .case-key-numbers div { flex-wrap: wrap; }
+  .ov-cta { width: 100%; justify-content: space-between; }
+  .ov-head { margin-bottom: 24px; }
+  .ov-bento { margin-bottom: 30px; }
+  .surface h1.ov-title { font-size: clamp(42px, 12vw, 58px); }
+  .ov-row { grid-template-columns: 24px minmax(0, 1fr) 36px; gap: 10px; }
+  .ov-row-title { font-size: 18px; }
+  .ov-row-status { font-size: 12px; }
+  .site-header .brand { font-size: 22px; }
+  .site-header .nav-workspace { font-size: 11px; gap: 4px; }
+  .hero-content { padding-inline: 6%; }
+  .hero-wordmark { margin-top: 85px; margin-bottom: 30px; }
+  .hero-message h2 { font-size: clamp(24px, 6.8vw, 32px); }
+  .hero-action { width: 100%; margin-top: 28px; }
+  .hero-action .primary-button { width: 100%; max-width: 360px; }
+  .section-intro h2 { font-size: clamp(32px, 9vw, 39px); }
+  .step-row { gap: 16px; }
+  .step-row h3 { font-size: 19px; }
+}
