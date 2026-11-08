@@ -1204,3 +1204,9 @@ On the first real phone case the advocate asked its question at 12:18 UTC, the o
 
 Verification: case session suite on the disposable database with mocked provider. The batch change has not yet been observed on production.
 
+## 2026-11-08 — Concise case titles on every path
+
+Case titles could still be long or uninformative. Only new web and email cases were shortened: phone cases all got a fixed label, edits saved the title as typed, and older cases kept their long titles. Phone cases are now named from the caller's account, edits are shortened through the same `shortCaseTitle`, and `scripts/backfill-case-titles.ts` renames existing cases (it prints a plan unless run with `--apply`, and skips test fixtures). The phone Function now receives `OPENAI_API_KEY`. A rename does not bump the case revision or wake the advocate. If the model call fails, the existing title or label stays.
+
+Verification: `scripts/case-title.test.ts` covers the new naming with mocked responses, and a direct call to `gpt-5.4-nano` with fictional text returned a usable title. The earlier note that the real model call was unchecked no longer applies.
+

@@ -57,6 +57,7 @@ export default defineConfig({
       PHONE_AUTH_SECRET:process.env.PHONE_AUTH_SECRET??"",
       AGENTPHONE_WEBHOOK_SECRET:process.env.AGENTPHONE_WEBHOOK_SECRET??"",
       PHONE_ALLOWED_NUMBERS:process.env.PHONE_ALLOWED_NUMBERS??"",
+      OPENAI_API_KEY:process.env.OPENAI_API_KEY??"",
       AGENTPHONE_API_KEY:process.env.AGENTPHONE_API_KEY??"",
       AGENTPHONE_AGENT_ID:process.env.AGENTPHONE_AGENT_ID??"",
       AGENTPHONE_NUMBER_ID:process.env.AGENTPHONE_NUMBER_ID??"",

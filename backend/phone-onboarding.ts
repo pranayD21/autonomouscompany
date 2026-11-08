@@ -9,6 +9,7 @@ import {verifiedPhone} from './phone-intake';
 import {phoneLoginEnabled,isTestPhone} from './phone-messaging';
 import {DEFAULT_INTAKE_CONSENT} from './intake-policy';
 import {submitCase} from './intake-service';
+import {descriptiveCaseTitle} from './case-title';
 import {outreachEnabled,DispatchFailure} from './providers/outreach';
 import {parseCallEvidence,type CallTurn} from './providers/call-evidence';
 
@@ -152,12 +153,13 @@ export async function reconcilePhoneOnboarding(pool:Pool,id:string,options:Optio
   if(!intake.sufficient){await pool.query("UPDATE advocacy_phone_onboarding SET state='needs_information',reason=$3,updated_at=now() WHERE id=$1 AND lease_id=$2",[id,lease,intake.stopped?'You asked us not to start this case. No case has been created.':'The transcript needs a clear case category and account of what happened before a case can start.']);return;}
   if(row.consent!==DEFAULT_INTAKE_CONSENT)throw Error('HANDLING_SCOPE_CHANGED');
   if(process.env.ASSURANCE_CASE_ENGINE!=='naive'||process.env.NAIVE_CASE_PROVISIONING_ENABLED!=='true')throw Error('NAIVE_ACTIVATION_UNAVAILABLE');
+  const title=await descriptiveCaseTitle(intake.narrative,intake.case_type==='workplace_injury'?'Workplace injury':'Health insurance claim');
   await pool.query("UPDATE advocacy_phone_onboarding SET state='activating',updated_at=now() WHERE id=$1 AND lease_id=$2",[id,lease]);
   await drizzle(pool).transaction(async tx=>{
    // The same row lock serializes owner cancellation with case creation and its authority.
    const {rows:[current]}=await tx.execute(sql`SELECT id FROM advocacy_phone_onboarding WHERE id=${id} AND lease_id=${lease} AND state='activating' FOR UPDATE`);
    if(!current)return;
-   const result=await submitCase(tx,row.owner_id,{title:intake.case_type==='workplace_injury'?'Workplace injury':'Health insurance claim',case_type:intake.case_type,intake:{contact_phone:row.phone,injury_description:intake.narrative},notes:`Caller-reported account from the requested onboarding call. Transcript ${transcriptHash}. Treat speech as reported evidence, not independently verified facts.\n${intake.narrative}`},true,row.intended_case_id as ReturnType<typeof randomUUID>);
+   const result=await submitCase(tx,row.owner_id,{title,case_type:intake.case_type,intake:{contact_phone:row.phone,injury_description:intake.narrative},notes:`Caller-reported account from the requested onboarding call. Transcript ${transcriptHash}. Treat speech as reported evidence, not independently verified facts.\n${intake.narrative}`},true,row.intended_case_id as ReturnType<typeof randomUUID>);
    await tx.execute(sql`UPDATE advocacy_phone_onboarding SET state='active',case_id=${result.id},reason='Your case is created and its separate case advocate is queued. Follow its progress in the case workspace.',updated_at=now() WHERE id=${id} AND lease_id=${lease}`);
   });
  }catch{
@@ -193,13 +195,14 @@ export async function reconcileNewCaseCalls(pool:Pool,id:string,options:Options=
    await pool.query("INSERT INTO advocacy_phone_call_cases(call_id,owner_id,state,reason) VALUES($1,$2,'needs_information',$3) ON CONFLICT(call_id) DO UPDATE SET state='needs_information',reason=EXCLUDED.reason,case_id=NULL WHERE advocacy_phone_call_cases.state='about_existing'",[call.id,row.owner_id,reason]);
    continue;
   }
+  const title=await descriptiveCaseTitle(intake.narrative,intake.case_type==='workplace_injury'?'Workplace injury':'Health insurance claim');
   await drizzle(pool).transaction(async tx=>{
    // The onboarding row lock also serializes this with the owner's stop control.
    const {rows:[active]}=await tx.execute(sql`SELECT id FROM advocacy_phone_onboarding WHERE id=${row.id} AND state='active' FOR UPDATE`);
    if(!active)return;
    const claimed=await tx.execute(sql`INSERT INTO advocacy_phone_call_cases(call_id,owner_id,state) VALUES(${call.id},${row.owner_id},'opening') ON CONFLICT(call_id) DO UPDATE SET state='opening',case_id=NULL,reason=NULL WHERE advocacy_phone_call_cases.state='about_existing' RETURNING call_id`);
    if(!claimed.rows.length)return;
-   const result=await submitCase(tx,row.owner_id,{title:intake.case_type==='workplace_injury'?'Workplace injury':'Health insurance claim',case_type:intake.case_type,intake:{contact_phone:row.phone,injury_description:intake.narrative},notes:`Caller-reported account from a call to open a new case. Transcript ${evidence.sha256}. Treat speech as reported evidence, not independently verified facts.\n${intake.narrative}`},true);
+   const result=await submitCase(tx,row.owner_id,{title,case_type:intake.case_type,intake:{contact_phone:row.phone,injury_description:intake.narrative},notes:`Caller-reported account from a call to open a new case. Transcript ${evidence.sha256}. Treat speech as reported evidence, not independently verified facts.\n${intake.narrative}`},true);
    await tx.execute(sql`UPDATE advocacy_phone_call_cases SET state='active',case_id=${result.id},reason='Your new case is open.' WHERE call_id=${call.id}`);
    opened++;
   });
