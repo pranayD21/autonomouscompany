@@ -1,5 +1,8 @@
 # ElevenLabs voice with native Twilio telephony
 
+**Retired for new calls.** The user explicitly selected direct AgentPhone only on November 7, 2026. New calls no longer support ElevenLabs/Twilio selection. The setup and funding records below are historical; they are not current instructions to buy or configure anything. See [AgentPhone-only calling](voice-agentphone.md).
+
+
 Current instruction: do not purchase a Twilio number. If Twilio encounters another issue, switch to AgentPhone directly without ElevenLabs, using its existing balance. This preference supersedes the earlier request to avoid AgentPhone. The explicit provider selector is deployed; the live selection remains ElevenLabs. The frontend confirmation change awaits deployment before a switch. Verify direct AgentPhone calling access before use, preserve case authorization and limits, and never retry an ambiguous Twilio call through another provider.
 
 ## Selected replacement

@@ -1,6 +1,6 @@
 # Persistent case sessions
 
-`backend/case-agent-session.ts` implements one durable Naïve session per standing authority. It is prepared for activation, not live-verified with Naïve. The existing bounded workflow remains the production path until a case has a verified identity/vault binding and an internal session record.
+`backend/case-agent-session.ts` implements one durable Naïve session per standing authority. A synthetic live start and same-session evidence wake have passed, with two explicit operator approvals required by Naïve. The existing bounded workflow remains the production path until a case has a verified identity/vault binding and an internal session record.
 
 ## Binding and budgets
 
@@ -28,7 +28,7 @@ The existing `autopoll` Function processes call evidence, persistent sessions, a
 
 `case-agent-session.test.ts` uses a disposable database and fake provider transports. It checks owner/binding isolation, concurrent starts, session/identity/budget preservation, event deduplication, same-key retry after uncertain delivery, cancellation on revocation, revocation during a provider read, budget-pause handling, and backoff without a replacement session. Existing reply, call-evidence, and autonomy suites cover the changed transaction/scheduler paths.
 
-No production persistent session has been registered. The compatible admin setup and two-case tool-isolation test have now passed using case-specific connector URLs; their fixtures and temporary setup keys were removed. Activation still requires provisioning a fresh authorized case binding and verifying a real persistent start/wake cycle. The original own-inbox grant remains human_required with its existing counts; this implementation does not reactivate it. A customer-facing activation/status interface and automatic credential renewal are not implemented.
+A temporary production synthetic session was registered for the lifecycle test. The compatible admin setup and two-case tool-isolation test have now passed using case-specific connector URLs; their fixtures and temporary setup keys were removed. The live provisioning and persistent start/wake cycle passed; normal customer activation and unattended approval handling remain unfinished. The original own-inbox grant remains human_required with its existing counts; this implementation does not reactivate it. A customer-facing activation/status interface and automatic credential renewal are not implemented.
 
 
 ## Owner-visible session status
@@ -43,3 +43,36 @@ Ordinary crew reviews and bounded decisions explicitly use `NAIVE_GENERAL_AGENT_
 Before the persistent worker starts a remote session, `backend/providers/case-binding.ts` reads the pinned version, identity metadata, and identity’s attached agents. It requires exactly the expected case-specific Assurance connector, no literal credential headers, deny-by-default permissions, the existing $2/month and $0.25/task budget, matching case identity metadata, and the correct agent attachment. A mismatch records human_required without starting inference. Provider read failures use the existing backoff instead. The worker receives the public `NAIVE_CASE_TOOLS_URL` base via its server environment.
 
 These checks do not prove that the vault contains the correct sealed token; the provisioning operation must still create and verify that binding before registration. Public per-user provisioning and renewal remain unfinished. The runtime preflight needs no new admin key and does not mutate remote agents.
+
+### Stop during startup verification
+
+The worker rereads the authority, case owner, tool credential, and operator allowlist after the remote binding check and before creating a session. Revocation during that check stops the local run without starting a remote session. This narrows the startup race; it does not make a database check and remote API call atomic. Case tools still enforce the current authority on each action.
+
+## Operator provisioning command
+
+`backend/provision-case-session.ts` and `scripts/provision-case-session.ts` provision an existing active, synthetic standing authority. Run with a compatible temporary admin key in a private file:
+
+```sh
+NAIVE_SETUP_KEY_FILE=/private/path/setup-key npx tsx scripts/provision-case-session.ts CASE_UUID AUTHORITY_UUID OWNER_UUID
+```
+
+The command reads the coordinator ID, general version, case-tool URL, database URL, and operator allowlist from the existing private environment. It does not create an authority, change contacts, reset counts, increase budgets, or directly send communications. Successful registration allows the scheduled worker to start the session under that authority, so this is an activation command, not a dry run. Revoke the temporary admin key after setup.
+
+Setup creates or recovers a deterministic authority-specific identity and vault, attaches the coordinator, seals a fresh case credential, publishes or recovers a case-specific version, restores the coordinator's previous general default, verifies the binding, and registers the local run. A repeated successful command returns the existing registration without replacing its session or renewing its credential.
+
+Provisioning uses a database transaction with authority/case row locks and a coordinator advisory lock. The token row becomes visible only when registration commits; any failed transaction leaves its remote sealed token unusable. Retry removes those stale sealed credentials and issues a fresh token. The command retains no plaintext token or admin key in a journal. Remote identities and versions can remain after failure and are recovered by deterministic metadata. Unexpected duplicate resources or foreign vault credentials fail closed. Version updates and restoration use the provider's expected-version check.
+
+This operator path holds database locks during provider requests; it is not a public signup endpoint. Concurrent edits or stops can wait for setup to finish, and setup's authority expiry is checked again at registration. An uncertain restoration leaves registration uncommitted; the pinned general version protects ordinary reviews while the operator resolves the provider state. Automatic credential renewal and unattended approval handling remain unfinished.
+
+Validation uses the disposable database and a fake Naïve transport: successful/idempotent activation, unchanged grant limits, wrong-owner/revoked-grant rejection before provider work, and recovery after a publication response is lost. Live provisioning and the persistent start/wake cycle have also passed with the approval limitations below.
+
+
+## Live lifecycle verification
+
+`scripts/persistent-live-smoke.ts` created a temporary synthetic case with zero contacts and `max_outbound: 0`, provisioned it, and exercised the production MCP endpoint. The scheduler started one remote session. Naïve chose a 60-minute follow-up timer and required a `read_people` approval; the operator confirmed that exact synthetic timer. A revision-2 evidence event was then queued and accepted by the same remote session at sequence 49. Naïve required another approval for `case_get`; after the exact case read was confirmed, its tool result contained revision 2 and the session finished with `end_turn`. Total reported consumption was 19,098 micro-USD ($0.019098), within the existing $0.25 cap.
+
+This proves live binding, scheduler start, event delivery, and updated evidence consumption in one persistent session. It does not prove unattended operation: two operator confirmations were necessary. The smoke command verifies the actual tool result and end-turn state, not just a delivery acknowledgement. Private event evidence and the test state are kept under ignored `test-results/` without raw credentials.
+
+The authority schema now permits research-only grants with zero contacts and zero outbound allowance. A positive outbound allowance still requires a contact. The action guard rejects contact attempts under a zero-outbound grant. Provisioning validates the complete authority schema before remote work.
+
+Cleanup completed: the remote session was cancelled, its vault credentials/vault and identity were deleted, and fixture rows were removed after confirming zero outbound records. The temporary admin key was revoked and its local secret file removed. Coordinator default version 23 was read back with zero MCP servers; general reviews remain pinned to verified version 21.

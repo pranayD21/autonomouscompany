@@ -225,3 +225,14 @@ export const caseOutcomes=pgTable("advocacy_case_outcomes",{
  report:jsonb("report").$type<import("./case-outcome").OutcomeInput>().notNull(),
  created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
 },t=>[uniqueIndex("advocacy_case_outcome_operation_idx").on(t.case_id,t.operation_id)]);
+
+// One shared admission gate across API and scheduled Functions; no case data or secrets.
+export const naiveCapacity = pgTable("advocacy_naive_capacity", {
+ id:text("id").primaryKey(),
+ lease_id:uuid("lease_id"),
+ lease_until:timestamp("lease_until",{withTimezone:true}),
+ next_allowed_at:timestamp("next_allowed_at",{withTimezone:true}).defaultNow().notNull(),
+ failures:integer("failures").notNull().default(0),
+ last_status:integer("last_status"),
+ request_id:text("request_id"),
+});

@@ -67,3 +67,30 @@ test("a mismatched remote binding prevents session creation",async()=>{
  await advanceCaseAgentSession(db,f.run.id,{...deps,verifyBinding:async()=>false,start:async input=>{starts++;return {id:"ses_must_not_start"};}});
  assert.equal(starts,0);assert.equal((await get(f.run.id)).state,"human_required");assert.equal((await get(f.run.id)).session_id,null);
 });
+
+for(const change of ["authority","credential","operator"] as const){
+ test(`${change} revocation during binding verification prevents session creation`,async()=>{
+  const f=await fixture();let starts=0;
+  try{
+   await advanceCaseAgentSession(db,f.run.id,{...deps,verifyBinding:async()=>{
+    if(change==="authority")await db.update(caseAuthorities).set({state:"revoked"}).where(eq(caseAuthorities.id,f.authority.id));
+    if(change==="credential")await db.update(caseToolCredentials).set({revoked_at:new Date()}).where(eq(caseToolCredentials.id,f.credential.id));
+    if(change==="operator")process.env.CREW_ALLOWED_USER_IDS="";
+    return true;
+   },start:async()=>{starts++;return {id:"ses_must_not_start"};}});
+   assert.equal(starts,0);assert.equal((await get(f.run.id)).state,"stopped");assert.equal((await get(f.run.id)).session_id,null);
+  }finally{process.env.CREW_ALLOWED_USER_IDS=owner;}
+ });
+}
+
+test("idle sessions do no Naïve work until new evidence or a due followup",async()=>{
+ const f=await fixture();await advanceCaseAgentSession(db,f.run.id,deps);
+ await advanceCaseAgentSession(db,f.run.id,deps);assert.equal((await get(f.run.id)).state,"idle");
+ let reads=0;const d={...deps,read:async()=>{reads++;return deps.read("existing");}};
+ await advanceCaseAgentSession(db,f.run.id,d);assert.equal(reads,0);
+ await queueCaseAgentEvent(db,f.item.id,"revision:2","evidence_updated",{revision:2});
+ await advanceCaseAgentSession(db,f.run.id,d);assert.equal(reads,1);
+ await advanceCaseAgentSession(db,f.run.id,deps);
+ await db.update(caseAuthorities).set({next_wake_at:new Date(Date.now()-1000)}).where(eq(caseAuthorities.id,f.authority.id));
+ await advanceCaseAgentSession(db,f.run.id,d);assert.equal(reads,2);
+});

@@ -7,9 +7,12 @@ export function caseBindingMatches(binding:CaseBinding,baseUrl:string,evidence:B
  const {version,identity,attachedAgentIds}=evidence;
  return version.version===binding.agent_version&&version.mcp_servers.length===1&&version.mcp_servers[0].name==="assurance"&&version.mcp_servers[0].url===expected&&!Object.keys(version.mcp_servers[0].headers??{}).length&&version.tools.default_config.permission==="deny"&&version.budget.period==="month"&&version.budget.cap_micro_usd===2000000&&version.budget.max_task_micro_usd===250000&&identity.id===binding.identity_id&&identity.metadata.case_id===binding.case_id&&attachedAgentIds.includes(binding.agent_id);
 }
-export async function verifyCaseBinding(binding:CaseBinding){
+type BindingReader={agents:{getVersion:(id:string,version:number)=>Promise<BindingEvidence["version"]>};identities:{get:(id:string)=>Promise<BindingEvidence["identity"]>;agents:(id:string)=>Promise<{data:{id:string}[]}>}};
+export async function verifyCaseBinding(binding:CaseBinding,client:BindingReader=naiveClient()){
  const url=process.env.NAIVE_CASE_TOOLS_URL;if(!url)throw Error("Case tool URL not configured");
- const client=naiveClient();
- const [version,identity,attached]=await Promise.all([client.agents.getVersion(binding.agent_id,binding.agent_version),client.identities.get(binding.identity_id),client.identities.agents(binding.identity_id)]);
+ // The shared transport admits one request at a time. Parallel reads would defer each other.
+ const version=await client.agents.getVersion(binding.agent_id,binding.agent_version);
+ const identity=await client.identities.get(binding.identity_id);
+ const attached=await client.identities.agents(binding.identity_id);
  return caseBindingMatches(binding,url,{version,identity,attachedAgentIds:attached.data.map(a=>a.id)});
 }

@@ -369,3 +369,49 @@ The case-tool foundation was migrated and deployed to production. Live MCP initi
 Used Playwriter in Dia to sign into the correct existing Managed Agents company and create a compatible temporary admin setup key. Runtime credentials/caps remain unchanged. Provisioned two case identities/vaults; the shared-URL live test exposed cross-session synthetic data contamination. Revoked both credentials, removed their sealed copies, and cancelled both runs. Prepared case-specific MCP URLs and version pins, updated the smoke script and configuration tests, and gated global blueprint MCP activation on an explicit case ID. Three configuration tests and build passed. Fresh isolated-URL reads return the correct cases, but full live completion/write verification is still pending amid provider approval gates and HTTP 429 capacity. No outreach occurred. See agent-tools.md.
 
 Live isolated-URL verification completed through the authenticated Dia session after external API capacity errors: both sessions ended normally, returned their own case IDs, rejected cross-case probes, and wrote one expected Neon fact each. Naïve read_people gates required explicit synthetic-test approvals, including one same-session continuation to finish the first write. Cancelled the failed shared-URL sessions; removed four test cases and their credentials/facts, deleted test vaults, detached identities, revoked temporary admin keys, and removed the local key file. Restored default coordinator version 21 with no case connector; per-case test versions remain historical. Runtime key, standing grants, and caps unchanged. General UI activation/provisioning remains future work.
+
+## 2026-11-07 — AgentPhone-only voice pivot
+
+Applied explicit user direction to use only direct AgentPhone for new calls. Removed ElevenLabs/Twilio new dispatch, changed provider defaults and the ignored local selector to agentphone, updated diagnostics and the authenticated readiness field, retained historical provider receipt reads, and updated transport/database fixtures and docs. Read-only provider check verified hosted mode and an active configured number. Eleven focused tests and build passed; full database suite not rerun. Deployment pending. No purchase, call, grant expansion, or automatic retry occurred.
+
+AgentPhone-only code and selector deployed to all six Functions; general-version tests and build passed before deployment. Updated agents.md to make the current provider instruction explicit. Authenticated readiness readback pending. No call placed.
+
+Neon readback confirms completed cases/tools/autopoll deployments (53/11/19) with the selector and AgentPhone variables declared. Authenticated readiness verification did not pass: the retained browser session timed out waiting for stack status, an initial fresh session returned the old readiness payload, and a later signup test returned to the login form rather than reaching the workspace. Recorded these limits; no new calling success is claimed.
+
+### Persistent startup revocation and hosted auth verification
+
+- Recheck authority, credential, ownership, and operator access after remote binding verification before creating a persistent session. Revocation during verification stops the run without a provider start.
+- Validation: all 12 persistent-session database tests passed, including three new revocation-during-verification cases; `npm run build` passed with the existing bundle-size warning. This worker change remains local and has not been deployed.
+- After the AgentPhone-only deployment, `E2E_BASE_URL=https://assurance.claims npm run test:e2e` passed fresh signup, authenticated Functions, Realtime, database persistence, cross-user isolation, deletion, sign-out and password sign-in. Autonomy API version 2 was observed. This check did not verify the authenticated voice-provider status field or place a call. Gateway inference remains unavailable because no model is enabled.
+
+### Resumable operator provisioning for persistent sessions
+
+- Added `backend/provision-case-session.ts` and its operator CLI for existing approved synthetic authorities. Setup recovers remote identities/vaults/versions, seals a transaction-scoped case credential, restores the previous general coordinator default, verifies the binding, and registers the worker session without resetting authority limits.
+- Failed database transactions leave remote tokens unusable. Retry recovers remote resources and replaces stale sealed credentials. No live case was activated, no grant was created, and no outreach was sent.
+- All four disposable-database tests passed: idempotent setup, authorization rejection before provider work, lost-publication recovery, and preserving a newer general default. Build passes with the existing bundle-size warning. The command still needs live provider verification; automatic renewal and customer-facing activation remain unfinished.
+
+### Live persistent session start and evidence wake
+
+- Verified operator provisioning against the correct Naïve company using a temporary admin key. Runtime key and approved agent caps were unchanged.
+- A synthetic zero-contact/zero-outbound case started one persistent remote session. Its queued revision-2 event was accepted at sequence 49; the same session read revision 2 and completed with `end_turn`, consuming 19,098 micro-USD. Two exact synthetic operations required operator confirmation through Naïve's `read_people` gate. This is not unattended operation.
+- Added `scripts/persistent-live-smoke.ts` with setup, status, explicit synthetic approval, event wake, verification, and cleanup modes. Added schema support for research-only authority and full authority validation before provisioning.
+- Seven policy tests, four provisioning database tests, and build passed; the build retains its existing chunk-size warning. No external messages or calls were sent.
+- Cleanup confirmed zero outbound rows, cancelled the test session, removed its identity/vault and database fixtures, revoked the temporary admin key, and deleted its local secret. General default version 23 has no MCP servers; configured general review pin remains 21.
+- Integrated verification: 26 disposable-database tests passed across persistent sessions, provisioning, and outreach. The initial outreach test command omitted `OUTREACH_TEST_DATABASE_URL` and correctly refused to run; rerunning with the disposable branch passed. Added an authenticated hosted readiness assertion for AgentPhone/email configuration and the new-user spending restriction.
+- Hosted E2E passed, including the new authenticated AgentPhone/email readiness assertion, sign-up/sign-in, Realtime, owner isolation, and case deletion. Neon Gateway still has no enabled model; its unavailable state remains explicit. No deployment was performed while the side chat owned the Naïve capacity transport work.
+
+### Reduced Naïve load and capacity recovery
+
+Added a database-backed request lease and shared cooldown to the Naïve SDK transport, plus event/timer-only remote polling for idle persistent cases. Naïve retains case decisions and coordination; backend scheduling and waiting do not consume model calls. Migration 0018 adds operational metadata only. No automatic POST replay, new spending authority, voice change, or external contact is introduced. Six transport/configuration tests and fifteen disposable-database regressions passed; build passed. Applied production migration 0018 and deployed six Functions. A read-only live coordinator GET through the shared transport returned 200; the lease released, failures reset to zero, and success spacing was recorded. No agent sessions or outreach were created. This does not guarantee provider capacity; see docs/naive-capacity.md for limits. The user cancelled external escalation; no report was sent.
+
+### Review-only permission selector
+
+- Added a review-only default to the autonomy form, with no contacts and no outbound allowance. Synthetic email remains an explicit alternative with its existing limits. Switching modes clears consent.
+- Added an optional E2E UI check that intercepts authorization requests and verifies both payloads and consent reset without creating live authority. Frontend changes are local and await deployment; no deployment overlaps the side chat's capacity work.
+- Validation passed: local E2E exercised review-only and email payloads, consent reset, real Auth/Functions/Realtime, and cross-user isolation; no live authority was created by the UI test. `npm run build` passed with the existing bundle-size warning. Gateway inference remains unavailable.
+
+### Shared integration review
+
+- Found and fixed a conflict between the new single-request governor and parallel case-binding reads. Preflight now reads version, identity, and attachment sequentially; all eight binding/transport/config tests passed.
+- The side chat applied migration 0018 and deployed the governor and idle-session optimization to all six Functions, then verified a real coordinator GET with lease release and zero failures. This controls HTTP traffic, not model concurrency. No external capacity report was sent, per the user's cancellation.
+- Deployed the integration fix successfully to all six Neon Functions with `--no-env-pull`. The review-only frontend remains pending Vercel publication.

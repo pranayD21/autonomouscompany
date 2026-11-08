@@ -7,12 +7,13 @@ export const caseAuthority=z.object({
   channel:z.enum(["email","call"]),destination:z.string().trim().min(1).max(254),
  }).strict().superRefine((c,ctx)=>{
   if(!(c.channel==="email"?z.email().safeParse(c.destination).success:/^\+[1-9]\d{7,14}$/.test(c.destination)))ctx.addIssue({code:"custom",message:"Invalid contact destination"});
- })).min(1).max(4),
+ })).min(0).max(4),
  max_decisions:z.number().int().min(1).max(10),
- max_outbound:z.number().int().min(1).max(10),
+ max_outbound:z.number().int().min(0).max(10),
  min_contact_interval_minutes:z.number().int().min(60).max(10080),
  expires_at:z.iso.datetime(),
 }).strict().superRefine((a,ctx)=>{
+ if(a.max_outbound>0&&!a.contacts.length)ctx.addIssue({code:"custom",message:"Outbound authority requires a contact"});
  if(new Set(a.contacts.map(c=>c.id)).size!==a.contacts.length)ctx.addIssue({code:"custom",message:"Contact IDs must be unique"});
 });
 export type CaseAuthority=z.infer<typeof caseAuthority>;

@@ -1,0 +1,26 @@
+import {expect,type Page} from "@playwright/test";
+export async function checkAutonomyPermissions(page:Page,apiBase:string,caseId:string){
+ const stackPath=`${apiBase}/stack/status`,crewPath=`${apiBase}/cases/${caseId}/crew`,path=`${apiBase}/cases/${caseId}/autonomy`;
+ const posted:Record<string,any>[]=[];
+ await page.route(stackPath,route=>route.fulfill({json:{naive:{configured:true,enabledForUser:true}}}));
+ await page.route(crewPath,route=>route.fulfill({json:{status:"idle",saved_at:new Date().toISOString(),result:{summary:"Synthetic permission UI fixture",missing_information:[],next_actions:[],evidence:[],human_help_required:false,human_help_reason:"",potential_discrepancy_cents:null}}}));
+ await page.route(path,route=>{
+  if(route.request().method()==="POST"){posted.push(route.request().postDataJSON());return route.fulfill({status:201,json:{}});}
+  return route.fulfill({json:{authorities:[],decisions:[],sessions:[]}});
+ });
+ try{
+  await page.reload();
+  const card=page.locator(`article[data-case-id="${caseId}"]`),form=card.locator("form").filter({has:page.getByLabel("Communication permission")});
+  const scope=form.getByLabel("Communication permission"),consent=form.getByRole("checkbox");
+  await expect(scope).toHaveValue("research");await expect(form.getByLabel("Customer test email",{exact:true})).toHaveCount(0);
+  await consent.check();await scope.selectOption("email");await expect(consent).not.toBeChecked();
+  await form.getByLabel("Customer test email",{exact:true}).fill("fictional@example.com");
+  await consent.check();await scope.selectOption("research");await expect(consent).not.toBeChecked();
+  await consent.check();await form.getByRole("button",{name:"Authorize review only",exact:true}).click();
+  await expect.poll(()=>posted.length).toBe(1);expect(posted[0].policy.contacts).toEqual([]);expect(posted[0].policy.max_outbound).toBe(0);
+  await scope.selectOption("email");await form.getByLabel("Customer test email",{exact:true}).fill("fictional@example.com");await consent.check();
+  await form.getByRole("button",{name:"Authorize autonomous email test",exact:true}).click();
+  await expect.poll(()=>posted.length).toBe(2);expect(posted[1].policy.max_outbound).toBe(2);expect(posted[1].policy.contacts).toEqual([{id:"customer",role:"customer",channel:"email",destination:"fictional@example.com"}]);
+  console.log("PASS mocked authorization UI: review-only sends no contacts, email retains limits, scope changes clear consent; no live grant created");
+ }finally{await page.unroute(stackPath);await page.unroute(crewPath);await page.unroute(path);await page.reload();}
+}

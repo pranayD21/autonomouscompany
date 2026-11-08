@@ -29,3 +29,11 @@ test("missing receipt is uncertain and does not cause another call",async()=>{
 test("ElevenLabs receipt keeps its provider after selection changes",async()=>{
  const result=await readOutreach({...action,provider_id:"elevenlabs:previous-call"},(async url=>{assert.equal(String(url),"https://api.elevenlabs.io/v1/convai/conversations/previous-call");return Response.json({conversation_id:"previous-call",agent_id:"old-agent",status:"done",metadata:{call_duration_secs:12}});}) as typeof fetch);assert.equal(result.duration_seconds,12);
 });
+
+test("default voice path is AgentPhone; legacy ElevenLabs config cannot enable dialing",()=>{
+ delete process.env.OUTREACH_VOICE_PROVIDER;
+ assert.equal(outreachEnabled("call"),true);
+ process.env.OUTREACH_VOICE_PROVIDER="elevenlabs";
+ assert.equal(outreachEnabled("call"),false);
+ process.env.OUTREACH_VOICE_PROVIDER="agentphone";
+});

@@ -6,7 +6,6 @@ import {drizzle} from "drizzle-orm/node-postgres";
 import {eq} from "drizzle-orm";
 import {cases,outreachActions} from "../backend/schema";
 import {dispatchOnce} from "../backend/outreach-service";
-import {elevenLabsOutreachPrompt} from "../backend/providers/voice-config";
 import {actionInput,destinationAllowed,DispatchFailure,sendOutreach,readOutreach} from "../backend/providers/outreach";
 if(!process.env.OUTREACH_TEST_DATABASE_URL)throw new Error("Use an isolated Neon test branch via OUTREACH_TEST_DATABASE_URL");
 const pool=new Pool({connectionString:process.env.OUTREACH_TEST_DATABASE_URL.replace("sslmode=require","sslmode=verify-full"),max:4});
@@ -47,10 +46,10 @@ test("a threaded follow-up keeps the authorized recipient and rejects a mismatch
  await assert.rejects(()=>sendOutreach({...a,reply_thread_id:null},request),/INVALID_REPLY_CONTEXT/);assert.equal(calls,1);
 });
 test("call disables audio recording, carries reviewed plan, and validates receipt",async()=>{
- process.env.ELEVENLABS_API_KEY="test";process.env.ELEVENLABS_OUTREACH_AGENT_ID="test";process.env.ELEVENLABS_PHONE_NUMBER_ID="test";
- const a=await draft();const request=(async(_url,init)=>{if(!init?.method)return Response.json({conversation_config:{agent:{prompt:{prompt:elevenLabsOutreachPrompt}},conversation:{max_duration_seconds:180}},platform_settings:{privacy:{record_voice:false},auth:{enable_auth:true}}});const body=JSON.parse(String(init?.body));assert.equal(body.call_recording_enabled,false);assert.equal(body.to_number,a.destination);assert.ok(body.conversation_initiation_client_data.dynamic_variables.discussion_plan.includes(a.body));return Response.json({success:true,conversation_id:"c1",callSid:"CA-test"});}) as typeof fetch;
- assert.equal((await sendOutreach(a,request)).provider_id,"elevenlabs:c1");
- await assert.rejects(()=>sendOutreach(a,(async(url,init)=>init?.method?Response.json({accepted:true}):request(url,init)) as typeof fetch),/INVALID_PROVIDER_RESPONSE/);
+ process.env.OUTREACH_VOICE_PROVIDER="agentphone";process.env.AGENTPHONE_API_KEY="test";process.env.AGENTPHONE_AGENT_ID="test";process.env.AGENTPHONE_NUMBER_ID="test";
+ const a=await draft();const request=(async(_url,init)=>{const body=JSON.parse(String(init?.body));assert.equal(body.disableRecording,true);assert.equal(body.toNumber,a.destination);assert.ok(body.systemPrompt.includes(JSON.stringify(a.body)));return Response.json({id:"c1",status:"queued"});}) as typeof fetch;
+ assert.equal((await sendOutreach(a,request)).provider_id,"c1");
+ await assert.rejects(()=>sendOutreach(a,(async()=>Response.json({accepted:true})) as typeof fetch),/INVALID_PROVIDER_RESPONSE/);
 });
 test("status reads cannot send and discard transcripts and message bodies",async()=>{
  const a={...await draft(),provider_id:"c1"};const result=await readOutreach(a,(async(_url,init)=>{assert.equal(init?.method,undefined);return Response.json({id:"c1",status:"completed",durationSeconds:46,transcript:"not retained"});}) as typeof fetch);

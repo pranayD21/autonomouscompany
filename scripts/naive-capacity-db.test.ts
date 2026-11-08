@@ -1,0 +1,31 @@
+import {test,before,after} from "node:test";
+import assert from "node:assert/strict";
+import {randomUUID} from "node:crypto";
+import {Pool} from "pg";
+import {drizzle} from "drizzle-orm/node-postgres";
+import {migrate} from "drizzle-orm/node-postgres/migrator";
+import {postgresCapacity} from "../backend/providers/naive-capacity";
+if(!process.env.OUTREACH_TEST_DATABASE_URL)throw Error("Disposable branch required");
+const pool=new Pool({connectionString:process.env.OUTREACH_TEST_DATABASE_URL.replace("sslmode=require","sslmode=verify-full"),max:6});
+before(async()=>{await migrate(drizzle(pool),{migrationsFolder:"drizzle"});await pool.query("DELETE FROM advocacy_naive_capacity");});
+after(async()=>{await pool.query("DELETE FROM advocacy_naive_capacity");await pool.end();});
+test("independent workers share one lease, Retry-After cooldown, and stale-owner protection",async()=>{
+ const workers=Array.from({length:6},()=>postgresCapacity(pool));const tokens=workers.map(()=>randomUUID());
+ const results=await Promise.all(workers.map((w,i)=>w.acquire(tokens[i])));assert.equal(results.filter(x=>x.acquired).length,1);
+ const winner=results.findIndex(x=>x.acquired);
+ await workers[winner].release(tokens[winner],429,120000,"fixture-capacity");
+ const blocked=await workers[0].acquire(randomUUID());assert.equal(blocked.acquired,false);assert.ok(blocked.waitMs>110000);
+ await workers[0].release(randomUUID(),200,null,null);
+ assert.equal((await pool.query("SELECT failures,last_status,request_id FROM advocacy_naive_capacity")).rows[0].failures,1);
+ await pool.query("UPDATE advocacy_naive_capacity SET next_allowed_at=now()-interval '1 second'");
+ const token=randomUUID();assert.equal((await workers[1].acquire(token)).acquired,true);
+ await workers[1].release(token,503,null,null);
+ const state=(await pool.query("SELECT failures,extract(epoch FROM(next_allowed_at-now())) AS delay FROM advocacy_naive_capacity")).rows[0];assert.equal(state.failures,2);assert.ok(Number(state.delay)>55);
+ await pool.query("UPDATE advocacy_naive_capacity SET next_allowed_at=now()-interval '1 second'");
+ const recovered=randomUUID();assert.equal((await workers[0].acquire(recovered)).acquired,true);await workers[0].release(recovered,200,null,null);
+ assert.equal((await pool.query("SELECT failures FROM advocacy_naive_capacity")).rows[0].failures,0);
+});
+test("expired worker leases recover after a process crash",async()=>{
+ await pool.query("UPDATE advocacy_naive_capacity SET lease_id=$1,lease_until=now()-interval '1 second',next_allowed_at=now()-interval '1 second'",[randomUUID()]);
+ const store=postgresCapacity(pool),token=randomUUID();assert.equal((await store.acquire(token)).acquired,true);await store.release(token,200,null,null);
+});

@@ -40,3 +40,10 @@ test("synthetic completion requires current recorded outcome evidence and never 
  assert.equal(checkCaseDecision(authority,stop,{...ctx,uncertain_dispatch:true}),"DISPATCH_NEEDS_RECONCILIATION");
  assert.equal(checkCaseDecision(authority,{...stop,outcome:"goal_met"},ctx),"OUTCOME_NOT_VERIFIED");
 });
+
+test("research-only authority permits zero contacts and rejects all outbound actions",()=>{
+ const research={...authority,contacts:[],max_outbound:0};
+ assert.equal(caseAuthority.safeParse(research).success,true);
+ assert.equal(caseAuthority.safeParse({...research,max_outbound:1}).success,false);
+ assert.equal(checkCaseDecision(research,contact,context),"OUTBOUND_LIMIT");
+});

@@ -16,6 +16,8 @@ Run `node --env-file=.env.local node_modules/.bin/naive up --dry-run` before app
 
 ## Voice and email
 
+Current selection: **AgentPhone only** for new voice calls. Twilio/ElevenLabs setup and SIP are retired requirements. Historical records below remain for audit; see [current voice configuration](voice-agentphone.md).
+
 Current direction: the user requested a workaround without AgentPhone. Local new-call code now targets ElevenLabs native Twilio telephony; Twilio signup, number setup, deployment, and live verification remain pending. Existing AgentPhone setup records below are historical. See [replacement setup](voice-twilio.md).
 
 AgentPhone means **agentphone.ai**, not agentphone.app. Its native hosted voice and ElevenLabs over SIP are alternative call paths. SIP needs AgentPhone account enablement and a supported trunk configuration. Never attach one number to both call paths. Account setup and one authorized hosted-voice call are complete; see the verification records below.

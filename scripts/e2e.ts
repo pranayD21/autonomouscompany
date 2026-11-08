@@ -1,5 +1,6 @@
 import { chromium, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
+import {checkAutonomyPermissions} from "./autonomy-ui-check";
 const browser = await chromium.launch({headless:true});
 const context = await browser.newContext();
 const page = await context.newPage();
@@ -31,6 +32,7 @@ try {
   await expect(card).toBeVisible({timeout:20000});
   console.log("PASS persisted case survives reload");
   const caseId=await card.getAttribute("data-case-id");
+  if(process.env.E2E_AUTHORIZATION_UI==="1")await checkAutonomyPermissions(page,apiBase,caseId!);
   if(process.env.E2E_OUTCOMES_UI==="1"){
     const outcomePath=`${apiBase}/cases/${caseId}/outcomes`;
     await page.route(outcomePath,route=>route.fulfill({json:[{id:randomUUID(),created_at:new Date().toISOString(),evidence_current:false,independently_verified:false,attribution:"agent_reported",report:{summary:"Synthetic UI outcome fixture",claim_decision:"partially_accepted",original_responsibility_cents:100000,final_responsibility_cents:20000,reduction_cents:80000,refund_received_cents:null,calculation_explanation:"Fictional calculation",evidence:[{source_ref:"document:synthetic",quote:"Fictional statement supporting the calculation."}]}}]}));
@@ -50,6 +52,14 @@ try {
     await expect(card.getByText("No outcome has been recorded.",{exact:true})).toBeVisible();
     console.log("PASS outcome UI fixture: reported values, unknown refund, stale-evidence warning, quotes, and empty state (mocked outcome response)");
   }
+  const stackStatus=await fetch(`${apiBase}/stack/status`,{headers:{Authorization:authorization}});
+  expect(stackStatus.status).toBe(200);
+  const stack=await stackStatus.json();
+  expect(stack.outreach.callProvider).toBe("agentphone");
+  expect(stack.outreach.callConfigured).toBe(true);
+  expect(stack.outreach.emailConfigured).toBe(true);
+  expect(stack.outreach.enabledForUser).toBe(false);
+  console.log("PASS authenticated readiness: AgentPhone and email configured; new signup cannot spend");
   const unauth=await fetch(`${apiBase}/cases`);
   expect(unauth.status).toBe(401);
   const malformed=await fetch(`${apiBase}/cases`,{headers:{Authorization:"Bearer invalid"}});

@@ -101,3 +101,15 @@ The side-chat setup task used Playwriter in Dia to sign into the correct existin
 
 
 Synthetic scenario completion now has its own evidence-backed stop option, with a mandatory no-real-payout label. It passed live MCP verification without contacting anyone. This is demo completion, not the still-unimplemented verified real-outcome path. Payment remains hypothetical per the latest user instruction.
+
+## AgentPhone-only pivot
+
+The user explicitly selected direct AgentPhone only. Local dispatch now removes the ElevenLabs/Twilio new-call path; defaults and the private environment select AgentPhone, and other selectors disable calls. Historical receipts remain readable. Read-only provider check confirms a hosted agent and active number. Eleven focused voice/general-version tests and build pass. All six Functions deployed; Neon confirms completed deployment records. Authenticated app readiness readback remains unverified after test-session/signup failures; no new call authorized or placed. Twilio number purchase, ElevenLabs integration, and SIP access are no longer demo blockers for this voice path. See voice-agentphone.md.
+
+### Persistent session live lifecycle
+
+Operator provisioning and a same-session evidence wake now pass against live Naïve/Neon. A zero-contact, zero-outbound synthetic authority was provisioned; the same session consumed revision 2 after event delivery and ended its turn, spending $0.019098. Two explicit `read_people` confirmations were required. All test resources and the temporary setup key were cleaned up. Customer activation, automatic credential renewal, and unattended approval handling remain unfinished; this test does not establish autonomous real claim handling.
+
+### Reduced Naïve load deployed
+
+The SDK transport now uses production Postgres to admit one HTTP request at a time, space successes, and share capacity cooldowns across Functions. Idle persistent cases skip remote status reads until new evidence or a due timer. Naïve remains responsible for case coordination; no alternate model is introduced. Six transport/configuration tests, fifteen disposable-database regressions, and build passed. Migration 0018 and six Function deployments completed. A live read-only coordinator request returned 200 with the gate released and failures zero. No new sessions or external contacts were made. The user cancelled external escalation; no report was sent. Remote model concurrency and provider availability are not guaranteed by an HTTP gate. See [capacity operations](naive-capacity.md).

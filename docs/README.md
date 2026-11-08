@@ -42,3 +42,7 @@ Every repository change must update the relevant documentation in the same chang
 - [Recorded case outcomes](outcomes.md) — agent calculations, exact evidence quotes, retry handling, and verification limits.
 
 - [Hypothetical payments](payments.md) — Stripe sandbox setup and the current no-collection product scope.
+
+- [AgentPhone-only voice](voice-agentphone.md): current new-call provider, configuration, historical receipts, and verification.
+
+- [Naïve capacity](naive-capacity.md): shared request admission, cooldowns, idle-case load reduction, and escalation status.

@@ -1,6 +1,7 @@
 import { createClient } from "@usenaive-sdk/managed-agents";
 import {potentialDifference} from "../claim-input";
 import { z } from "zod";
+import {naiveFetch} from "./naive-capacity";
 
 export const crewOutput = z.object({
   summary: z.string().max(1600),
@@ -19,7 +20,7 @@ export const crewOutput = z.object({
 export function naiveClient() {
   if (!process.env.NAIVE_API_KEY) throw new Error("NaiveNotConfigured");
   return createClient({ baseUrl: "https://api.vetta.sh", apiKey: process.env.NAIVE_API_KEY,
-    fetch: (url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(25000) }),
+    fetch: naiveFetch(),
   });
 }
 export function crewConfiguration() {
