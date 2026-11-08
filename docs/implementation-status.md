@@ -4,6 +4,8 @@ Updated November 8, 2026 UTC. This document supersedes older milestone descripti
 
 ## Current integration checkpoint
 
+Latest hosted result, November 8, 2026: the zero-contact onboarding fixture now runs from CEO allocation through a started advocate session to a persisted first goal, with no outreach. Its onboarding events were not yet marked finished, so the formal proof has not passed. The first real phone case, opened from a callback, has its CEO and Front Desk events parked `human_required`, with no budget or advocate. Details are in the [change log](change-log.md).
+
 The Naïve company expansion is in progress and has not yet been published as a frontend release. The production backend has eight Functions, including `firm`, and migrations 0000–0029 (30 journal entries). Six permanent Naïve roles, their separate identities/vaults, and the company board exist. Three recurring role schedules are configured but disabled pending live verification. The selected model rejected the `loose` completion window; hosted company sessions use `immediate`.
 
 The new local frontend uses email sign-in, email intake, website conversation, uploads, and Gmail connection controls. The public site still serves the previous release until the reviewed changes are pushed. Phone/SMS/Mac Messages are historical experiments, outside the new customer path; `PHONE_FLOW_ENABLED=false` remains in force.

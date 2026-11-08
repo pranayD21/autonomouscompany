@@ -4,7 +4,7 @@ The current implementation connects permanent Naïve company roles to one advoca
 
 `backend/firm-events.ts` records website and email intake events. Website activation creates a staffing request atomically with the authority. The ordinary setup scheduler excludes these requests so that Front Desk and the old provisioner cannot both hire an advocate. A different authority on an already staffed case requires explicit handover rather than silently reusing credentials.
 
-`backend/firm-service.ts` exposes role-specific company operations. Front Desk requests a CEO allocation when a case has none. The CEO records the expected recovery, budget and reasoning, within existing provider credit. Hiring creates a dedicated Naïve advocate, a dedicated AgentMail inbox, and the existing isolated case identity/vault/session binding. Agent lists are paginated and duplicate names fail closed. Budget changes use Naïve's session budget API; a provider spending allocation does not buy credits.
+`backend/firm-service.ts` exposes role-specific company operations. Front Desk requests a CEO allocation when a case has none. The CEO records the expected recovery, budget and reasoning. Hiring creates a dedicated Naïve advocate, a dedicated AgentMail inbox, and the existing isolated case identity/vault/session binding. Agent lists are paginated and duplicate names fail closed. Budget changes use Naïve's session budget API; a provider spending allocation does not buy credits.
 
 `backend/firm-tools.ts` serves `/mcp/:role` using separate role bearer tokens. Company roles cannot invoke another role's tool or write arbitrary record kinds. Email verification challenges and proofs are excluded from company reads and writes. `backend/firm-runner.ts` stores each event session request before starting it, uses a stable provider idempotency key, verifies role/identity bindings, and reserves tool confirmations before dispatch. An uncertain confirmation is held for reconciliation. Scheduled role sessions use the same approval checks.
 
@@ -30,7 +30,7 @@ Board assignments resolve company role names or configured IDs to current Naïve
 
 Native `board_write` confirmations are denied with instructions to use the durable `firm.update_board_card` tool. This denial permits the existing role session to continue without executing an untracked board write. Front Desk asks `hire_advocate` to queue CEO allocation when no budget exists; board bookkeeping must not block staffing.
 
-Case activation queues both Front Desk intake and a deduplicated CEO allocation request. The CEO still chooses the amount and rationale from case evidence and available credit; this scheduling change prevents board bookkeeping from stranding an unstaffed case. Budget allocation then wakes Front Desk to hire.
+Case activation queues both Front Desk intake and a deduplicated CEO allocation request. The CEO supplies the amount and rationale; this scheduling change prevents board bookkeeping from stranding an unstaffed case. Budget allocation then wakes Front Desk to hire.
 
 ### Board assignment protocol and reconciliation
 
@@ -41,6 +41,14 @@ The previously stalled front-desk board operation was reconciled against its exi
 Provider errors retain only bounded status/code in the service. Full diagnostic provider bodies were kept only in ignored private investigation files and are not returned by company tools.
 
 Each firm scheduler invocation advances up to three due events within a 45-second admission slice, then checks scheduled approvals. Requests remain sequential under the shared governor; provider cooldown stops the slice. These are per-invocation capacity controls, not case-work budgets or decision limits.
+
+## Case budgets
+
+The CEO allocates each case budget through `set_case_budget`, and its mandate in `backend/firm-blueprint.ts` instructs it to allocate $250 per case. The tool records the amount the CEO supplies and its reason. The amount is a ceiling and is not checked against the credit balance, so real spend stops when organization credit runs out. Nothing buys credits or charges anyone.
+
+Naïve refuses to start or continue a session whose budget is below its pre-flight quote, with HTTP 402 `budget_exceeded`. The session scheduler records that reason, keeps the same session identity, and queues one `budget_needed` event per funded amount for the CEO on firm-staffed cases.
+
+A hired advocate's default agent version stays general with no case connector, and its session pins a separate connector version. Funding an unstarted advocate therefore publishes a new connector version carrying the budget, restores the general default, raises the default's budget too because Naïve checks a session budget against the default version's cap, pins the run to the connector version, and makes it due immediately. It does not queue another hiring event. A retry reuses a connector version already published at that amount.
 
 Budget allocation and hiring validate the staffing authority, case, owner, and active state before any provider request or further staffing event. Revoked cases cannot request a new allocation through company tools.
 

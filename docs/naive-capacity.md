@@ -35,3 +35,7 @@ Case-binding preflight performs its version, identity, and attachment reads sequ
 The shared lease still permits only one provider request at a time. When another request holds that lease, a caller now rechecks after one second within the existing four-retry admission window. It does not assume the lease's 35-second crash timeout is a provider cooldown. Actual `next_allowed_at` cooldowns, Retry-After, request timeouts, and no-replay behavior remain unchanged. This prevents simultaneous scheduler ticks from repeatedly deferring otherwise healthy short requests.
 
 Deferred-work status refers to the shared Naïve request queue. A local occupied lease is not evidence that Naïve returned HTTP 429; live rejection claims require a provider response.
+
+The session scheduler retries a local admission rejection up to three more times within the same invocation, waiting at most five seconds each time. These rejections never reached Naïve, and session start uses a stable idempotency key, so a retry cannot duplicate work. Other session failures log only the run ID, status, and provider code.
+
+A session request Naïve rejects, or one that fails without a capacity signal, retries after one minute with the same session and event identity. The saved reason includes Naïve's status, code, and message.

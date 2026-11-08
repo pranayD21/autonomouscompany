@@ -1033,3 +1033,17 @@ The first real callback was captured, but the caller said the category naturally
 ## 2026-11-08 — No customer email from advocates
 
 The user asked that customers hear from their advocate in chat, not by email. An email seen in the workspace came from an old demo case on an email account, but the rule was still only an instruction. Open-authority `send_email` to a customer is now refused. Verification is recorded in that release's commit message.
+
+## 2026-11-08 — $250 CEO case allocations and advocate start repair
+
+The hired onboarding advocate never started. Naïve returned HTTP 402 `budget_exceeded` ("the remaining budget for this task is below the pre-flight quote") because the CEO had allocated $0.05 to each case it funded. The scheduler reported this as "Provider unavailable" and retried after 15 minutes, while `set_case_budget` refused any change before the session started, so the case could not recover.
+
+At the user's direction the CEO mandate now instructs a $250 allocation per case. The tool records the amount the CEO supplies and no longer checks it against the credit balance; real spend still stops at available credit, and buying credits remains unauthorized. A 402 records its real reason and queues a CEO `budget_needed` event per funded amount. Funding an unstarted advocate publishes a new connector version with the budget, restores the general default, pins the run, and makes it due immediately, without another Front Desk hiring event. The scheduler also retries local admission rejections within one invocation. See [firm runtime](firm-runtime.md#case-budgets) and [Naïve capacity](naive-capacity.md).
+
+An intermediate version of this fix pinned the fixture's run to the general default, which has no connector, and the binding check correctly parked it `human_required`. No session started and no outreach occurred. The run and its onboarding events were repaired by hand to the connector version so the corrected path could run.
+
+The first hosted raise then failed with HTTP 400 `validation_failed` ("a session budget cannot exceed the agent's budget cap"), because Naïve checks the default version's cap and the restore had returned the default to $0.05. Funding now raises the default too. The session retry after a provider rejection dropped from 15 minutes to one minute, and the saved reason now carries Naïve's status, code, and message.
+
+Migration `0030_phone_onboarding.sql` was applied to production (31 journal entries), `PHONE_ONBOARDING_ENABLED=true` was set in the private environment, and role instructions were reconciled to new provider versions.
+
+Verification: firm service, tools, runner, session, and phone onboarding suites passed on the disposable database with mocked provider responses. On production, the zero-contact fixture hit the 402, the CEO recorded a $250 allocation with its own reason, the session started at about 10:46 UTC, and the first goal persisted at 10:50:21 UTC with zero outreach. The fixture's onboarding events had not yet been marked finished, so the formal proof script has not passed. This change placed no SMS or call; a separate session ran the real phone journey.
