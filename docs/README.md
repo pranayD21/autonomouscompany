@@ -46,3 +46,5 @@ Every repository change must update the relevant documentation in the same chang
 - [AgentPhone-only voice](voice-agentphone.md): current new-call provider, configuration, historical receipts, and verification.
 
 - [Naïve capacity](naive-capacity.md): shared request admission, cooldowns, idle-case load reduction, and escalation status.
+
+- [Automatic frontend deployments](auto-deploy.md): GitHub connection, production branch, and separate Neon backend deployment.

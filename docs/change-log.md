@@ -478,3 +478,7 @@ Activation validation: the initial parallel test invocation raced migration appl
 The first push encountered remote dashboard commit 972f0d1. Rebased onto it and preserved its sidebar, timeline, and authority-card styling while retaining activation loading and setup status. The combined build passed (681 modules). The first merged E2E reached deletion but timed out on the intentionally hidden sign-out control in the collapsed sidebar; updated the test to expand Workspace navigation by hover before signing out. Final combined verification follows.
 
 The final combined local E2E passed activation/approval fixtures, real auth, persistence, readiness, isolation, deletion, sidebar sign-out, and password sign-in. The side task is connecting GitHub automatic frontend deployments; this change is ready for that path, but persistent activation remains disabled in production until dedicated setup access and a live activation test succeed.
+
+### Connect Vercel to GitHub
+
+Connected assurance-claims to pranayD21/autonomouscompany, confirmed main as production branch through Vercel readback, and documented frontend automatic deployments. No token, domain, or Neon backend configuration was changed. This documentation-only commit verifies the push-triggered build; its deployment outcome will be recorded after verification.
