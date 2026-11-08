@@ -1267,3 +1267,17 @@ Verification: `npm run build` passed (TypeScript and Vite) with the existing bun
 A full read of the docs found limit statements the earlier keyword pass missed, including portal, pricing, gateway billing, SMS registration, and provider-gap sentences. Removed them from the topic docs. Operating rules, feature gates, authorization boundaries, test-mode payment rules, test-scope descriptions, evidence rules, and dated test results stay. Documentation only.
 
 Verification: `git diff --check` passed. No build or test was run because only Markdown changed.
+
+## 2026-11-08 — Run guide, verification record, and test tooling
+
+A review of the repository found that its docs did not make the real-user run clear, and that outsiders could not build or test it. The owner reports a successful real-user run. Added `docs/running.md` and `docs/verification.md`, and updated the README, documentation index, status, and hosting docs. Added `npm test` (`scripts/run-tests.ts`), a GitHub Actions workflow, public production URL defaults in `vite.config.ts`, and Prettier scripts and configuration. Existing code was not reformatted, so CI does not check formatting.
+
+Verification: before the docs were written, a build with an empty environment succeeded, and 61 of 65 test files passed on a throwaway Postgres; the four failures are listed in `docs/verification.md`. The CI workflow has never run, and nothing was run after these documentation edits, at the owner's direction.
+
+## 2026-11-08 — Test setup fixes and first-user record
+
+Fixed four failing suites through test setup only, with no product code change: `outreach`, `case-action-service`, and `autonomy-runner` now set a fixture inbox; `autonomy-runner` migrates its own database; `email-verification` creates a stand-in for Neon's `neon_auth."user"` table on plain Postgres. An `autonomy-runner` concurrency assertion that failed in an earlier full run also passed after these changes; its original cause was not isolated.
+
+The owner reported that a Naïve GTM agent got Assurance's first user through Reddit. Recorded this in the README, `docs/product.md`, `docs/firm-blueprint.md`, and `docs/verification.md`. The owner states that older repository files predate this; no outreach record is stored in the repository.
+
+Verification: `tsc --noEmit` passed, and `npm test` passed all 65 files on a fresh throwaway Postgres with no private environment. The CI workflow has not yet run on GitHub.

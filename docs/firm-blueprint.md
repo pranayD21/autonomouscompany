@@ -8,7 +8,7 @@
 | Front Desk | AgentMail lead intake and case hiring | firm_status, list_cases, read_case_summary, list_email_leads, open_email_lead, hire_advocate, update_board_card, read_playbook |
 | Reviewer | Evidence-based independent case review | firm_status, list_cases, read_case_summary, review_case, update_board_card, read_playbook |
 | Knowledge | Reusable, de-identified playbook | firm_status, list_cases, read_case_summary, read_playbook, write_playbook, update_board_card |
-| Growth | Public prospective lead research; no outreach | firm_status, read_playbook, record_growth_lead, update_board_card |
+| Growth | Public prospective lead research; this role itself sends no outreach (first-user acquisition used a Naïve GTM agent, see [verification](verification.md)) | firm_status, read_playbook, record_growth_lead, update_board_card |
 | Finance | Costs and hypothetical/test fees; no real charges | firm_status, list_cases, read_case_summary, record_test_fee, case_costs, update_board_card, read_playbook |
 
 Each agent and identity is named `assurance-firm-<role>`. The MCP namespace is `firm`; each agent receives only its role's listed tools, with default deny. The endpoint is `/mcp/<role>` on the Neon firm Function. Each identity has its own static-bearer credential in its own vault. The setup script additionally restricts each sealed credential to its agent. Tokens are never placed in MCP headers or agent configuration.

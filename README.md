@@ -12,28 +12,29 @@ Assurance is an agent-run insurance claims advocacy service. It helps injured pe
 4. The customer continues in website chat and uploads documents there.
 5. The advocate researches the claim, contacts the insurer or claims administrator, follows up, and reports back on the website.
 
-The team has tested this journey end to end through manual UI workflows. See [implementation status](docs/implementation-status.md) for recorded verification.
+The team has run this product end to end with a real user on production. Its first user came through Reddit using a Naïve GTM agent. [Verification](docs/verification.md) records that run, the other production evidence, and the test results.
 
 Start with [agents.md](agents.md) and the [documentation index](docs/README.md). Every repository change must update the relevant Markdown in `docs/`.
 
-## Run locally
+## Run it
+
+Use the live service at https://assurance.claims, or build the client with no private files:
 
 ```sh
 npm ci
-# Restore your team's private .env.local; .env.example lists variable names only.
 npm run build
 npm start
 ```
 
-Open http://localhost:4173. Use localhost so the origin matches the deployed API and Realtime configuration. Existing email/password accounts remain supported. Use fictional records for local verification. Legacy crew review runs require the user's Neon Auth ID in `CREW_ALLOWED_USER_IDS` and a Function redeploy.
+Open http://localhost:4173. The local client talks to the production backend, so enter only fictional details.
+
+Run the tests against a disposable Postgres database:
 
 ```sh
-npm run stack:check
 npx playwright install chromium
-npm run test:e2e
-npm run stack:plan
+OUTREACH_TEST_DATABASE_URL=postgres://localhost/assurance_test npm test
 ```
 
-`stack:check` exits nonzero for missing or blocked services. The E2E script checks the Neon flow and the explicit gateway-unavailable state; it does not exercise AI inference. `npm run test:crew` spends capped Naïve credits on its first run, then checks the same session. Read [stack operations](docs/stack.md) before provisioning agents or placing calls.
+[Running Assurance](docs/running.md) covers the tests, required accounts, and deploying your own backend.
 
 No real medical documents, credentials, call recordings, or private patient information belong in this repository.

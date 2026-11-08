@@ -39,6 +39,7 @@
     "@vitejs/plugin-react": "^6.2.1",
     "dotenv": "^18.0.9",
     "drizzle-kit": "^0.31.11",
+    "prettier": "^3.9.10",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.6"
@@ -48,6 +49,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "tsx scripts/run-tests.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "start": "vite preview --host 127.0.0.1",

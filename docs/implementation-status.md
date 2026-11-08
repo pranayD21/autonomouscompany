@@ -2,7 +2,7 @@
 
 Updated November 8, 2026 UTC. This document supersedes older milestone descriptions. [Hosted agent](hosted-agent.md) explains the runtime; [change log](change-log.md) retains the verification history.
 
-Assurance is a functioning insurance claims advocacy service. The team has tested the customer journey end to end through manual UI workflows, including a working customer walkthrough. The sections below record the specific evidence held in this repository. Historical fictional runs stay labeled as test evidence.
+Assurance is a functioning insurance claims advocacy service. The team has tested the customer journey end to end through manual UI workflows and reports a successful run with a real user on production; see [verification](verification.md). The sections below record the specific evidence held in this repository. Historical fictional runs stay labeled as test evidence.
 
 ## Current system
 

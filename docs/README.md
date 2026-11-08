@@ -11,6 +11,8 @@ Read [../agents.md](../agents.md) first. These Markdown files are the durable pr
 | [frontend.md](frontend.md) | Changing the workspace UI, mobile layouts, next-step logic, routes, or copy rules |
 | [neon.md](neon.md) | Configuring backend services, credentials, deployment, and tooling |
 | [demo-and-research.md](demo-and-research.md) | Finding participants, recording interviews, or preparing product walkthroughs |
+| [running.md](running.md) | Building, testing, or deploying Assurance |
+| [verification.md](verification.md) | Understanding the real-user run, production evidence, and what tests prove |
 | [implementation-status.md](implementation-status.md) | Checking what exists and verification evidence |
 | [change-log.md](change-log.md) | Reviewing changes and their validation |
 

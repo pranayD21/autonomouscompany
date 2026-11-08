@@ -10,6 +10,7 @@ import {takeCaseAction} from "../backend/case-action-service";
 import {advanceCaseAuthority,type AutonomyDependencies} from "../backend/autonomy-runner";
 import type {CaseAuthority,CaseDecision} from "../backend/autonomy-policy";
 if(!process.env.OUTREACH_TEST_DATABASE_URL)throw Error("Disposable branch required");
+process.env.AGENTMAIL_INBOX_ID??="fixture-inbox";
 const pool=new Pool({connectionString:process.env.OUTREACH_TEST_DATABASE_URL.replace("sslmode=require","sslmode=verify-full"),max:5}),db=drizzle(pool),ids:string[]=[],owner=randomUUID();
 const policy:CaseAuthority={synthetic:true,goal:"Collect fictional employer details",contacts:[{id:"customer",role:"customer",channel:"email",destination:"demo@example.com"}],max_decisions:3,max_outbound:2,min_contact_interval_minutes:60,expires_at:new Date(Date.now()+86400000).toISOString()};
 const decision:CaseDecision={tool:"contact_customer",contact_id:"customer",subject:"Synthetic test",body:"Which fictional employer?",reason:"Employer missing",evidence_refs:["case:1"]};

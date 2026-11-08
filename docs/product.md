@@ -31,6 +31,10 @@ Company operations include authorized intake, case delivery, updates, and cost t
 
 Track case outcomes, autonomous actions, human interventions, model/call/email costs, and exception-handling effort. Insurer payment to a provider is not automatically patient savings or a patient refund.
 
+## Customer acquisition
+
+Assurance got its first user through Reddit using a Naïve GTM agent. See [verification](verification.md).
+
 ## Service providers
 
 Naïve runs company agents and isolated case advocates. Neon provides backend services and persistence. AgentPhone handles requested voice calls, AgentMail handles email, and Vercel hosts the frontend. Twilio Verify supplies phone sign-in codes. Stripe is restricted to test-mode finance tools. Provider configuration and verified availability are documented in [implementation status](implementation-status.md) and the individual integration documents.

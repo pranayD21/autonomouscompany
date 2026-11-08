@@ -1,0 +1,11 @@
+dist/
+node_modules/
+drizzle/
+docs/
+artifacts/
+reports/
+research_notes/
+public/
+package-lock.json
+*.md
+*.yml

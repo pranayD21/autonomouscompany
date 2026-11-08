@@ -1,4 +1,4 @@
-# Direct-model demo fallback
+# Legacy direct-model fallback
 
 This is a legacy path, added after repeated Naïve capacity errors. `scripts/demo/` provides a separate local runner that executes real Assurance MCP tools through a direct OpenAI model. It is not the production path: it does not change the persistent workflow or switch production cases. Its console identifies the engine as the direct-model fallback; do not present these decisions as live Naïve execution.
 

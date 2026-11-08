@@ -8,6 +8,7 @@ import {cases,outreachActions,caseMailboxes} from "../backend/schema";
 import {dispatchOnce} from "../backend/outreach-service";
 import {actionInput,destinationAllowed,DispatchFailure,sendOutreach,readOutreach} from "../backend/providers/outreach";
 if(!process.env.OUTREACH_TEST_DATABASE_URL)throw new Error("Use an isolated Neon test branch via OUTREACH_TEST_DATABASE_URL");
+process.env.AGENTMAIL_INBOX_ID??="fixture-inbox";
 const pool=new Pool({connectionString:process.env.OUTREACH_TEST_DATABASE_URL.replace("sslmode=require","sslmode=verify-full"),max:4});
 const db=drizzle(pool);const owner=`outreach-test-${randomUUID()}`;
 const [item]=await db.insert(cases).values({owner_id:owner,title:"Synthetic outreach test",bill_cents:120000,eob_cents:40000}).returning();

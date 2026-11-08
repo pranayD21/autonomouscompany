@@ -8,7 +8,7 @@ Assurance is served at https://assurance.claims, with https://assurance-claims.v
 - `VITE_NEON_REALTIME_URL`
 - `VITE_CASES_API_URL`
 
-`vite.config.ts` validates those URLs and supports local Neon environment fallback. Provider keys, database URLs, and auth secrets are never Vite variables. `.vercelignore` excludes private environment, CLI metadata, local build/test artifacts, and `test-results/` from manual uploads; Git ignores the same private state. Preserve exact Auth, Realtime, and API origin allowlists for both hosted domains and local development.
+`vite.config.ts` validates those URLs, supports local Neon environment fallback, and otherwise uses the public production locations so a build needs no private files. Provider keys, database URLs, and auth secrets are never Vite variables. `.vercelignore` excludes private environment, CLI metadata, local build/test artifacts, and `test-results/` from manual uploads; Git ignores the same private state. Preserve exact Auth, Realtime, and API origin allowlists for both hosted domains and local development.
 
 Release record for `d4f535e`: public HTML returned HTTP 200 with `assets/index-iqqqwjLX.js`, matching the local build. Hosted email E2E passed authentication, older-email fallback, persistence, Realtime, owner isolation, deletion, and sign-out/sign-in. Hosted fictional phone UI checks passed stable identity and two-account isolation. The one authorized real SMS code verified and opened the hosted dashboard. See [implementation-status.md](implementation-status.md) for direct-agent and communication proof.
 

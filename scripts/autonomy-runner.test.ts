@@ -1,7 +1,8 @@
-import {test,after} from "node:test";
+import {test,after,before} from "node:test";
 import assert from "node:assert/strict";
 import {randomUUID} from "node:crypto";
 import {Pool} from "pg";
+import {migrate} from "drizzle-orm/node-postgres/migrator";
 import {drizzle} from "drizzle-orm/node-postgres";
 import {eq,inArray,sql} from "drizzle-orm";
 import {cases,crewRuns,caseAuthorities,caseDecisions,outreachActions,replyMonitors,caseReplies} from "../backend/schema";
@@ -9,7 +10,9 @@ import {authorizeCase,revokeCaseAuthority,readCaseAutonomy} from "../backend/aut
 import {pollAutonomousCases,advanceCaseAuthority,type AutonomyDependencies} from "../backend/autonomy-runner";
 import type {CaseAuthority,CaseDecision} from "../backend/autonomy-policy";
 if(!process.env.OUTREACH_TEST_DATABASE_URL)throw Error("Use a disposable database branch");
+process.env.AGENTMAIL_INBOX_ID??="fixture-inbox";
 const pool=new Pool({connectionString:process.env.OUTREACH_TEST_DATABASE_URL.replace("sslmode=require","sslmode=verify-full"),max:5,connectionTimeoutMillis:15000,query_timeout:30000}),db=drizzle(pool);
+before(async()=>{await migrate(db,{migrationsFolder:"drizzle"});});
 const owner=`autonomy-test-${randomUUID()}`,ids:string[]=[];
 const policy:CaseAuthority={synthetic:true,goal:"Gather fictional employer details",contacts:[{id:"customer",role:"customer",channel:"email",destination:"customer@example.com"}],max_decisions:3,max_outbound:2,min_contact_interval_minutes:60,expires_at:new Date(Date.now()+86400000).toISOString()};
 const decision:CaseDecision={tool:"contact_customer",contact_id:"customer",subject:"Synthetic Assurance question",body:"What fictional employer should we use?",reason:"Employer is missing",evidence_refs:["case:1"]};
