@@ -1,4 +1,4 @@
-import {and,desc,eq,sql} from 'drizzle-orm';
+import {and,desc,eq,inArray,sql} from 'drizzle-orm';
 import type {NodePgDatabase} from 'drizzle-orm/node-postgres';
 import {z} from 'zod';
 import {caseMessages,cases,caseAuthorities,caseDecisions,caseToolCredentials,directCaseRuns,caseAgentSessions,caseAgentSetups} from './schema';
@@ -54,6 +54,8 @@ async function persistOwnerMessage(db:NodePgDatabase,caseId:string,owner:string,
    const [naive]=await tx.select().from(caseAgentSessions).where(and(eq(caseAgentSessions.authority_id,authority.id),eq(caseAgentSessions.state,'human_required')));
    if(direct||naive)try{await tx.transaction(async nested=>resumeCaseAuthority(nested,caseId,authority.id,owner));resumed=true;}catch(error){if(!(error instanceof Error)||!['RUN_BUSY','UNRESOLVED_DISPATCH','PERMISSION_ENDED','NOT_RESUMABLE'].includes(error.message))throw error;}
   }
+  // A working or idle advocate picks this up on the scheduler's next pass, not at its next routine check.
+  if(authority)await tx.update(caseAgentSessions).set({next_check_at:new Date()}).where(and(eq(caseAgentSessions.authority_id,authority.id),inArray(caseAgentSessions.state,['running','idle'])));
   return {saved:true,resumed,message_id:input.id};
  });
 }

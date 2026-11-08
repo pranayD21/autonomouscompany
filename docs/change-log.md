@@ -1233,3 +1233,13 @@ Case titles could still be long or uninformative. Only new web and email cases w
 
 Verification: `scripts/case-title.test.ts` covers the new naming with mocked responses, and a direct call to `gpt-5.4-nano` with fictional text returned a usable title. The earlier note that the real model call was unchecked no longer applies.
 
+## 2026-11-08 — Website chat replies to the owner
+
+The owner reported no reply to chat messages. On the first real phone case, the "idk" sent at 12:23 UTC was delivered to the advocate at 12:50, because each tool call waited about two minutes for approval and the session had to finish its turn first. It was also delivered as "untrusted information, not instructions", contradicting the advocate's own instructions about authenticated owner messages, and its paired resume event drew a second reply.
+
+Owner messages now reach the advocate as the owner's words with an instruction to reply, make the session due immediately, and no longer draw a duplicate. The scheduler stays in a 50-second loop each minute. Stale hires that never saved an agent now retry too; the phone owner's second case was stuck that way after the old inbox limit. See [website case conversation](web-chat.md).
+
+Not changed: messages on a stopped case, or on a case with no hired advocate, are saved without a reply.
+
+Verification: case session, case message, firm service, and firm runner suites on the disposable database with a mocked provider. Production behavior is checked after deploy.
+

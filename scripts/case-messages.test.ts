@@ -4,6 +4,9 @@ import {randomUUID} from 'node:crypto';
 import {Pool} from 'pg';
 import {drizzle} from 'drizzle-orm/node-postgres';
 import {migrate} from 'drizzle-orm/node-postgres/migrator';
+import {issueCaseToolCredential} from '../backend/case-tool-auth';
+import {caseAgentEvents,caseAgentSessions,cases} from '../backend/schema';
+import {eq,sql} from 'drizzle-orm';
 import {readCaseMessages,sendCaseMessage,postAgentCaseMessage,requestCaseDocument} from '../backend/case-messages';
 import {submitCase} from '../backend/intake-service';
 import {revokeCaseAuthority} from '../backend/autonomy-service';
@@ -58,3 +61,5 @@ test('agent-authored document type and message persist exactly and deduplicate b
  await assert.rejects(requestCaseDocument(db,identity,{...request,message:'A changed request'}),/OPERATION_CONFLICT/);
  assert.equal((await pool.query('SELECT count(*)::int AS n FROM advocacy_outreach_actions WHERE case_id=$1',[id])).rows[0].n,0);
 });
+test('an owner message makes a working advocate due immediately',async()=>{const id=randomUUID();await db.insert(cases).values({id,owner_id:owner,title:'Wake fixture'});ids.push(id);const authority=(await db.execute(sql`INSERT INTO advocacy_case_authorities(case_id,approved_by,policy) VALUES(${id},${owner},${JSON.stringify({version:2,consent:'Fictional.'})}::jsonb) RETURNING id`)).rows[0].id as string;const credential=await issueCaseToolCredential(db,id,owner,authority);const later=new Date(Date.now()+3600000);const [run]=await db.insert(caseAgentSessions).values({case_id:id,authority_id:authority,credential_id:credential.id,identity_id:`idn_${randomUUID()}`,agent_id:'agt_test',agent_version:1,session_id:`ses_${randomUUID()}`,state:'running',next_check_at:later}).returning();await sendCaseMessage(db,id,owner,{id:randomUUID(),text:'Are you there?'});const [after]=await db.select().from(caseAgentSessions).where(eq(caseAgentSessions.id,run.id));assert.ok(after.next_check_at!.getTime()<=Date.now());await db.delete(caseAgentEvents).where(eq(caseAgentEvents.run_id,run.id));await db.delete(caseAgentSessions).where(eq(caseAgentSessions.id,run.id));});
+
