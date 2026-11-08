@@ -10,8 +10,17 @@ export const firmTools:Record<FirmRole,string[]>={
  growth:['firm_status','read_playbook','record_growth_lead','update_board_card'],
  finance:['firm_status','list_cases','read_case_summary','record_test_fee','case_costs','update_board_card','read_playbook'],
 };
+// Naïve built-ins each role may use. The runner approves these when Naïve parks them; a parked scheduled run otherwise blocks every later fire.
+export const firmNativeTools:Record<FirmRole,string[]>={
+ ceo:['send_to_agent','wait_for_agents'],
+ frontdesk:[],
+ reviewer:[],
+ knowledge:['web_search','web_fetch'],
+ growth:['web_search','web_fetch'],
+ finance:[],
+};
 export function firmHarness(){const value=process.env.ASSURANCE_FIRM_HARNESS??'vetta';if(!['pi','vetta'].includes(value))throw Error('INVALID_FIRM_HARNESS');return value as 'pi'|'vetta';}
-export function firmWindow(){const value=process.env.ASSURANCE_FIRM_WINDOW??'loose';if(!['immediate','priority','loose'].includes(value))throw Error('INVALID_FIRM_WINDOW');return value as 'immediate'|'priority'|'loose';}
+export function firmWindow(){const value=process.env.ASSURANCE_FIRM_WINDOW??'immediate';if(!['immediate','priority','loose'].includes(value))throw Error('INVALID_FIRM_WINDOW');return value as 'immediate'|'priority'|'loose';}
 export function firmBudget(){const value=Number(process.env.ASSURANCE_FIRM_BUDGET_MICRO_USD);if(!Number.isSafeInteger(value)||value<=0)throw Error('ASSURANCE_FIRM_BUDGET_MICRO_USD_REQUIRED');return value;}
 export function firmEndpoint(role:FirmRole){
  const raw=process.env.ASSURANCE_FIRM_TOOLS_URL;if(!raw)throw Error('ASSURANCE_FIRM_TOOLS_URL_REQUIRED');
@@ -29,9 +38,9 @@ const mandates:Record<FirmRole,string>={
 };
 export function firmAgentDeclarations():(AgentDecl&{harness:'pi'|'vetta'})[]{
  const amount=firmBudget(),budget={cap_micro_usd:amount,max_task_micro_usd:amount,period:'month' as const};
- return firmRoles.map(role=>({name:firmAgentName(role),role,harness:firmHarness(),description:`Assurance permanent ${role} role`,model:process.env.ASSURANCE_FIRM_MODEL??'openai/gpt-5.4-mini',budget,window:firmWindow(),identity:firmAgentName(role),skills:['assurance-firm-operations'],system:`${common}\n${mandates[role]}`,metadata:{assurance_firm_role:role},mcp_servers:[{name:'firm',url:firmEndpoint(role)}],tools:{default_config:{permission:'deny' as const},configs:Object.fromEntries([['board_write',{enabled:false,permission:'deny' as const}],...firmTools[role].map(name=>[`firm.${name}`,{enabled:true,permission:'allow' as const}]),...(role==='ceo'?['send_to_agent','wait_for_agents'].map(name=>[name,{enabled:true,permission:'allow' as const}]):[]),...(role==='growth'||role==='knowledge'?['web_search','web_fetch'].map(name=>[name,{enabled:true,permission:'allow' as const}]):[])])},handoffs:role==='ceo'?firmRoles.filter(r=>r!=='ceo').map(firmAgentName):false,
+ return firmRoles.map(role=>({name:firmAgentName(role),role,harness:firmHarness(),description:`Assurance permanent ${role} role`,model:process.env.ASSURANCE_FIRM_MODEL??'openai/gpt-5.4-mini',budget,window:firmWindow(),identity:firmAgentName(role),skills:['assurance-firm-operations'],system:`${common}\n${mandates[role]}`,metadata:{assurance_firm_role:role},mcp_servers:[{name:'firm',url:firmEndpoint(role)}],tools:{default_config:{permission:'deny' as const},configs:Object.fromEntries([['board_write',{enabled:false,permission:'deny' as const}],...firmTools[role].map(name=>[`firm.${name}`,{enabled:true,permission:'allow' as const}]),...firmNativeTools[role].map(name=>[name,{enabled:true,permission:'allow' as const}])])},handoffs:role==='ceo'?firmRoles.filter(r=>r!=='ceo').map(firmAgentName):false,
  ...(role==='ceo'?{multiagent:{type:'coordinator' as const,board:true,agents:firmRoles.filter(r=>r!=='ceo').map(r=>({type:'agent' as const,name:firmAgentName(r)}))}}:{}),
- ...(['ceo','growth','knowledge'].includes(role)?{schedules:[{cron:role==='ceo'?'*/15 * * * *':role==='knowledge'?'17 */4 * * *':'43 */6 * * *',timezone:'UTC',input:`Run the Assurance ${role} operating cycle. Read firm_status and the existing board/playbook first. Perform only useful incremental work, persist evidence and next steps, and finish this turn when there is nothing actionable.`,summary:`Assurance ${role} operating cycle`,budget_micro_usd:amount,identity:firmAgentName(role),enabled:process.env.ASSURANCE_FIRM_SCHEDULES_ENABLED!=='false'}]}:{}),
+ ...(['ceo','growth','knowledge'].includes(role)?{schedules:[{cron:role==='ceo'?'*/15 * * * *':role==='knowledge'?'17 */4 * * *':'43 */6 * * *',timezone:'UTC',input:`Run the Assurance ${role} operating cycle. Read firm_status and the existing board/playbook first. Perform only useful incremental work, persist evidence and next steps, and finish this turn when there is nothing actionable.`,summary:`Assurance ${role} operating cycle`,budget_micro_usd:amount,identity:firmAgentName(role),enabled:true}]}:{}),
  }));
 }
 // Declarative vault values can reference an env name, not a JSON property. Derive only in process memory.

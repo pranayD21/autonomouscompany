@@ -3,7 +3,7 @@ import {and,eq,sql} from 'drizzle-orm';
 import type {NodePgDatabase} from 'drizzle-orm/node-postgres';
 import {firmEvents,firmOperations,firmRecords} from './schema';
 import {firmEnabled} from './firm-events';
-import {firmRoles,firmTools,firmBudget,firmWindow,type FirmRole} from './firm-blueprint';
+import {firmRoles,firmTools,firmNativeTools,firmBudget,firmWindow,type FirmRole} from './firm-blueprint';
 import {firmNaive,firmRegistry,resumeInterruptedHires} from './firm-service';
 import {firmToolSchemas} from './firm-tools';
 import {isNaiveAdmissionRejected,isNaiveCapacityError,naiveRetryAt} from './naive-retry';
@@ -24,6 +24,7 @@ export async function approveFirmPending(db:NodePgDatabase,role:FirmRole,session
  const pending=remote.pending_actions;if(!Array.isArray(pending)||!pending.length)return {state:'unsupported'};
  for(const action of pending){
   if(action.kind==='tool'&&action.name==='board_write'&&Number.isSafeInteger(action.parked_seq)&&action.parked_seq>=0&&typeof action.tool_call_id==='string')continue;
+  if(action.kind==='tool'&&firmNativeTools[role].includes(action.name)&&Number.isSafeInteger(action.parked_seq)&&action.parked_seq>=0&&typeof action.tool_call_id==='string')continue;
   const name=typeof action.name==='string'&&action.name.startsWith('firm.')?action.name.slice(5):'';
   const schema=firmToolSchemas[name as keyof typeof firmToolSchemas];
   if(action.kind!=='tool'||!Number.isSafeInteger(action.parked_seq)||action.parked_seq<0||typeof action.tool_call_id!=='string'||!firmTools[role].includes(name)||!schema?.safeParse(action.args).success)return {state:'unsupported'};
@@ -118,16 +119,20 @@ export async function advanceFirmEvent(db:NodePgDatabase,event:typeof firmEvents
 export async function discoverScheduledApprovals(db:NodePgDatabase,provider:FirmProvider){
  const key='firm-approval-discovery';
  const [saved]=await db.select().from(firmRecords).where(eq(firmRecords.key,key));
- const index=Number(saved?.payload.index??0)%firmRoles.length,role=firmRoles[index],registry=firmRegistry()[role];
- if(!registry?.agent_id)return {checked:0};
- const cursor=typeof saved?.payload.cursor==='string'?saved.payload.cursor:null;
- const page=await provider.request('GET',`/v1/sessions?agent_id=${encodeURIComponent(registry.agent_id)}&status=idle&stop_reason=awaiting_approval&limit=20${cursor?`&after=${encodeURIComponent(cursor)}`:''}`);
- if(!Array.isArray(page.data))throw Error('INVALID_FIRM_SESSION_PAGE');
+ const cursors:Record<string,string>={...(saved?.payload.cursors as Record<string,string>|undefined)};
  let checked=0;
- for(const session of page.data){if(!binding(role,session))continue;const result=await approveFirmPending(db,role,session.id,provider);checked++;
-  if(!['confirmed','not_pending'].includes(result.state))await db.insert(firmRecords).values({key:`firm-session-blocked:${session.id}`,kind:'session_intervention',actor:role,payload:{session_id:session.id,reason:result.state}}).onConflictDoNothing();
+ // Every role on every tick: a scheduled run parked on approval makes Naïve skip that schedule's next fires.
+ for(const role of firmRoles){
+  const registry=firmRegistry()[role];if(!registry?.agent_id)continue;
+  const cursor=cursors[role]??null;
+  const page=await provider.request('GET',`/v1/sessions?agent_id=${encodeURIComponent(registry.agent_id)}&status=idle&stop_reason=awaiting_approval&limit=20${cursor?`&after=${encodeURIComponent(cursor)}`:''}`);
+  if(!Array.isArray(page.data))throw Error('INVALID_FIRM_SESSION_PAGE');
+  for(const session of page.data){if(!binding(role,session))continue;const result=await approveFirmPending(db,role,session.id,provider);checked++;
+   if(!['confirmed','not_pending'].includes(result.state))await db.insert(firmRecords).values({key:`firm-session-blocked:${session.id}`,kind:'session_intervention',actor:role,payload:{session_id:session.id,reason:result.state}}).onConflictDoNothing();
+  }
+  if(page.has_more&&typeof page.next_cursor==='string'&&page.next_cursor!==cursor)cursors[role]=page.next_cursor;else delete cursors[role];
  }
- const payload=page.has_more&&typeof page.next_cursor==='string'&&page.next_cursor!==cursor?{index,cursor:page.next_cursor}:{index:(index+1)%firmRoles.length,cursor:null};
+ const payload={cursors};
  await db.insert(firmRecords).values({key,kind:'scheduler_cursor',actor:'system',payload}).onConflictDoUpdate({target:firmRecords.key,set:{payload,updated_at:new Date()}});return {checked};
 }
 export async function pollFirmEvents(db:NodePgDatabase,provider:FirmProvider=defaults,options:{maxEvents?:number}={}){

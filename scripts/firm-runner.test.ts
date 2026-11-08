@@ -5,7 +5,7 @@ import {Pool} from 'pg';
 import {drizzle} from 'drizzle-orm/node-postgres';
 import {migrate} from 'drizzle-orm/node-postgres/migrator';
 import {approveFirmPending,firmBusinessResult,advanceFirmEvent,discoverScheduledApprovals,pollFirmEvents,type FirmProvider} from '../backend/firm-runner';
-import {firmRoles} from '../backend/firm-blueprint';
+import {firmRoles,firmAgentDeclarations,firmWindow} from '../backend/firm-blueprint';
 if(!process.env.OUTREACH_TEST_DATABASE_URL)throw Error('Disposable DB required');
 const pool=new Pool({connectionString:process.env.OUTREACH_TEST_DATABASE_URL.replace('sslmode=require','sslmode=verify-full')}),db=drizzle(pool),events:string[]=[],sessions:string[]=[];
 const registry=Object.fromEntries(firmRoles.map(role=>[role,{agent_id:`agt_fixture_${role}`,identity_id:`idn_fixture_${role}`,version:1}]));
@@ -37,6 +37,26 @@ test('scheduled role sessions are discovered and receive scoped approval',async(
  const f=fixture();await pool.query("DELETE FROM advocacy_firm_records WHERE key='firm-approval-discovery'");let confirmations=0;
  const provider:FirmProvider={request:async(method,path)=>{if(path.includes('?'))return {data:[f.remote],has_more:false};if(method==='POST')confirmations++;return f.remote;}};
  assert.equal((await discoverScheduledApprovals(db,provider)).checked,1);assert.equal(confirmations,1);
+});
+
+test('a role gets approval for its own built-ins but not for other built-ins',async()=>{
+ const pending=(name:string,role:'growth'|'frontdesk')=>{const f=fixture(),action={...f.action,name,args:{url:'https://example.com'}},remote={...f.remote,agent_id:registry[role].agent_id,identity_id:registry[role].identity_id,pending_actions:[action]};let confirmations=0;return {id:f.id,provider:{request:async(method:string)=>{if(method==='POST')confirmations++;return remote;}} as FirmProvider,confirmations:()=>confirmations};};
+ const allowed=pending('web_fetch','growth');assert.equal((await approveFirmPending(db,'growth',allowed.id,allowed.provider)).state,'confirmed');assert.equal(allowed.confirmations(),1);
+ const otherRole=pending('web_fetch','frontdesk');assert.equal((await approveFirmPending(db,'frontdesk',otherRole.id,otherRole.provider)).state,'unsupported');assert.equal(otherRole.confirmations(),0);
+ const undeclared=pending('bash','growth');assert.equal((await approveFirmPending(db,'growth',undeclared.id,undeclared.provider)).state,'unsupported');assert.equal(undeclared.confirmations(),0);
+});
+
+test('one approval pass reaches parked sessions in every role',async()=>{
+ await pool.query("DELETE FROM advocacy_firm_records WHERE key='firm-approval-discovery'");
+ const remotes=Object.fromEntries((['ceo','growth','knowledge'] as const).map(role=>{const f=fixture();return [role,{...f.remote,agent_id:registry[role].agent_id,identity_id:registry[role].identity_id}];}));let confirmations=0;
+ const provider:FirmProvider={request:async(method,path)=>{if(path.includes('?'))return {data:Object.values(remotes).filter(r=>path.includes(encodeURIComponent(r.agent_id))),has_more:false};if(method==='POST'){confirmations++;return {};}return Object.values(remotes).find(r=>path.includes(r.id))!;}};
+ assert.equal((await discoverScheduledApprovals(db,provider)).checked,3);assert.equal(confirmations,3);
+});
+
+test('schedules are always declared enabled and default to a window the model accepts',()=>{
+ process.env.ASSURANCE_FIRM_TOOLS_URL='https://firm.example.com';process.env.ASSURANCE_FIRM_SCHEDULES_ENABLED='false';delete process.env.ASSURANCE_FIRM_WINDOW;
+ const schedules=firmAgentDeclarations().flatMap(agent=>agent.schedules??[]);
+ assert.equal(schedules.length,3);assert.ok(schedules.every(schedule=>schedule.enabled));assert.equal(firmWindow(),'immediate');
 });
 
 test('queued firm work is not starved by an older running event due for polling',async()=>{

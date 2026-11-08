@@ -1281,3 +1281,11 @@ Fixed four failing suites through test setup only, with no product code change: 
 The owner reported that a Naïve GTM agent got Assurance's first user through Reddit. Recorded this in the README, `docs/product.md`, `docs/firm-blueprint.md`, and `docs/verification.md`. The owner states that older repository files predate this; no outreach record is stored in the repository.
 
 Verification: `tsc --noEmit` passed, and `npm test` passed all 65 files on a fresh throwaway Postgres with no private environment. The CI workflow has not yet run on GitHub.
+
+## 2026-11-08 — Enable company schedules and keep them from stalling
+
+The user asked for all company schedules to run. `ASSURANCE_FIRM_SCHEDULES_ENABLED` is removed, so the CEO, Growth, and Knowledge schedules are always declared enabled and a leftover private `false` cannot keep them off. Enabling them alone would not have held: Naïve skips a schedule's next fire while its last run waits for approval, and the runner approved only `firm.*` tools, so a parked `web_fetch` or `send_to_agent` would have stopped that schedule. Each role's declared built-ins are now approved, every role is checked on each scheduler tick rather than one per tick, and the window default is `immediate` because Naïve rejected `loose`.
+
+These take effect on production only after the firm Function is deployed and `scripts/configure-assurance-firm.ts --apply` runs.
+
+Verification: `tsc --noEmit` and `scripts/firm-runner.test.ts` (16/16) on a throwaway Postgres with a mocked provider. No provider or production change was made.

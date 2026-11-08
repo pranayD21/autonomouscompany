@@ -17,7 +17,7 @@ export default defineConfig({
       ASSURANCE_FIRM_TOKENS:{value:process.env.ASSURANCE_FIRM_TOKENS,required:false,onUndefined:"skip"},
       ASSURANCE_FIRM_REGISTRY:process.env.ASSURANCE_FIRM_REGISTRY??"{}",
       ASSURANCE_FIRM_BOARD_ID:process.env.ASSURANCE_FIRM_BOARD_ID??"",
-      ASSURANCE_FIRM_WINDOW:process.env.ASSURANCE_FIRM_WINDOW??"loose",
+      ASSURANCE_FIRM_WINDOW:process.env.ASSURANCE_FIRM_WINDOW??"immediate",
       ASSURANCE_FIRM_HARNESS:process.env.ASSURANCE_FIRM_HARNESS??"vetta",
       ASSURANCE_FIRM_MODEL:process.env.ASSURANCE_FIRM_MODEL??"openai/gpt-5.4-mini",
       ASSURANCE_FIRM_BUDGET_MICRO_USD:process.env.ASSURANCE_FIRM_BUDGET_MICRO_USD??"",
