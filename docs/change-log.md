@@ -273,3 +273,13 @@ Diagnosed cached NXDOMAIN in the local Tailscale resolver while multiple public 
 ## Direct public fallback restored
 
 After another computer reported NXDOMAIN, removed the old Vercel hostname’s redirect and connected it directly to Production. Verified HTTPS 200 and Vercel valid configuration. No app code or credentials changed. assurance.claims remains configured and publicly resolvable on checked resolvers; the affected computer may need DNS cache expiry or a working resolver.
+
+## Frontend deployed and expanded autonomy proposal received
+
+Deployed the provider-neutral call confirmation to Vercel production and passed hosted E2E. Revoked both temporary deployment tokens. Saved the user’s full autonomy proposal and linked it from the documentation index. The user explicitly superseded its shared-file coordination requirement: this agent owns all implementation. Existing standing email-test limits remain intact while the expanded architecture is built. No budget increase, call, or Twilio purchase occurred.
+
+## Case tool foundation
+
+Added a separate Streamable HTTP MCP Function, case-scoped hash-only expiring credentials, owner/operator issuance and revocation routes, case_get, and idempotent sourced-statement recording. Migration 0013 passed on the disposable branch. Four protocol tests, two database tests, and build passed. Sending, calling, persistent sessions, research tools, outcomes, and checkout remain next work; this foundation does not expand the existing own-inbox test authorization.
+
+The case-tool foundation was migrated and deployed to production. Live MCP initialization/discovery, own-case read, idempotent statement write, missing/revoked credential denial, and cross-case denial passed. Temporary synthetic fixtures were cleaned up. Naïve tool execution and external actions are not yet part of this verification.

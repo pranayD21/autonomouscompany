@@ -11,6 +11,7 @@ export default defineConfig({
   auth: true,
   aiGateway: true,
   functions: {
+    tools: { name: "Assurance case tools", source: "./backend/case-tools-worker.ts", env: { CREW_ALLOWED_USER_IDS: process.env.CREW_ALLOWED_USER_IDS ?? "" } },
     autopoll: {
       name: "Assurance autonomous case worker",
       source: "./backend/autonomy-worker.ts",

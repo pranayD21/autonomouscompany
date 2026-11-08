@@ -32,3 +32,7 @@ Every repository change must update the relevant documentation in the same chang
 - [ElevenLabs/Twilio voice](voice-twilio.md): AgentPhone replacement, account setup, call controls, and verification limits.
 
 - [Naïve case autonomy](autonomy.md): standing authorization, durable decisions, stop controls, and synthetic test limits.
+
+- [Expanded autonomy proposal](autonomy-plan.md): user-supplied target architecture; proposal statements are not proof of implementation. The user superseded its coordination instruction and assigned all files to this agent.
+
+- [Case tool server](agent-tools.md): MCP transport, case credentials, sourced statements, and verification.

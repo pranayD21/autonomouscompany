@@ -10,8 +10,9 @@ import { createRealtime, rawSql } from "@neon/realtime/server";
 import { neon } from "@neon/ai-sdk-provider";
 import { generateText } from "ai";
 import { z } from "zod";
-import { cases, crewRuns, outreachActions, caseReplies, replyMonitors, documents, documentExtractions, caseAuthorities, type BillCase } from "./schema";
+import { cases, crewRuns, outreachActions, caseReplies, replyMonitors, documents, documentExtractions, caseAuthorities, caseToolCredentials, type BillCase } from "./schema";
 import {authorizeCase,revokeCaseAuthority,readCaseAutonomy} from "./autonomy-service";
+import {issueCaseToolCredential} from "./case-tool-auth";
 import {setReplyMonitoring} from "./reply-monitor";
 
 import { crewConfiguration, naiveClient, startCrew, repairCrew } from "./providers/naive";
@@ -96,6 +97,16 @@ app.delete("/cases/:id", async (c) => {
 
 // Access is limited to operator-listed test users until spending and patient authorization flows exist.
 const crewAllowed = (userId: string) => (process.env.CREW_ALLOWED_USER_IDS ?? "").split(",").includes(userId);
+app.post("/cases/:id/agent-credentials",async c=>{
+ if(!await ownedCase(c.req.param("id"),c.get("userId")))return c.json({error:"Case not found."},404);
+ if(!crewAllowed(c.get("userId")))return c.json({error:"Agent tools are limited to configured operators."},403);
+ return c.json(await issueCaseToolCredential(db,c.req.param("id"),c.get("userId")),201);
+});
+app.post("/cases/:id/agent-credentials/:credentialId/revoke",async c=>{
+ if(!await ownedCase(c.req.param("id"),c.get("userId"))||!z.uuid().safeParse(c.req.param("credentialId")).success)return c.json({error:"Credential not found."},404);
+ const [saved]=await db.update(caseToolCredentials).set({revoked_at:new Date()}).where(and(eq(caseToolCredentials.id,c.req.param("credentialId")),eq(caseToolCredentials.case_id,c.req.param("id")),eq(caseToolCredentials.issued_by,c.get("userId")))).returning({id:caseToolCredentials.id});
+ return saved?c.json(saved):c.json({error:"Credential not found."},404);
+});
 app.get("/cases/:id/autonomy",async c=>{
  if(!await ownedCase(c.req.param("id"),c.get("userId")))return c.json({error:"Case not found."},404);
  return c.json(await readCaseAutonomy(db,c.req.param("id"),c.get("userId")));

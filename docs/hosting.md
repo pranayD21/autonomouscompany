@@ -58,3 +58,7 @@ Verified the file has two proper nameserver lines, normal system resolution retu
 ## Public fallback while new-domain DNS caches expire
 
 A second computer reported DNS_PROBE_FINISHED_NXDOMAIN. Cloudflare and Google still returned the correct apex A record; Quad9 returned the Porkbun delegation, and no conflicting DS record was present. Restored assurance-claims.vercel.app as a Production domain instead of redirecting it to assurance.claims. Vercel reports both as Valid Configuration / Production; unauthenticated HTTPS on the fallback returns 200. Existing Auth/CORS/Realtime origins already allow this hostname. The apex stays canonical, and www continues to redirect to it. The second computer’s resolver remains uninspected; negative caching is a diagnosis supported by public checks, not proof that its local problem is fixed.
+
+## Provider-neutral frontend deployed
+
+Deployment dpl_HRzhB97ZCHSVepdi4maaJQQjFtyQ is Ready on production. The upload dry run excluded env files, local Neon/Vercel metadata, and test artifacts. Hosted E2E passed normal-domain signup/sign-in, case persistence, realtime, isolation, autonomy authorization denial for unlisted users, and sign-out. Gateway inference remains unavailable. Both temporary deployment access tokens were revoked in Vercel and their rows disappeared. GitHub automatic deployment remains unconnected.

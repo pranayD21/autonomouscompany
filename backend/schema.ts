@@ -156,3 +156,23 @@ export const replyMonitors=pgTable("advocacy_reply_monitors",{
  error_code:text("error_code"),
 },t=>[index("advocacy_reply_monitor_due_idx").on(t.enabled,t.next_check_at)]);
 export type ReplyMonitor=typeof replyMonitors.$inferSelect;
+
+export const caseToolCredentials=pgTable("advocacy_case_tool_credentials",{
+ id:uuid("id").primaryKey().defaultRandom(),
+ case_id:uuid("case_id").notNull().references(()=>cases.id,{onDelete:"cascade"}),
+ token_hash:text("token_hash").notNull(),
+ issued_by:text("issued_by").notNull(),
+ created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
+ expires_at:timestamp("expires_at",{withTimezone:true}).notNull(),
+ revoked_at:timestamp("revoked_at",{withTimezone:true}),
+},t=>[uniqueIndex("advocacy_tool_token_hash_idx").on(t.token_hash)]);
+
+export const caseAgentFacts=pgTable("advocacy_case_agent_facts",{
+ id:uuid("id").primaryKey().defaultRandom(),
+ case_id:uuid("case_id").notNull().references(()=>cases.id,{onDelete:"cascade"}),
+ credential_id:uuid("credential_id").notNull().references(()=>caseToolCredentials.id,{onDelete:"restrict"}),
+ operation_id:uuid("operation_id").notNull(),
+ statement:text("statement").notNull(),
+ source_ref:text("source_ref").notNull(),
+ created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
+},t=>[uniqueIndex("advocacy_fact_operation_idx").on(t.case_id,t.operation_id)]);
