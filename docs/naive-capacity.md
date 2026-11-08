@@ -41,3 +41,5 @@ The session scheduler retries a local admission rejection up to three more times
 A session request Naïve rejects, or one that fails without a capacity signal, retries after one minute with the same session and event identity. The saved reason includes Naïve's status, code, and message.
 
 An advocate session stays idle until every action in a pending batch is confirmed. The session scheduler now confirms the whole visible batch in one pass, rechecking the session before each confirmation, instead of one action per pass.
+
+The session scheduler now runs a 50-second loop in each cron run, with working sessions due about every 3 seconds, idle sessions every 45 seconds, and a 3-minute claim lease. All provider requests still pass through the shared governor, so this raises read volume but not concurrency.

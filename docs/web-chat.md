@@ -10,6 +10,12 @@ Migration `0026_unknown_la_nuit.sql` adds `advocacy_case_messages`, defined in `
 
 A message can resume the same paused v2 agent when its existing permission is valid and no uncertain communication or active lease blocks continuation. An answer is retained even when continuation is blocked. Stopped/revoked cases retain new messages without restarting work or creating new permission. Third-party sources cannot write owner messages through this authenticated API.
 
+## How a message reaches the advocate
+
+Saving an owner message queues a `claimant_updated_case` event carrying the text and makes a running or idle advocate due immediately. `backend/case-agent-session.ts` delivers it as the owner's words, marked as an authenticated message within the case scope, and tells the advocate to answer with `message_customer` and not to repeat a question the owner could not answer. Other incoming events, such as insurer email, stay labelled as untrusted information. When a chat message also resumed a paused run, its paired `owner_resumed` event is marked delivered without a second send, so the owner gets one reply.
+
+An event is delivered once the session has finished its current turn. Naïve parks a session for confirmation between tool calls, so the scheduler (`pollCaseAgentSessions` in `backend/autonomy-worker.ts`) stays in a 50-second loop within each one-minute cron run. It checks working sessions about every 3 seconds and confirms approvals within seconds. Replies should arrive in about a minute instead of tens of minutes; a case whose advocate has been stopped or was never hired still saves messages without a reply.
+
 ## Agent messages
 
 `postAgentCaseMessage` saves a website message under an authority-bound case credential. It requires the correct owner/case/credential, an active or waiting v2 authority, and an operation UUID. Identical retries return the saved message; conflicting retries are rejected. It does not send an external communication or increment evidence revision, avoiding self-wake loops.

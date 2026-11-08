@@ -60,7 +60,7 @@ export async function fundedConnectorVersion(agentId:string,authorityId:string,a
 // Finishing a hire Front Desk already started is mechanical. The model reads `hiring` as done, so the scheduler completes it.
 export async function resumeInterruptedHires(db:NodePgDatabase){
  const due=await db.execute(sql`SELECT f.case_id,f.authority_id FROM advocacy_firm_staffing f JOIN advocacy_case_authorities a ON a.id=f.authority_id
-  WHERE f.state='hiring' AND f.agent_id IS NOT NULL AND f.updated_at<now()-interval '2 minutes' AND a.state IN ('active','waiting')
+  WHERE f.state='hiring' AND (f.agent_id IS NOT NULL AND f.updated_at<now()-interval '2 minutes' OR f.agent_id IS NULL AND f.updated_at<now()-interval '5 minutes') AND a.state IN ('active','waiting')
   AND NOT EXISTS (SELECT 1 FROM advocacy_firm_records r WHERE r.key='advocate-provision:'||f.authority_id::text) ORDER BY f.updated_at LIMIT 1`);
  const row=due.rows[0] as {case_id:string;authority_id:string}|undefined;if(!row)return {resumed:0};
  // Spaces out retries of a failing step and keeps the retry operation distinct.

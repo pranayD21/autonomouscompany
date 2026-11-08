@@ -19,8 +19,9 @@ app.post("/poll",async c=>{
  const direct=await pollDirectCaseRuns(drizzle(pool));
  const setups=await pollCaseAgentSetups(drizzle(pool));
  const calls=await pollCallEvidence(drizzle(pool));
- const sessions=await pollCaseAgentSessions(drizzle(pool));
- const result={...await pollAutonomousCases(drizzle(pool)),calls,sessions,setups,direct};console.log("Case autonomy",JSON.stringify({invocationId:parsed.invocation.invocationId,...result}));return c.json(result);
+ const autonomous=await pollAutonomousCases(drizzle(pool));
+ const sessions=await pollCaseAgentSessions(drizzle(pool),undefined,{sliceMs:50000});
+ const result={...autonomous,calls,sessions,setups,direct};console.log("Case autonomy",JSON.stringify({invocationId:parsed.invocation.invocationId,...result}));return c.json(result);
 });
 app.onError(()=>Response.json({error:"Autonomous case checks temporarily unavailable."},{status:503}));
 export default app;
