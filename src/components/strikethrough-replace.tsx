@@ -6,22 +6,35 @@ export interface StrikethroughReplaceProps {
   lineColor?: string;
   speed?: number;
   className?: string;
+  /** Selector for content below the word: the struck word slides behind it and fades out before reaching it. */
+  fadeBelow?: string;
 }
 
-type Settle = { fromW: number; toW: number; dx: number; dy: number; inDy: number };
+type Settle = { fromW: number; toW: number; dx: number; dy: number; inDy: number; fadeStart: number; fadeEnd: number };
 
-// Scale of the struck word once it drops below, and its approximate ink height
-// (dot of the "i" to baseline) in em, used to tuck it just under the baseline.
-const FROM_SCALE = 0.3;
-const FROM_INK = 0.74;
 // Extra room after the settled word: the script "s" tail runs past its advance.
-const TO_GAP = 0.08;
+const TO_GAP = 0.11;
+// Gap between the settled word's baseline and the top of the dropped word's ink, in em.
+const FROM_DROP_GAP = 0.06;
+// Horizontal padding on the struck word (cancelled by negative margin in CSS) so
+// its fade mask also covers the strike line, which overhangs the letters.
+const FROM_PAD = 0.12;
+
+// Ink extent above (asc) and below (desc) the baseline for `text` in `el`'s font, in px.
+function inkBox(el: Element, text: string) {
+  const s = getComputedStyle(el);
+  const ctx = document.createElement("canvas").getContext("2d");
+  if (!ctx) return null;
+  ctx.font = `${s.fontStyle} ${s.fontWeight} ${s.fontSize} ${s.fontFamily}`;
+  const m = ctx.measureText(text);
+  return { asc: m.actualBoundingBoxAscent, desc: m.actualBoundingBoxDescent };
+}
 
 // Phase 1 (CSS): strike through `from` and write `to` above it.
-// Phase 2 (settle): `to` drops onto the baseline in place of `from`, and the
-// struck `from` slides down below the word. Offsets are measured in em so the
-// settled layout survives the wordmark's viewport-based font size changing.
-export function StrikethroughReplace({ from, to, lineColor = "currentColor", speed = 1, className = "" }: StrikethroughReplaceProps) {
+// Phase 2 (settle): `to` drops into line, vertically centred on the rest of the
+// word, and the struck `from` slides down behind the content below, fading out
+// before it reaches it. Offsets are in em so they follow the viewport-based font size.
+export function StrikethroughReplace({ from, to, lineColor = "currentColor", speed = 1, className = "", fadeBelow }: StrikethroughReplaceProps) {
   const durationMs = 1400 / Math.max(0.01, speed);
   const root = useRef<HTMLSpanElement>(null);
   const fromEl = useRef<HTMLSpanElement>(null);
@@ -40,8 +53,23 @@ export function StrikethroughReplace({ from, to, lineColor = "currentColor", spe
       // offsetTop/offsetLeft ignore transforms, so these are the untransformed positions.
       const fromBaseline = f.offsetTop + fb.offsetTop;
       const toBaseline = t.offsetTop + tb.offsetTop;
-      const base = fb.offsetTop / em;
-      setGeo({ fromW: f.offsetWidth / em, toW: tb.offsetLeft / em + TO_GAP, dx: -t.offsetLeft / em, dy: (fromBaseline - toBaseline) / em, inDy: base + 0.06 - FROM_SCALE * (base - FROM_INK) });
+      // Centre the replacement's ink on the rest of the word's x-height band.
+      const rest = r.nextElementSibling, restInk = rest && inkBox(rest, rest.textContent || "x"), toInk = inkBox(t, to);
+      const centring = restInk && toInk ? ((toInk.asc - toInk.desc) - (restInk.asc - restInk.desc)) / 2 : 0;
+      const fromInk = inkBox(f, from);
+      const base = fb.offsetTop;
+      const inDy = (fromInk?.asc ?? 0.74 * em) + FROM_DROP_GAP * em;
+      // Fade the dropped word from just under the baseline to fully gone at the content below.
+      const below = fadeBelow ? document.querySelector(fadeBelow) : null;
+      const rootTop = r.getBoundingClientRect().top;
+      const belowGap = below ? below.getBoundingClientRect().top - (rootTop + fromBaseline) : 0.45 * em;
+      setGeo({
+        fromW: f.offsetWidth / em - FROM_PAD * 2, toW: tb.offsetLeft / em + TO_GAP, dx: -t.offsetLeft / em,
+        dy: (fromBaseline - toBaseline + centring) / em, inDy: inDy / em,
+        // Mask stops in the struck word's resting box; CSS offsets them by its
+        // current slide so the fade stays fixed on the page while it moves.
+        fadeStart: (base + FROM_DROP_GAP * em) / em, fadeEnd: (base + Math.max(belowGap, 0.2 * em)) / em,
+      });
     };
     measure();
     // Web fonts change both words' metrics after first paint, so re-measure
@@ -49,9 +77,10 @@ export function StrikethroughReplace({ from, to, lineColor = "currentColor", spe
     const ro = new ResizeObserver(measure);
     if (fromEl.current) ro.observe(fromEl.current);
     if (toEl.current) ro.observe(toEl.current);
+    window.addEventListener("resize", measure);
     document.fonts?.ready.then(measure);
-    return () => { cancelled = true; ro.disconnect(); };
-  }, [from, to]);
+    return () => { cancelled = true; ro.disconnect(); window.removeEventListener("resize", measure); };
+  }, [from, to, fadeBelow]);
 
   const measured = geo !== null;
   useEffect(() => {
@@ -64,7 +93,11 @@ export function StrikethroughReplace({ from, to, lineColor = "currentColor", spe
   const styles = {
     "--replace-duration": `${durationMs}ms`,
     "--strike-color": lineColor,
-    ...(geo && { width: `${settled ? geo.toW : geo.fromW}em`, "--settle-dx": `${geo.dx}em`, "--settle-dy": `${geo.dy}em`, "--settle-in-dy": `${geo.inDy}em`, "--settle-in-scale": FROM_SCALE }),
+    ...(geo && {
+      width: `${settled ? geo.toW : geo.fromW}em`,
+      "--settle-dx": `${geo.dx}em`, "--settle-dy": `${geo.dy}em`, "--settle-in-dy": `${geo.inDy}em`,
+      "--fade-start": `${geo.fadeStart}em`, "--fade-end": `${geo.fadeEnd}em`,
+    }),
   } as CSSProperties;
 
   return <span ref={root} className={`strikethrough-replace${settled ? " is-settled" : ""} ${className}`} style={styles}>
