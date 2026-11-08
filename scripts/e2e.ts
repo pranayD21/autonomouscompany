@@ -61,7 +61,7 @@ try {
   expect(stack.outreach.callConfigured).toBe(true);
   expect(stack.outreach.emailConfigured).toBe(true);
   expect(stack.outreach.enabledForUser).toBe(false);
-  console.log("PASS authenticated readiness: AgentPhone and email configured; new signup cannot spend");
+  console.log("PASS authenticated readiness: AgentPhone and email configured; legacy manual outreach remains operator-gated");
   const unauth=await fetch(`${apiBase}/cases`);
   expect(unauth.status).toBe(401);
   const malformed=await fetch(`${apiBase}/cases`,{headers:{Authorization:"Bearer invalid"}});
@@ -118,6 +118,7 @@ try {
   if(await page.getByRole("navigation",{name:"Workspace navigation",exact:true}).count())await page.getByRole("navigation",{name:"Workspace navigation",exact:true}).hover();
   await page.getByRole("button", {name:"Sign out",exact:true}).click();
   await page.getByRole("link",{name:"Open workspace",exact:true}).click({timeout:20000});
+  await emailFallback(page);
   await expect(page.getByRole("button", {name:"Sign in",exact:true})).toBeVisible({timeout:15000});
   console.log("PASS sign-out");
   await page.getByLabel("Email",{exact:true}).fill(email);

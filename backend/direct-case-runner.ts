@@ -148,7 +148,7 @@ export async function advanceDirectCaseRun(db:NodePgDatabase,run:DirectRun,deps:
     run.observed_revision=current.revision;
     const previous=run.messages.at(-2);let unresolved=false;try{unresolved=previous?.role==="tool"&&JSON.parse(previous.content??"{}").isError===true;}catch{}
     if(unresolved){await save(db,run,"human_required",message.content??"A tool rejected the last request. Review and resume to correct it.",null);return;}
-    await save(db,run,current.authorityState==="human_required"?"human_required":"idle",null,null);return;
+    await save(db,run,current.authorityState==="human_required"?"human_required":"idle",message.content,null);return;
    }
    await save(db,run);
   }

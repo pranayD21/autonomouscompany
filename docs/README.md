@@ -57,7 +57,7 @@ Every repository change must update the relevant documentation in the same chang
 
 - [Case activation and status](activation-flow.md): owner-written permission, start/resume/stop controls, engine attribution, and UI verification.
 
-- [Resume handoff](RESUME-HANDOFF.md): current uncommitted integration, exact remaining work, external gates, and validation plan for a new chat.
+- [Resume handoff](RESUME-HANDOFF.md): deployed release, private test journals, and remaining external gates for a new chat.
 
 - [Hosted direct-model agent](hosted-agent.md): scheduler, durable conversation, research/document tools, engine separation, and hosted verification.
 

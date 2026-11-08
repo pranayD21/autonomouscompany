@@ -1,6 +1,6 @@
 # Agent context and repository rules
 
-Last updated: 2026-11-07. This is the shared handoff for the medical billing advocacy product discussed by the founding team. Read this file, then [docs/README.md](docs/README.md), then only the documentation relevant to your task.
+Last updated: 2026-11-08 UTC. This is the shared handoff for the medical billing advocacy product discussed by the founding team. Read this file, then [docs/README.md](docs/README.md), then only the documentation relevant to your task.
 
 ## Mandatory documentation rule
 
@@ -31,7 +31,7 @@ The user says the team has a working product. The local scaffold described in th
 
 ## Phone-first entry direction
 
-The user wants callers to begin by calling Assurance, with accounts tied to verified phone numbers. Document requests and detected problems should text a sign-in-required portal/dashboard link. Existing accounts may link a phone only after proving both identities; caller ID alone never unlocks a case. The additive phone service is implemented behind a disabled flag while individual/no-EIN AgentPhone SMS registration and live verification are completed. Keep registration contact details in ignored private files. The user approved the $25 individual SMS registration; AgentPhone accepted it and reports pending review. Real test calls/texts and inbound routing activation remain unapproved and disabled. See [phone-first accounts](docs/phone-first.md).
+The user wants callers to begin by calling Assurance, with accounts tied to verified phone numbers. Document requests and detected problems should text a sign-in-required portal/dashboard link. Existing accounts may link a phone only after proving both identities; caller ID alone never unlocks a case. Phone login is deployed through Twilio Verify, including one successful consented real SMS sign-in and fictional shared demo accounts. Inbound intake and AgentPhone notification texts remain disabled through PHONE_FLOW_ENABLED=false. Keep registration contact details in ignored private files. The user approved the $25 individual SMS registration; AgentPhone accepted it and reports pending review. No additional real test calls/texts or inbound routing activation are authorized by that registration payment. See [phone-first accounts](docs/phone-first.md).
 
 ## Hackathon context
 
@@ -51,7 +51,7 @@ The event requires the Naïve SDK. Judges emphasize what the company actually ac
 
 ## Current handoff status
 
-The repository now contains the React/Neon case workspace, migrations, provider setup scripts, and Naïve crew configuration. Auth, database, Function, Realtime, and two-user isolation checks pass. Provider accounts and synthetic voice agents are provisioned. Gateway inference remains unavailable with no enabled model. A user-authorized AgentPhone hosted-voice test completed successfully. New calls now use AgentPhone only; Twilio and ElevenLabs are not activation requirements. The app is hosted at https://assurance.claims. A bounded own-inbox autonomous test delivered its first Naïve-selected email; its fictional reply was imported automatically and triggered a second Naïve decision. A premature follow-up exposed a timing issue now covered by server deferral and clearer prompt inputs. A persistent synthetic session also consumed an evidence update in the same session, with two explicit provider approvals. Complete case advocacy is not yet verified. See [implementation status](docs/implementation-status.md) and [stack operations](docs/stack.md) before making readiness claims.
+The hosted direct-agent proof of concept and phone login are deployed at https://assurance.claims. Real scheduler activation, document extraction/confirmation, owner resume, isolation, stop persistence, one delivered fictional email, and one Twilio Verify SMS sign-in passed. The full fictional insurer exchange passed with scripted model responses and fake communications; no real insurer outcome is claimed. Legacy Naïve remains separate and gateway inference remains unavailable. See [implementation status](docs/implementation-status.md) for current evidence and boundaries; older milestone entries are historical.
 
 ## Documentation map
 

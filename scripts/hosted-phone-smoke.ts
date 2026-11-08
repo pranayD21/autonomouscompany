@@ -5,7 +5,7 @@ import {readFileSync,writeFileSync,renameSync,chmodSync,lstatSync,openSync,close
 config({path:'.env.local',quiet:true});
 const site=new URL(process.env.HOSTED_PHONE_SITE_URL??'https://assurance.claims');
 const phoneBase=new URL(process.env.PHONE_AUTH_BASE_URL??'');
-const casesBase=new URL(process.env.VITE_CASES_API_URL??'');
+const casesBase=new URL(process.env.VITE_CASES_API_URL??phoneBase.origin.replace('-phone.compute.','-cases.compute.'));
 const journalPath='test-results/hosted-phone-real.json';
 type Journal={phone:string;send_attempted_at?:string;send_http_status?:number;send_state?:string;verify_attempted_at?:string;verify_http_status?:number;dashboard_verified_at?:string;signed_out_at?:string};
 class CheckFailure extends Error{constructor(readonly code:string){super(code);}}
@@ -18,19 +18,20 @@ async function credentials(sessionToken:string){const session=await phoneRequest
 async function caseRequest(jwt:string,path:string,method='GET',body?:unknown){return fetch(new URL(path,casesBase),{method,headers:{Authorization:`Bearer ${jwt}`,'Content-Type':'application/json',Origin:site.origin},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(30000),redirect:'error'});}
 async function dashboard(page:Page){await expect(page.getByText('Live updates connected',{exact:true})).toBeVisible({timeout:60000});await expect(page.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();}
 async function demoLogin(page:Page,number:string){await page.goto(new URL('/#workspace',site).href);await page.getByRole('button',{name:number,exact:true}).click();await dashboard(page);const token=await page.evaluate(()=>sessionStorage.getItem('assurance-phone-session'));check(token,'DEMO_SESSION_MISSING');return credentials(token);}
+async function signOut(page:Page){const nav=page.getByRole('navigation',{name:'Workspace navigation',exact:true});if(await nav.count())await nav.hover();await page.getByRole('button',{name:'Sign out',exact:true}).click();}
 async function demo(){
  const browser=await chromium.launch({headless:true});const ownerContext=await browser.newContext(),otherContext=await browser.newContext();
  let owned:Awaited<ReturnType<typeof credentials>>|undefined,fixtureId:string|undefined,cleanupFailed=false;
  try{
   const page=await ownerContext.newPage();const initial=await demoLogin(page,'+15555550100');
-  await page.getByRole('button',{name:'Sign out',exact:true}).click();await expect.poll(()=>page.evaluate(()=>sessionStorage.getItem('assurance-phone-session'))).toBeNull();
+  await signOut(page);await expect.poll(()=>page.evaluate(()=>sessionStorage.getItem('assurance-phone-session'))).toBeNull();
   owned=await demoLogin(page,'+15555550100');check(initial.identity===owned.identity,'DEMO_IDENTITY_CHANGED');
   const created=await caseRequest(owned.jwt,'/cases','POST',{title:`Fictional phone smoke ${randomUUID()}`,case_type:'health_insurance',notes:'Made-up hosted phone authentication fixture. No insurer contact or agent activation authorized.'});check(created.status===201,'DEMO_CASE_CREATE_FAILED');fixtureId=(await created.json()).id;check(typeof fixtureId==='string'&&/^[0-9a-f-]{36}$/i.test(fixtureId),'DEMO_CASE_ID_INVALID');
   const mine=await caseRequest(owned.jwt,'/cases');check(mine.ok&&(await mine.json()).some((item:{id:string})=>item.id===fixtureId),'DEMO_OWNER_CASE_MISSING');
   const otherPage=await otherContext.newPage(),other=await demoLogin(otherPage,'+15555550101');check(other.identity!==owned.identity,'DEMO_IDENTITIES_COLLIDE');
   const list=await caseRequest(other.jwt,'/cases');check(list.ok&&!(await list.json()).some((item:{id:string})=>item.id===fixtureId),'DEMO_CASE_LIST_ISOLATION_FAILED');
   const foreign=await caseRequest(other.jwt,`/cases/${fixtureId}/autonomy`);check(foreign.status===404,'DEMO_CASE_DETAIL_ISOLATION_FAILED');
-  await otherPage.getByRole('button',{name:'Sign out',exact:true}).click();
+  await signOut(otherPage);
   console.log('PASS hosted fictional phone sign-in, sign-out/re-sign-in stable identity, live dashboard, and two-account case isolation. No real SMS requested.');
  }finally{
   if(fixtureId&&owned){try{const removed=await caseRequest(owned.jwt,`/cases/${fixtureId}`,'DELETE');cleanupFailed=!removed.ok;}catch{cleanupFailed=true;}}
@@ -69,4 +70,4 @@ async function realVerify(){
 try{
  check(site.protocol==='https:'&&phoneBase.protocol==='https:'&&casesBase.protocol==='https:','HTTPS_REQUIRED');
  const command=process.argv[2];if(command==='demo')await demo();else if(command==='real-send')await realSend();else if(command==='real-verify')await realVerify();else throw new CheckFailure('USE_DEMO_REAL_SEND_OR_REAL_VERIFY');
-}catch(error){console.error(error instanceof CheckFailure?error.code:'HOSTED_PHONE_CHECK_FAILED_DETAILS_SUPPRESSED');process.exitCode=1;}
+}catch(error){console.error(error instanceof CheckFailure?error.code:process.argv[2]==='demo'&&error instanceof Error?error.message.slice(0,1600):'HOSTED_PHONE_CHECK_FAILED_DETAILS_SUPPRESSED');process.exitCode=1;}

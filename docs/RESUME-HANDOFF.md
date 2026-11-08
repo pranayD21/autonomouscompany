@@ -1,5 +1,5 @@
 # Current handoff
 
-The November 8 unfinished-integration handoff has been implemented. Read [implementation-status.md](implementation-status.md), [hosted-agent.md](hosted-agent.md), and [activation-flow.md](activation-flow.md) for current state instead of the earlier uncommitted-file checklist.
+The earlier unfinished hosted-integration and phone-login handoffs have been implemented and deployed. Read [implementation-status.md](implementation-status.md), [hosted-agent.md](hosted-agent.md), [phone-first.md](phone-first.md), and [activation-flow.md](activation-flow.md) for the current implementation and verification evidence.
 
-At the current checkpoint, migrations 0023–0024 and the backend are deployed. Hosted verification is underway; the frontend publication and final checks are still pending. Preserve private hosted smoke state under ignored `test-results/`; never repeat the one-email fixture as a new grant. The previous Naïve rotation fixture is cleaned. SMS registration remains pending and phone entry remains disabled.
+Preserve the private hosted smoke records under ignored `test-results/`; they contain the one-email and one-SMS attempt journals. Both tests have succeeded and must not be repeated as new grants. The live direct-case fixtures are revoked. The previous Naïve rotation fixture is cleaned. AgentPhone SMS registration remains pending; inbound calls and notification texts stay disabled independently of working Twilio Verify phone login.
