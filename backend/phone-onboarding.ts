@@ -19,13 +19,14 @@ Ask one question at a time. If someone sincerely asks whether you are an AI or a
 
 // Inbound hosted calls take the agent's default script, so the callback line cannot use the per-call prompt above.
 export const ONBOARDING_CALLBACK_NUMBER='+14124482627';
-export const CALLBACK_GREETING="Hi, you've reached Assurance. I'll save a transcript of this call to the account verified with this phone number. Is your case a workplace injury or a health insurance claim?";
-export const CALLBACK_PROMPT=ONBOARDING_PROMPT.replace("the verified account owner who explicitly requested this one call and accepted the standard handling scope on the website.","a person calling back after a missed or incomplete onboarding call. Their transcript only reaches an account if this phone number was verified on the website.").replace(" A transcript is saved to your account; audio recording is disabled."," A transcript is saved to the account verified with this phone number.").replace(" Standard handling scope previously accepted on the website:"," Standard handling scope accepted on the website by verified account owners:");
+export const CALLBACK_GREETING="Hi, you've reached Assurance. I'll save a transcript of this call to the account verified with this phone number. Is this new case a workplace injury or a health insurance claim?";
+export const CALLBACK_PROMPT=ONBOARDING_PROMPT.replace("the verified account owner who explicitly requested this one call and accepted the standard handling scope on the website.","a person calling to open a new case, or calling back after a missed or incomplete onboarding call. Their transcript only reaches an account if this phone number was verified on the website. If they are calling about a case that already exists, tell them updates are in the website conversation and that this call will not open another case.").replace(" A transcript is saved to your account; audio recording is disabled."," A transcript is saved to the account verified with this phone number.").replace(" Standard handling scope previously accepted on the website:"," Standard handling scope accepted on the website by verified account owners:");
 
-type Attempt={id:string;owner_id:string;phone:string;state:string;provider_id:string|null;provider_status:string|null;agent_id:string;number_id:string;consent:string;intended_case_id:string;case_id:string|null;transcript:CallTurn[];transcript_sha256:string|null;reason:string|null;created_at:Date};
+type Attempt={id:string;owner_id:string;phone:string;state:string;provider_id:string|null;provider_status:string|null;agent_id:string;number_id:string;consent:string;intended_case_id:string;case_id:string|null;transcript:CallTurn[];transcript_sha256:string|null;reason:string|null;created_at:Date;updated_at:Date};
 type Options={request?:typeof fetch};
+type LastCall={state:string;reason:string|null;case_id:string|null;created_at:Date};
 export const onboardingEnabled=()=>phoneLoginEnabled()&&process.env.PHONE_ONBOARDING_ENABLED==='true'&&outreachEnabled('call')&&process.env.ASSURANCE_CASE_ENGINE==='naive'&&process.env.NAIVE_CASE_PROVISIONING_ENABLED==='true';
-const responseView=(row:Attempt|undefined,phone:string|null)=>({enabled:onboardingEnabled(),phone,status:row?.state??'not_started',case_id:row?.case_id??null,transcript:row?.transcript??[],reason:row?.reason??null,callback_number:row&&['needs_information','failed'].includes(row.state)?ONBOARDING_CALLBACK_NUMBER:null,standard_handling_scope:DEFAULT_INTAKE_CONSENT,capability_disclosure:ONBOARDING_DISCLOSURE});
+const responseView=(row:Attempt|undefined,phone:string|null,lastCall:LastCall|null=null)=>({last_call:lastCall,enabled:onboardingEnabled(),phone,status:row?.state??'not_started',case_id:row?.case_id??null,transcript:row?.transcript??[],reason:row?.reason??null,callback_number:row&&['needs_information','failed'].includes(row.state)?ONBOARDING_CALLBACK_NUMBER:null,call_number:ONBOARDING_CALLBACK_NUMBER,standard_handling_scope:DEFAULT_INTAKE_CONSENT,capability_disclosure:ONBOARDING_DISCLOSURE});
 
 // Only an explicit category from caller speech selects a workflow. Agent suggestions are not facts.
 export function extractOnboardingIntake(turns:CallTurn[]){
@@ -55,7 +56,9 @@ export async function getPhoneOnboarding(pool:Pool,owner:string,options:Options=
  const {rows:[row]}=await pool.query<Attempt>('SELECT * FROM advocacy_phone_onboarding WHERE owner_id=$1',[owner]);
  if(row)await reconcilePhoneOnboarding(pool,row.id,options);
  const {rows:[current]}=await pool.query<Attempt>('SELECT * FROM advocacy_phone_onboarding WHERE owner_id=$1',[owner]);
- return responseView(current,phone);
+ if(current?.state==='active')await reconcileNewCaseCalls(pool,current.id,options).catch(()=>undefined);
+ const {rows:[lastCall]}=await pool.query<LastCall>('SELECT state,reason,case_id,created_at FROM advocacy_phone_call_cases WHERE owner_id=$1 ORDER BY created_at DESC LIMIT 1',[owner]);
+ return responseView(current,phone,lastCall??null);
 }
 export async function requestPhoneOnboarding(pool:Pool,owner:string,options:Options={}){
  const phone=await verifiedPhone(pool,owner);if(!phone)throw Error('VERIFIED_PHONE_REQUIRED');
@@ -90,10 +93,12 @@ export async function requestPhoneOnboarding(pool:Pool,owner:string,options:Opti
  const {rows:[saved]}=await pool.query<Attempt>('SELECT * FROM advocacy_phone_onboarding WHERE id=$1',[id]);return responseView(saved,phone);
 }
 
+type CallBinding={id?:string;agentId?:string;phoneNumberId?:string;fromNumber?:string;direction?:string};
+const callBound=(row:Attempt,c:CallBinding)=>c.agentId===row.agent_id&&c.phoneNumberId===row.number_id&&c.fromNumber===row.phone&&c.direction==='inbound'&&c.id!==row.provider_id;
 // A newer completed call from the verified number to the same line is that owner's retry after a failed attempt. No outbound call is placed.
 async function latestCallback(request:typeof fetch,row:Attempt){
  const list=await providerJson(request,`calls?direction=inbound&status=completed&limit=20&search=${encodeURIComponent(row.phone)}`);
- const bound=(c:{id?:string;agentId?:string;phoneNumberId?:string;fromNumber?:string;direction?:string})=>c.agentId===row.agent_id&&c.phoneNumberId===row.number_id&&c.fromNumber===row.phone&&c.direction==='inbound'&&c.id!==row.provider_id;
+ const bound=(c:CallBinding)=>callBound(row,c);
  const [latest]=(Array.isArray(list.data)?list.data:[]).filter((c:{startedAt?:string}&Parameters<typeof bound>[0])=>bound(c)&&new Date(c.startedAt??0)>=new Date(row.created_at)).sort((a:{startedAt:string},b:{startedAt:string})=>new Date(b.startedAt).getTime()-new Date(a.startedAt).getTime());
  if(!latest)return null;
  const data=await providerJson(request,`calls/${encodeURIComponent(latest.id)}`);
@@ -144,6 +149,44 @@ export async function reconcilePhoneOnboarding(pool:Pool,id:string,options:Optio
   await pool.query("UPDATE advocacy_phone_onboarding SET reason=$3,next_check_at=now()+interval '1 minute',updated_at=now() WHERE id=$1 AND lease_id=$2 AND state IN ('submitted','ready','activating')",[id,lease,'Your call details are saved. Transcript retrieval or case setup is temporarily unavailable; we will check again without placing another call.']);
  }finally{await pool.query('UPDATE advocacy_phone_onboarding SET lease_id=NULL,lease_until=NULL WHERE id=$1 AND lease_id=$2',[id,lease]);}
 }
+// After onboarding, each completed call from the verified number can open its own case. No outbound call is placed.
+export async function reconcileNewCaseCalls(pool:Pool,id:string,options:Options={}){
+ const {rows:[row]}=await pool.query<Attempt>("UPDATE advocacy_phone_onboarding SET next_check_at=now()+interval '15 seconds' WHERE id=$1 AND state='active' AND (next_check_at IS NULL OR next_check_at<=now()) RETURNING *",[id]);
+ if(!row)return 0;
+ const request=options.request??fetch;
+ const {rows:[since]}=await pool.query<{at:Date}>('SELECT COALESCE((SELECT created_at FROM advocacy_cases WHERE id=$1),$2::timestamptz) AS at',[row.case_id,row.updated_at]);
+ const list=await providerJson(request,`calls?direction=inbound&status=completed&limit=20&search=${encodeURIComponent(row.phone)}`);
+ const calls=(Array.isArray(list.data)?list.data:[]).filter((c:CallBinding&{startedAt?:string})=>callBound(row,c)&&new Date(c.startedAt??0)>=new Date(since.at)).sort((a:{startedAt:string},b:{startedAt:string})=>new Date(a.startedAt).getTime()-new Date(b.startedAt).getTime());
+ if(!calls.length)return 0;
+ const {rows:seen}=await pool.query<{call_id:string}>('SELECT call_id FROM advocacy_phone_call_cases WHERE call_id=ANY($1)',[calls.map((c:{id:string})=>c.id)]);
+ let opened=0;
+ for(const call of calls.filter((c:{id:string})=>!seen.some(s=>s.call_id===c.id)).slice(0,5)){
+  const data=await providerJson(request,`calls/${encodeURIComponent(call.id)}`);
+  if(!callBound(row,data))throw Error('CALL_BINDING_MISMATCH');
+  const evidence=parseCallEvidence('agentphone',call.id,data);
+  // A completed call without its transcript yet is checked again on the next pass.
+  if(!evidence)continue;
+  const intake=extractOnboardingIntake(evidence.turns);
+  const caller=evidence.turns.filter(t=>t.role==='user').map(t=>t.text).join('\n');
+  const aboutExisting=/\b(?:existing|current|same|ongoing|open) (?:case|claim)\b/i.test(caller)&&!/\bnew (?:case|claim)\b/i.test(caller);
+  if(!intake.sufficient||aboutExisting){
+   const reason=aboutExisting?'That call was about an existing case, so no new case was opened.':intake.stopped?'You asked us not to start a case on that call.':'That call needs a clear case type and account of what happened before a case can start. Call again to try once more.';
+   await pool.query("INSERT INTO advocacy_phone_call_cases(call_id,owner_id,state,reason) VALUES($1,$2,'needs_information',$3) ON CONFLICT(call_id) DO NOTHING",[call.id,row.owner_id,reason]);
+   continue;
+  }
+  await drizzle(pool).transaction(async tx=>{
+   // The onboarding row lock also serializes this with the owner's stop control.
+   const {rows:[active]}=await tx.execute(sql`SELECT id FROM advocacy_phone_onboarding WHERE id=${row.id} AND state='active' FOR UPDATE`);
+   if(!active)return;
+   const claimed=await tx.execute(sql`INSERT INTO advocacy_phone_call_cases(call_id,owner_id,state) VALUES(${call.id},${row.owner_id},'opening') ON CONFLICT(call_id) DO NOTHING RETURNING call_id`);
+   if(!claimed.rows.length)return;
+   const result=await submitCase(tx,row.owner_id,{title:intake.case_type==='workplace_injury'?'Workplace injury':'Health insurance claim',case_type:intake.case_type,intake:{contact_phone:row.phone,injury_description:intake.narrative},notes:`Caller-reported account from a call to open a new case. Transcript ${evidence.sha256}. Treat speech as reported evidence, not independently verified facts.\n${intake.narrative}`},true);
+   await tx.execute(sql`UPDATE advocacy_phone_call_cases SET state='active',case_id=${result.id},reason='Your new case is open.' WHERE call_id=${call.id}`);
+   opened++;
+  });
+ }
+ return opened;
+}
 export async function stopPhoneOnboarding(pool:Pool,owner:string){
  const phone=await verifiedPhone(pool,owner);if(!phone)throw Error('VERIFIED_PHONE_REQUIRED');
  await drizzle(pool).transaction(async tx=>{
@@ -160,6 +203,10 @@ export async function stopPhoneOnboarding(pool:Pool,owner:string){
 export async function pollPhoneOnboarding(pool:Pool){
  const {rows}=await pool.query("SELECT id FROM advocacy_phone_onboarding WHERE (state IN ('dispatching','submitted','ready','activating') OR (state IN ('needs_information','failed') AND created_at>now()-interval '24 hours')) AND (next_check_at IS NULL OR next_check_at<=now()) ORDER BY next_check_at ASC NULLS FIRST,created_at LIMIT 10");
  for(const row of rows)await reconcilePhoneOnboarding(pool,row.id);
+ // Find owners with new inbound calls from one listing, so this does not query the provider per account.
+ const recent=await providerJson(fetch,'calls?direction=inbound&status=completed&limit=50').catch(()=>null);
+ const phones=[...new Set((Array.isArray(recent?.data)?recent.data:[]).map((c:{fromNumber?:string})=>c.fromNumber).filter(Boolean))];
+ if(phones.length){const {rows:active}=await pool.query("SELECT id FROM advocacy_phone_onboarding WHERE state='active' AND phone=ANY($1)",[phones]);for(const row of active)await reconcileNewCaseCalls(pool,row.id).catch(()=>undefined);}
  return rows.length;
 }
 export function phoneOnboardingRoutes(pool:Pool){

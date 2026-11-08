@@ -1068,3 +1068,7 @@ Verification: the firm runner suite covers three continuations followed by escal
 ## 2026-11-08 — Restrict outside contact to the owner's inbox
 
 The user confirmed their phone case is real and asked that it contact no insurers, only their own inbox for now. Open permissions did not check the recipient allowlist, so added `OUTREACH_RESTRICT_TO_ALLOWLIST` with checks at the action and the send, and refusals for portals and emailed-lead invitations. Advocate sessions are told the limit. See [phone onboarding](phone-onboarding.md). Verification is recorded in that release's commit message.
+
+## 2026-11-08 — Open new cases by calling
+
+The user asked that a new case work like onboarding: call, say what happened, and the case opens without manual input. Added `reconcileNewCaseCalls`, migration `0031_phone_call_cases.sql`, the call panel in place of the form for phone accounts, and an updated hosted greeting. See [phone onboarding](phone-onboarding.md). Verification is recorded in that release's commit message.

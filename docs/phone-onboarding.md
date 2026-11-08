@@ -38,6 +38,12 @@ The phone token and sign-in mode live in `localStorage`, shared across tabs, so 
 
 Shared fictional test accounts only appear in the Vite development server. The phone Function's `/status` still returns the test numbers and fixed code, and they still sign in, because `scripts/phone-flow.test.ts` covers them.
 
+## Opening another case
+
+Phone accounts open every later case by calling, with no form. The New case page shows `call_number` from `GET /phone/onboarding` and the result of the last call. After onboarding is `active`, `reconcileNewCaseCalls` treats each completed inbound call from the verified number, started after the first case, as a request for a new case. `advocacy_phone_call_cases` (migration `0031`) holds one row per call, so retries cannot open a second case and a deleted case does not return. The same intake rules apply. A call about an existing case, an unclear call, or a stop request opens nothing and is reported as `last_call`. Stopping onboarding stops new cases too. The scheduler and the open dashboard both check. Email accounts keep the form.
+
+The transcript is only linked through caller ID, so a spoofed caller could open a false case and start its advocate on a verified account. Fix this before wider use.
+
 ## Outreach restriction
 
 Set `OUTREACH_RESTRICT_TO_ALLOWLIST=true` on the `firm`, `tools`, `autopoll`, and `cases` Functions to limit outside contact to `OUTREACH_ALLOWED_EMAILS` and `OUTREACH_ALLOWED_PHONES`. `takeOpenCaseAction` refuses other recipients before recording an action, and `sendOutreach` refuses them again at the send. Portals and `open_email_lead` are refused while it is on. Email-address verification mail and requested onboarding calls use separate paths and are unaffected. New advocate sessions are told the allowed address and that it is the owner's inbox, not an insurer. Authenticated `GET /stack/status` reports `outreach.restricted`. To lift it, set the flag to `false` and redeploy.

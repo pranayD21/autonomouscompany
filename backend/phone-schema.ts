@@ -18,6 +18,11 @@ export const macBridgeDeliveries=pgTable('advocacy_mac_bridge_deliveries',{notif
 export const macBridgeInbound=pgTable('advocacy_mac_bridge_inbound',{event_id:text('event_id').primaryKey(),payload_hash:text('payload_hash').notNull(),phone:text('phone').notNull(),body:text('body').notNull(),case_id:uuid('case_id').references(()=>cases.id),disposition:text('disposition').notNull(),received_at:time('received_at').notNull(),created_at:time('created_at').defaultNow().notNull()});
 
 // One explicit outbound onboarding call per verified owner. A missing receipt never permits redial.
+// One row per inbound call considered for a new case, so a call opens at most one and a deleted case never returns.
+export const phoneCallCases=pgTable('advocacy_phone_call_cases',{
+ call_id:text('call_id').primaryKey(),owner_id:text('owner_id').notNull(),case_id:uuid('case_id').references(()=>cases.id,{onDelete:'set null'}),
+ state:text('state').notNull(),reason:text('reason'),created_at:time('created_at').defaultNow().notNull(),
+},t=>[index('phone_call_cases_owner_idx').on(t.owner_id,t.created_at)]);
 export const phoneOnboarding=pgTable('advocacy_phone_onboarding',{
  id:uuid('id').primaryKey().defaultRandom(),owner_id:text('owner_id').notNull().unique(),phone:text('phone').notNull(),
  state:text('state').notNull().default('dispatching'),agent_id:text('agent_id').notNull(),number_id:text('number_id').notNull(),
