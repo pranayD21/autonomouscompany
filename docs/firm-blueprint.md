@@ -13,7 +13,7 @@
 
 Each agent and identity is named `assurance-firm-<role>`. The MCP namespace is `firm`; each agent receives only its role's listed tools, with default deny. The endpoint is `/mcp/<role>` on the Neon firm Function. Each identity has its own static-bearer credential in its own vault. The setup script additionally restricts each sealed credential to its agent. Tokens are never placed in MCP headers or agent configuration.
 
-The CEO is a coordinator with a company board and the other permanent roles as its team. CEO, Knowledge and Growth run in the provider's `loose` window. Their UTC schedules are every 15 minutes, every four hours at minute 17, and every six hours at minute 43, respectively. Each cycle inspects existing work and stops if nothing useful remains. Front Desk, Reviewer and Finance are delegated roles rather than periodic inference loops.
+The CEO is a coordinator with a company board and the other permanent roles as its team. `ASSURANCE_FIRM_WINDOW` selects the provider completion window. The code default is `loose`; the deployment uses `immediate` because Naïve rejected `loose` for the selected model. CEO, Knowledge and Growth declare UTC schedules of every 15 minutes, every four hours at minute 17, and every six hours at minute 43, respectively. Each cycle inspects existing work and stops if nothing useful remains. Front Desk, Reviewer and Finance are delegated roles rather than periodic inference loops.
 
 ## Configuration
 
@@ -21,7 +21,8 @@ The CEO is a coordinator with a company board and the other permanent roles as i
 - `ASSURANCE_FIRM_BUDGET_MICRO_USD`: positive provider bootstrap allocation derived by the operator from available organization credit. Both the declared agent and schedule budget use this value; there is no fixed repository dollar amount. This is not a credit purchase or a case-specific budget. The CEO's server tool owns case allocations.
 - `ASSURANCE_FIRM_TOKENS`: private JSON object with `ceo`, `frontdesk`, `reviewer`, `knowledge`, `growth`, and `finance` values of at least 32 characters. Use the same map on the firm Function. Never commit or print it.
 - `ASSURANCE_FIRM_MODEL`: optional model, default `openai/gpt-5.4-mini`.
-- `ASSURANCE_FIRM_SCHEDULES_ENABLED`: set `false` to declare disabled schedules during staged rollout; otherwise enabled.
+- `ASSURANCE_FIRM_SCHEDULES_ENABLED`: `false` declares the three schedules disabled; otherwise they are enabled. The current configuration sets `false`, so company work runs on events rather than these timers.
+- `ASSURANCE_FIRM_WINDOW`: provider completion window (`immediate`, `priority`, or `loose`).
 - `NAIVE_SETUP_API_KEY`: admin-capable setup key; the script falls back to `NAIVE_API_KEY` only when absent. Runtime case credentials never receive this key.
 
 The blueprint vault schema supports `{from_env: name}` but no JSON selectors. `prepareFirmTokenEnvironment()` reads the private token map into six derived environment values in memory. The declaration references those names without including secret values. Keep the token map stable across applies: vault values are write-only, and a config read cannot verify that a sealed value equals a rotated token. Credential rotation needs explicit reconciliation, not blind creation of another credential.
@@ -39,7 +40,7 @@ The first command prints a configuration plan and performs no provider writes. T
 
 `node --env-file=.env.local node_modules/.bin/naive up --dry-run` can inspect the full declaration; `naive up` applies the declared resources. Read the plan before an apply that includes legacy agents, since retaining a name prevents deletion but does not prevent a declared configuration update. The separate firm setup script touches only permanent firm roles.
 
-The implementation was checked against `GET https://api.vetta.sh/v1/openapi.json` (HTTP 200, API version 2026-09-30), the supplied agency blueprint, and installed `@usenaive-sdk/blueprints` 0.18 types. TypeScript passed. Local declaration evaluation reported eleven agents, six identities, six vaults, one skill, and three schedules; plan mode passed. This does not establish remote provisioning, schedule execution, mailbox ingestion, or company outcomes. Record live results separately after applying and checking the deployed resources.
+The implementation was checked against `GET https://api.vetta.sh/v1/openapi.json` (HTTP 200, API version 2026-09-30), the supplied agency blueprint, and installed `@usenaive-sdk/blueprints` 0.18 types. TypeScript passed. Local declaration evaluation reported eleven agents, six identities, six vaults, one skill, and three schedules; plan mode passed. That check is static. Live company records are in [firm runtime](firm-runtime.md) and the change log.
 
 ## Hosted company Function and durable event runner
 

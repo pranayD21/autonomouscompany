@@ -8,7 +8,7 @@ The service locks the owned case, validates the evidence, saves one report, and 
 
 `case_get` returns the reports as `agent_reported`, with `independently_verified: false`. Readback rechecks the cited quotes against current evidence and sets `evidence_current: false` when a document loses confirmation or a reply is held. Historical reports remain readable; retry acknowledgement alone must not be treated as proof that the evidence is still current.
 
-An exact quote establishes traceability, not that the agent interpreted the statement correctly or that a bank transfer occurred. Recording a report does not permit `stop_case(goal_met)`, mark the case complete, send a final message, or charge a fee. Outcome verification and test-mode checkout still need implementation. Naïve's local tool configuration includes the new tool; publishing it remains dependent on the compatible setup credential.
+An exact quote establishes traceability, not that the agent interpreted the statement correctly or that a bank transfer occurred. Recording a report does not itself mark the case complete, send a final message, or charge a fee. `record_outcome` is in the case agent's tool configuration. Finance's test-mode fee record is described in [payments](payments.md).
 
 ## Verification
 
@@ -26,6 +26,8 @@ Migration 0017 and the tool are deployed. Twelve tests and the build passed. `np
 
 ## Ending a synthetic scenario
 
-`stop_case` accepts `synthetic_demo_completed` separately from `goal_met`. It requires synthetic standing authority, a referenced recorded outcome whose supporting quotes are still current, and no uncertain dispatch. The worker rechecks outcome evidence while applying the decision. The stored stop reason explicitly says that the synthetic scenario ended and no real payout was verified. This does not close a real claim, verify coverage or savings, receive money, or create a payment. Real `goal_met` retains its separate verification requirement and remains unavailable without verified completion.
+`stop_case` accepts `synthetic_demo_completed` separately from `goal_met`. It requires synthetic standing authority, a referenced recorded outcome whose supporting quotes are still current, and no uncertain dispatch. The worker rechecks outcome evidence while applying the decision. The stored stop reason explicitly says that the synthetic scenario ended and no real payout was verified. This does not close a real claim, verify coverage or savings, receive money, or create a payment.
 
-Current outcomes appear in case reads and decision snapshots with `outcome:<id>` evidence references. A quote becoming stale removes the reference from current evidence. The bounded decision prompt now asks one question per message, as specified in the progressive-intake plan.
+Under version-2 permission, `stop_case(goal_met)` requires a current recorded outcome reference, and its result is labeled `evidence_reported_not_independently_verified`. Legacy grants return `OUTCOME_NOT_VERIFIED` for `goal_met`, because nothing in the legacy path sets `verified_goal_met`.
+
+Current outcomes appear in case reads and decision snapshots with `outcome:<id>` evidence references. A quote becoming stale removes the reference from current evidence. The bounded decision prompt asks one question per message.

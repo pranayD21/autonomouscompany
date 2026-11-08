@@ -9,7 +9,7 @@ if(!response.ok) throw new Error(`AgentPhone update HTTP ${response.status}`);
 const readback=await fetch(`https://api.agentphone.ai/v1/agents/${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${process.env.AGENTPHONE_API_KEY}`}});
 if(!readback.ok) throw new Error(`AgentPhone readback HTTP ${readback.status}`);
 const agent=await readback.json();
-if(agent.systemPrompt!==agentPhoneConfig.systemPrompt||agent.beginMessage!==agentPhoneConfig.beginMessage||agent.voiceMode!=="hosted"||agent.enableMessaging!==false) throw new Error("AgentPhone saved voice configuration does not match the requested demo");
+if(agent.systemPrompt!==agentPhoneConfig.systemPrompt||agent.beginMessage!==agentPhoneConfig.beginMessage||agent.voiceMode!=="hosted"||agent.enableMessaging!==false) throw new Error("AgentPhone saved voice configuration does not match the requested configuration");
 console.log(JSON.stringify({id:agent.id,name:agent.name,voiceMode:agent.voiceMode,messaging:agent.enableMessaging,prompt_matches:true,greeting_matches:true}));
 const number=agent.numbers?.[0];
 if(number && !/^AGENTPHONE_NUMBER_ID=/m.test(readFileSync('.env.local','utf8'))) appendFileSync('.env.local',`\nAGENTPHONE_NUMBER_ID=${number.id}\nAGENTPHONE_NUMBER=${number.phoneNumber}\n`);

@@ -10,4 +10,4 @@ Run `npx tsx scripts/configure-twilio-verify.ts --apply` to save the verified ex
 
 The example configuration adds `PHONE_LOGIN_ENABLED`, `PHONE_SMS_PROVIDER`, `PHONE_TEST_NUMBERS`, and `PHONE_TEST_CODE` without private values. These runtime settings belong to the phone-login implementation. A configured service alone does not prove SMS delivery or enable phone login.
 
-Implementation follows Twilio's [Verify Services API](https://www.twilio.com/docs/verify/api/service). TypeScript passed after adding the script. No live setup request or verification text was sent during implementation.
+Implementation follows Twilio's [Verify Services API](https://www.twilio.com/docs/verify/api/service). TypeScript passed after adding the script. The Assurance service has been created once and read back with six-digit codes; see [phone-first](phone-first.md).

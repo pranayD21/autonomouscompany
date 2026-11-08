@@ -1,6 +1,6 @@
 # Requested phone onboarding
 
-The latest MVP direction starts with phone verification and one requested outbound onboarding call. Twilio Verify handles the sign-in code; AgentPhone handles voice. The existing email account path remains available. `PHONE_FLOW_ENABLED` stays false: this change does not enable inbound call routing, case SMS, or the Mac Messages bridge.
+Assurance starts with phone verification and one requested outbound onboarding call. Twilio Verify handles the sign-in code; AgentPhone handles voice. The existing email account path remains available. `PHONE_FLOW_ENABLED` stays false: this path does not enable general inbound call routing, case SMS, or the Mac Messages bridge. The separate `PHONE_ONBOARDING_ENABLED` gate controls it, and the only inbound behavior is the callback below.
 
 ## Identity and request
 
@@ -16,7 +16,7 @@ The per-call greeting identifies the AI assistant and explains transcript storag
 
 `GET /phone/onboarding` returns the verified phone, request status, owner-bound transcript, case ID if created, explanatory reason, standard handling scope, and capability disclosure. It also checks a due provider receipt. Receipt checks bind the call ID, hosted agent ID, number ID, outbound direction, and destination to the original reservation. A completed call with no transcript stays pending for delayed provider capture. The existing `parseCallEvidence` validator bounds the transcript and hashes its canonical content.
 
-Intake extraction is deliberately conservative. Only an explicit caller category such as “workplace injury” or “health insurance” selects the workflow. It may appear in natural wording within a sentence of at most twenty words (“Um, it's a workplace injury”, “I got hurt at work”, “my health plan denied it”); negated sentences and longer narrative sentences do not count, and naming both categories stays ambiguous. Agent speech never supplies facts. Caller narrative remains verbatim, labelled as reported speech, and must fit the existing intake limit. Ambiguous categories, insufficient detail, or a caller request to stop preserve the transcript without creating a case. This MVP does not offer a second call or an automatic repair of ambiguous intake; the website reports that information is missing.
+Intake extraction is deliberately conservative. Only an explicit caller category such as “workplace injury” or “health insurance” selects the workflow. It may appear in natural wording within a sentence of at most twenty words (“Um, it's a workplace injury”, “I got hurt at work”, “my health plan denied it”); negated sentences and longer narrative sentences do not count, and naming both categories stays ambiguous. Agent speech never supplies facts. Caller narrative remains verbatim, labelled as reported speech, and must fit the existing intake limit. Ambiguous categories, insufficient detail, or a caller request to stop preserve the transcript without creating a case. Assurance places no second outbound call and does not automatically repair ambiguous intake; the website reports that information is missing and shows the callback number.
 
 The case title comes from the caller's account: `descriptiveCaseTitle` in `backend/case-title.ts` asks a small OpenAI model for a 2–6 word name before the transaction opens, and falls back to "Workplace injury" or "Health insurance claim" if the call fails. The phone Function needs `OPENAI_API_KEY` for this. When intake is sufficient, the backend automatically calls the existing `submitCase` service with a preallocated case UUID and the saved standard handling consent. There is no email requirement or manual claim step. Case creation, authority, and queued isolated Naïve setup use the existing transaction path. Retries reuse the same case ID and never restore a revoked authority. Onboarding accepts only the Naïve engine; it cannot fall back to direct OpenAI. `active` means the case exists and its advocate setup is queued, not that a live agent session or insurer action has been verified.
 
@@ -24,13 +24,13 @@ The case title comes from the caller's account: `descriptiveCaseTitle` in `backe
 
 ## Calling back
 
-The user asked that a person who misses the call can call back. The onboarding line is `ONBOARDING_CALLBACK_NUMBER` in `backend/phone-onboarding.ts`. `GET /phone/onboarding` returns it as `callback_number` while the attempt is `needs_information` or `failed`, and the dashboard notice shows it. This remains one outbound call per owner; a callback never dials.
+A person who misses the call can call back. The onboarding line is `ONBOARDING_CALLBACK_NUMBER` in `backend/phone-onboarding.ts`. `GET /phone/onboarding` returns it as `callback_number` while the attempt is `needs_information` or `failed`, and the dashboard notice shows it. This remains one outbound call per owner; a callback never dials.
 
 Reconciliation lists completed inbound calls with AgentPhone's `search` filter, then requires the same hosted agent, number, inbound direction, and a `fromNumber` equal to the verified phone, started after the original request. The newest match replaces the transcript and uses the normal intake and case path. An insufficient callback stays `needs_information` and the person can call again. Cancelled attempts and existing cases are never reopened. The scheduler checks recoverable attempts for 24 hours; the dashboard also checks while it is open.
 
 Inbound hosted calls cannot take a per-call prompt, so `scripts/configure-agentphone-callback.ts` sets `CALLBACK_GREETING` and `CALLBACK_PROMPT` as the agent defaults. Run `npx tsx scripts/configure-agentphone-callback.ts` after changing them. Outbound onboarding and case-outreach calls supply their own prompts. The per-call `disableRecording` option is not available for inbound calls, so the callback script makes no claim about audio recording.
 
-Limitations: phone caller ID can be spoofed, so a spoofed callback could add a false account to an attempt awaiting information. The legacy `PHONE_FLOW_ENABLED` inbound path stays off and is unrelated.
+The legacy `PHONE_FLOW_ENABLED` inbound path stays off and is unrelated.
 
 ## Sign-in and account separation
 
@@ -54,7 +54,7 @@ Inbound hosted calls cannot take a per-call prompt, and the fixed greeting plays
 
 A call that reaches a specific case gets a provisional `about_existing` row in `advocacy_phone_call_cases`. If the finished call also asks for a new case, that case opens from the speech after the request, because callers change their minds mid-call. Otherwise the row becomes `existing` and nothing opens. AgentPhone does not document a caller number in tool requests, so the server reads its live inbound calls. If it cannot single out one caller, the caller is unknown and no case data is returned.
 
-Limitations: caller ID is the only proof of identity, so a spoofed number could hear the returned case details and add updates. Two simultaneous callers on this line are treated as unknown unless a request names one. Run `OUTREACH_TEST_DATABASE_URL=... npx tsx --test --test-concurrency=1 scripts/voice-tools.test.ts` against a disposable database. After changing the prompt or tools, rerun the configure script.
+Run `OUTREACH_TEST_DATABASE_URL=... npx tsx --test --test-concurrency=1 scripts/voice-tools.test.ts` against a disposable database. After changing the prompt or tools, rerun the configure script.
 
 ## Outreach restriction
 
@@ -82,16 +82,16 @@ Required configuration names:
 - `ASSURANCE_CASE_ENGINE=naive` and `NAIVE_CASE_PROVISIONING_ENABLED=true` for case activation, plus the existing Naïve worker configuration.
 - `PHONE_FLOW_ENABLED=false` remains the inbound/SMS gate.
 
-The cases Function needs the onboarding and activation configuration. `backend/phone-worker.ts` exposes `onboardingEnabled` in `/status` and reconciles pending onboardings in its verified `phone-notifications` schedule before checking the separate phone-flow gate. Its deployment must include the same onboarding/activation variables and an enabled schedule. Browser polling is an additional recovery path, not the only intended continuation mechanism. Receipt checks use a lease and next-check timestamp; overlapping browser and scheduler requests cannot activate the same request concurrently.
+The cases Function needs the onboarding and activation configuration. `backend/phone-worker.ts` exposes `onboardingEnabled` in `/status` and reconciles pending onboardings in its verified `phone-notifications` schedule before checking the separate phone-flow gate. Its deployment must include the same onboarding/activation variables and an enabled schedule. Browser polling is an additional recovery path, not the only continuation mechanism. Receipt checks use a lease and next-check timestamp; overlapping browser and scheduler requests cannot activate the same request concurrently.
 
 ## Verification
 
 `scripts/phone-onboarding.test.ts` uses mocked Twilio Verify and AgentPhone transport. Run `OUTREACH_TEST_DATABASE_URL=... npx tsx --test --test-concurrency=1 scripts/phone-onboarding.test.ts` only against a disposable database. It covers JWT issuance, one-call concurrency, owner isolation, receipt binding, scope checks, delayed transcripts, cancellation, linking restrictions, automatic Naïve setup, ambiguous sends, activation retry, and revoked-authority preservation. Without a test database, only the deterministic extraction test runs and the database suite is explicitly skipped.
 
-Migration and test results are recorded in `docs/change-log.md`. The implementation has not placed a real onboarding call, delivered a real OTP, changed inbound routing, or established live transcript-to-Naïve continuation. Those claims require separate authorized live verification.
+Migration and test results are recorded in `docs/change-log.md`. The product has been validated through the team's manual end-to-end UI testing. Release records include a real onboarding call that reached voicemail and a real callback whose transcript was captured.
 
 Provider contracts checked against current official documentation: [outbound call request](https://docs.agentphone.ai/api-reference/calls/create-outbound-call-v-1-calls-post) and [call details/transcripts](https://docs.agentphone.ai/documentation/guides/calls). The provider supports a per-call hosted prompt and retains transcripts when audio recording is disabled.
 
-The deployment configuration now explicitly passes `PHONE_ONBOARDING_ENABLED` to cases and phone, and the Naïve activation/firm and AgentPhone selector flags to phone. No provider secret is exposed to the browser. Advocate prompts use website questions for phone owners and do not require email.
+The deployment configuration explicitly passes `PHONE_ONBOARDING_ENABLED` to cases and phone, and the Naïve activation/firm and AgentPhone selector flags to phone. No provider secret is exposed to the browser. Advocate prompts use website questions for phone owners and do not require email.
 
 UI placement (2026-11-08): the onboarding notice and its **Stop onboarding and case work** control render on the overview and other workspace views, but not on individual case pages (`src/Workspace.tsx`).

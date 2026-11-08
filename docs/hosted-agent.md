@@ -1,6 +1,6 @@
 # Hosted direct-model case agent
 
-The current proof-of-concept path uses direct OpenAI inference. Naïve retains legacy sessions and historical planning context; it does not execute direct-model decisions. See [activation-flow.md](activation-flow.md) for owner controls and [outreach.md](outreach.md) for communications.
+This runner executes case runs on direct OpenAI inference. New cases use Naïve when `ASSURANCE_CASE_ENGINE=naive`, which the private environment sets (see [Naïve restoration](naive-restoration.md)); direct runs created earlier keep running here. Naïve does not execute direct-model decisions. See [activation-flow.md](activation-flow.md) for owner controls and [outreach.md](outreach.md) for communications.
 
 ## Runtime and storage
 
@@ -14,9 +14,9 @@ The runner reads the current case and sets a stable goal/finish condition. It us
 
 ## Deployment configuration
 
-The autopoll Function needs server-only `OPENAI_API_KEY` and `ASSURANCE_DIRECT_MODEL` (default `gpt-5.4-mini`). Cases uses `ASSURANCE_DIRECT_ACTIVATION_ENABLED=true` only once the worker is configured. Cases also receives `OPENAI_API_KEY` for direct document reading with `ASSURANCE_DOCUMENT_READER=direct_openai`; that key is never part of Vite configuration. The same key shortens long case titles (over 40 characters) at submission through `backend/case-title.ts`, using `ASSURANCE_TITLE_MODEL` (default `gpt-5.4-nano`) with a 6-second timeout; any failure or missing key keeps the original title. Completed readings are available as machine-extracted, unverified observations without mandatory confirmation. Owner confirmation remains separate provenance; final-outcome evidence requirements remain enforced.
+The autopoll Function needs server-only `OPENAI_API_KEY` and `ASSURANCE_DIRECT_MODEL` (default `gpt-5.4-mini`). `ASSURANCE_DIRECT_ACTIVATION_ENABLED=true` gates new direct activations when the direct engine is selected. Cases also receives `OPENAI_API_KEY` for direct document reading with `ASSURANCE_DOCUMENT_READER=direct_openai`; that key is never part of Vite configuration. The same key shortens long case titles (over 40 characters) at submission through `backend/case-title.ts`, using `ASSURANCE_TITLE_MODEL` (default `gpt-5.4-nano`) with a 6-second timeout; any failure or missing key keeps the original title. Completed readings are available as machine-extracted, unverified observations without mandatory confirmation. Owner confirmation remains separate provenance; final-outcome evidence requirements remain enforced.
 
-Deploy migrations and Neon Functions before publishing the frontend. Preserve existing private provider settings with `neon deploy --env .env.local --branch production --no-env-pull`. Git pushes deploy only the Vercel frontend. `PHONE_FLOW_ENABLED` remains false while carrier registration is pending. New voice calls use AgentPhone only. Payments remain hypothetical.
+Deploy migrations and Neon Functions before publishing the frontend. Preserve existing private provider settings with `neon deploy --env .env.local --branch production --no-env-pull`. Git pushes deploy only the Vercel frontend. `PHONE_FLOW_ENABLED=false` keeps general inbound routing and case SMS off. New voice calls use AgentPhone only. Payments are Stripe test mode only, with no real fee collection; see [payments](payments.md).
 
 ## Verification
 
@@ -26,4 +26,4 @@ Run database suites serially against the disposable `OUTREACH_TEST_DATABASE_URL`
 
 ## New-case Naïve selection
 
-`ASSURANCE_CASE_ENGINE=naive` restores Naïve for newly authorized v2 cases once provisioning is enabled. Existing direct runs continue to use this runner and retain their conversations. The direct adapter excludes the hosted MCP `set_goal` tool because direct runs already persist their own fenced goal tool. See [Naïve restoration](naive-restoration.md) for lifecycle and verification details. Document extraction remains on its working direct reader; changing case coordination does not switch that provider.
+`ASSURANCE_CASE_ENGINE=naive` selects Naïve for newly authorized v2 cases when `NAIVE_CASE_PROVISIONING_ENABLED=true`. Existing direct runs continue to use this runner and retain their conversations. The direct adapter excludes the hosted MCP `set_goal` tool because direct runs already persist their own fenced goal tool. See [Naïve restoration](naive-restoration.md) for lifecycle and verification details. Document extraction remains on its working direct reader; changing case coordination does not switch that provider.

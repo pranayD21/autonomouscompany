@@ -6,22 +6,22 @@ Read [../agents.md](../agents.md) first. These Markdown files are the durable pr
 
 | Document | Read when |
 | --- | --- |
-| [product.md](product.md) | Understanding customers, scope, business model, and hackathon fit |
+| [product.md](product.md) | Understanding customers, scope, and business model |
 | [architecture.md](architecture.md) | Locating code or designing agent and service boundaries |
 | [frontend.md](frontend.md) | Changing the workspace UI, mobile layouts, next-step logic, routes, or copy rules |
 | [neon.md](neon.md) | Configuring backend services, credentials, deployment, and tooling |
-| [demo-and-research.md](demo-and-research.md) | Finding participants, recording interviews, or editing the demo |
-| [implementation-status.md](implementation-status.md) | Checking what actually exists, verification evidence, and unfinished work |
+| [demo-and-research.md](demo-and-research.md) | Finding participants, recording interviews, or preparing product walkthroughs |
+| [implementation-status.md](implementation-status.md) | Checking what exists and verification evidence |
 | [change-log.md](change-log.md) | Reviewing changes and their validation |
 
-Every repository change must update the relevant documentation in the same change. Keep this directory exclusively `.md` files. The repository map describes the tracked implementation; implementation status distinguishes deployed and verified behavior from unfinished work.
+Every repository change must update the relevant documentation in the same change. Keep this directory exclusively `.md` files. The repository map describes the tracked implementation; implementation status records verified behavior.
 
 - [Account setup and agent stack](stack.md)
 - [Case outreach](outreach.md)
 - [Insurer-first workflows](insurance-workflows.md)
 
-- [Private case documents](documents.md): upload, storage, ownership, retry behavior, and extraction limitations.
-- [Official-source research](research.md): source selection, retrieval, immutable snapshots, citations, and coverage limits.
+- [Private case documents](documents.md): upload, storage, ownership, and retry behavior.
+- [Official-source research](research.md): source selection, retrieval, immutable snapshots, and citations.
 - [Case email replies](replies.md): thread ingestion, sender checks, held messages, evidence revisions, and correspondence references.
 
 - [Scheduled reply monitoring](reply-monitoring.md): owner controls, Neon trigger, retries, leases, and verification.
@@ -30,13 +30,11 @@ Every repository change must update the relevant documentation in the same chang
 
 - [Hosted frontend](hosting.md): Vercel build, public configuration, exact origins, and verification.
 
-- [SIP account access](sip-access.md): live provider rejection, required enablement, and post-approval routing steps.
+- [SIP account access](sip-access.md): superseded record of the SIP path.
 
-- [ElevenLabs/Twilio voice](voice-twilio.md): AgentPhone replacement, account setup, call controls, and verification limits.
+- [ElevenLabs/Twilio voice](voice-twilio.md): superseded record of the path AgentPhone replaced.
 
-- [Naïve case autonomy](autonomy.md): standing authorization, durable decisions, stop controls, and synthetic test limits.
-
-- [Expanded autonomy proposal](autonomy-plan.md): user-supplied target architecture; proposal statements are not proof of implementation. The user superseded its coordination instruction and assigned all files to this agent.
+- [Naïve case autonomy](autonomy.md): legacy version 1 authorization, durable decisions, and stop controls.
 
 - [Case tool server](agent-tools.md): MCP transport, case credentials, sourced statements, and verification.
 
@@ -56,11 +54,11 @@ Every repository change must update the relevant documentation in the same chang
 
 - [Persistent workflow migration](persistent-workflow-migration.md): current user override, provider requirements, migration plan, and recovery status.
 
-- [Direct-model demo fallback](demo-fallback.md): minimal Naïve handoff, local direct inference, exclusive-case requirements, and verification limits.
+- [Legacy direct-model fallback](demo-fallback.md): minimal Naïve handoff, local direct inference, and exclusive-case requirements.
 
 - [Case activation and status](activation-flow.md): submission scope, owner updates, start/stop controls, engine attribution, and UI verification.
 
-- [Resume handoff](RESUME-HANDOFF.md): deployed release, private test journals, and remaining external gates for a new chat.
+- [Resume handoff](RESUME-HANDOFF.md): deployed configuration, private test journals, and do-not-repeat rules for a new chat.
 
 - [Hosted direct-model agent](hosted-agent.md): scheduler, durable conversation, research/document tools, engine separation, and hosted verification.
 
@@ -75,12 +73,12 @@ Every repository change must update the relevant documentation in the same chang
 - [Naïve restoration](naive-restoration.md): engine selection, v2 lifecycle compatibility, provider budget configuration, and hosted verification.
 - [Website chat UI](web-chat-ui.md): persistent owner/agent conversation, message retries, attachments, and responsive UI verification.
 - [Website case conversation](web-chat.md): durable owner/agent messages, case-scoped API, safe resume, and document requests without SMS.
-- [Permanent company agents](firm-blueprint.md): Naïve role declarations, identities, vaults, schedules, setup script, and verification boundaries.
+- [Permanent company agents](firm-blueprint.md): Naïve role declarations, identities, vaults, schedules, and setup script.
 
 - [AgentMail intake and replies](agentmail-ingress.md): signed webhooks, email lead claiming, case inbox routing, and invitation delivery ledger.
-- [Company runtime](firm-runtime.md): durable company events, role tools, case staffing, budgets, board, learning, and verification boundaries.
+- [Company runtime](firm-runtime.md): durable company events, role tools, case staffing, budgets, board, and learning.
 
-- [Authentication session recovery](auth-session-recovery.md): historical phone-session token contention, preserved login credentials, and verification boundaries.
+- [Authentication session recovery](auth-session-recovery.md): historical phone-session token contention, and preserved login credentials.
 - [Case-isolated native browser portals](case-portals.md): portal service, private owner connection, durable action receipts and current upload gap.
 
 - [Requested phone onboarding](phone-onboarding.md): verified phone → one requested AgentPhone call → owner transcript → automatic isolated Naïve case setup, with no-redial recovery.

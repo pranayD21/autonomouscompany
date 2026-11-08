@@ -22,12 +22,9 @@ neon deploy --env .env.local --update-existing
 
 The first attempt required `--update-existing` because Realtime origins changed from an empty list to localhost ports 5173 and 4173. That specific change was inspected before applying it. Do not blindly use this flag for future configuration conflicts.
 
-Deployed Functions:
+`neon.ts` declares eight Functions: `cases`, `tools`, `autopoll`, `crewpoll`, `replypoll`, `phone`, `firm`, and `hello`. Their URLs follow the pattern `https://br-square-pine-bewan9j8-<name>.compute.c-9.us-east-2.aws.neon.tech/`.
 
-- `hello`: https://br-square-pine-bewan9j8-hello.compute.c-9.us-east-2.aws.neon.tech/
-- `cases`: https://br-square-pine-bewan9j8-cases.compute.c-9.us-east-2.aws.neon.tech/
-
-Deployment proves provisioning, not successful authenticated end-to-end operation.
+A deployment alone proves provisioning, not successful authenticated end-to-end operation.
 
 ## Configuration
 
@@ -47,11 +44,11 @@ On the setup machine, the CLI installed the Neon plugin for Claude Code/Desktop,
 
 These are user-level installations available to this project, not portable repository-local installations. No duplicate Codex MCP or skill installation was made. A fresh contributor should inspect their own tooling before installing anything. Installed MCP configuration does not prove its OAuth connection has been exercised; provisioning used the CLI.
 
-## Blocker and operational checks
+## AI Gateway and operational checks
 
-AI Gateway reported that no models were available until the organization adds a card and buys gateway credits. Billing: https://console.neon.tech/app/org-shy-darkness-62773978/billing. No credits were purchased by the agent. Successful inference remains unverified.
+Only the legacy `POST /cases/:id/analyze` route in `backend/api.ts` uses the AI Gateway; case agents run on Naïve, and document reading uses direct OpenAI.
 
-The hosted origin https://assurance-claims.vercel.app is configured in Function CORS, Realtime allowed origins, and Auth trusted domains. For future frontend domains, merge the exact origin into all three. Preserve existing entries. The local preview command uses `127.0.0.1`, while the allowlists contain `localhost`; test with `http://localhost:4173` or deliberately reconcile the origin mismatch.
+The hosted origins https://assurance.claims and https://assurance-claims.vercel.app are configured in Function CORS, Realtime allowed origins, and Auth trusted domains. For a new frontend domain, merge the exact origin into all three. Preserve existing entries. The local preview command uses `127.0.0.1`, while the allowlists contain `localhost`; test with `http://localhost:4173` or deliberately reconcile the origin mismatch.
 
 `crewpoll` and the `crew-monitor` five-minute trigger save completed Naïve reviews independently of the browser. Its only custom credential is `NAIVE_API_KEY`; database credentials are injected by Neon. Migration 0010 adds durable check/lease fields. The existing `replypoll` Function and its schedule remain separate and receive only the AgentMail credentials. See [review monitoring](crew-monitoring.md) and [reply monitoring](reply-monitoring.md).
 
@@ -60,14 +57,14 @@ Official references: https://neon.com/docs/llms.txt and the installed Neon servi
 Deployment verification: the CLI can report a completed deployment before requests reach the new Function version. Verify an affected authenticated route after deployment, including permission changes. During the crew review test, the old response persisted briefly; waiting and rechecking the same case avoided duplicate work. Migration 0002 was tested on a temporary branch before production; that temporary branch was then deleted.
 
 
-## AI Gateway recovery clarification
+## AI Gateway credits
 
-A fresh production catalog check returned HTTP 200, 63 models, zero enabled, and `paid_plan_required`, with recovery URL https://console.neon.tech/app/org-shy-darkness-62773978/billing. Current official guidance says directly card-billed Free organizations can add a card and purchase AI Gateway credits without upgrading. The minimum purchase is $5; new requests stop when balance falls below $2. In Billing, use the AI gateway credits card, add a payment card if needed, then Add credits. The default purchase selection is $25, so explicitly choose $5 for the minimum. No purchase was made.
+A production catalog check returned HTTP 200, 63 models, zero enabled, and `paid_plan_required`, with recovery URL https://console.neon.tech/app/org-shy-darkness-62773978/billing. Current official guidance says directly card-billed Free organizations can add a card and purchase AI Gateway credits without upgrading. The minimum purchase is $5; new requests stop when balance falls below $2. In Billing, use the AI gateway credits card, add a payment card if needed, then Add credits. The default purchase selection is $25, so explicitly choose $5 for the minimum. No purchase was made.
 
-The earlier hackathon promotion required a paid plan; that promotion flow is distinct from purchasing gateway credits on Free. Naïve credits do not fund Neon. If Billing still requires an upgrade or models remain locked after purchase, inspect the model restriction tooltip: marketplace billing, account verification, or another restriction can require a different remedy. See https://neon.com/docs/ai-gateway/prepaid-credits and https://neon.com/docs/ai-gateway/troubleshooting.
+The earlier sponsor-credit promotion required a paid plan; that promotion flow is distinct from purchasing gateway credits on Free. Naïve credits do not fund Neon. If Billing still requires an upgrade or models remain locked after purchase, inspect the model restriction tooltip: marketplace billing, account verification, or another restriction can require a different remedy. See https://neon.com/docs/ai-gateway/prepaid-credits and https://neon.com/docs/ai-gateway/troubleshooting.
 
 ## Company Function configuration
 
-`neon.ts` now declares the `firm` Function and `firm-operations` minute trigger. It hosts role MCP tools and the AgentMail webhook, then advances durable company sessions and inbound attachment extraction. Stage `ASSURANCE_FIRM_ENABLED=false` and `ASSURANCE_FIRM_SCHEDULES_ENABLED=false` while configuring resources. Deploy migrations and backend before publishing the email-first frontend. The cases Function also receives public AgentMail contact settings and the read-only Gmail auth-config ID; tokens stay server-only. See [company runtime](firm-runtime.md) for the full configuration and current proof boundaries.
+`neon.ts` declares the `firm` Function and `firm-operations` minute trigger. It hosts role MCP tools and the AgentMail webhook, then advances durable company sessions and inbound attachment extraction. The private environment sets `ASSURANCE_FIRM_ENABLED=true`. `ASSURANCE_FIRM_SCHEDULES_ENABLED=false` keeps the recurring CEO, Growth, and Knowledge schedules disabled. Deploy migrations and backend before publishing a dependent frontend. The cases Function also receives public AgentMail contact settings and the read-only Gmail auth-config ID; tokens stay server-only. See [company runtime](firm-runtime.md) for the full configuration.
 
-The latest phone MVP overrides the earlier email-first release plan. `PHONE_ONBOARDING_ENABLED` is passed to both cases and phone; phone also receives `ASSURANCE_CASE_ENGINE`, `NAIVE_CASE_PROVISIONING_ENABLED`, `ASSURANCE_FIRM_ENABLED`, and `OUTREACH_VOICE_PROVIDER`. Its existing minute trigger reconciles call receipts independently of `PHONE_FLOW_ENABLED=false`. Apply migration 0030 before deploying these routes.
+`PHONE_ONBOARDING_ENABLED` is passed to both cases and phone; phone also receives `ASSURANCE_CASE_ENGINE`, `NAIVE_CASE_PROVISIONING_ENABLED`, `ASSURANCE_FIRM_ENABLED`, and `OUTREACH_VOICE_PROVIDER`. Its minute trigger reconciles call receipts independently of `PHONE_FLOW_ENABLED=false`. Migration 0030 is applied to production (31 journal entries).

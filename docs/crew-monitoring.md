@@ -1,12 +1,12 @@
 # Saving completed agent reviews
 
-The `crewpoll` Neon Function checks existing Naïve sessions every five minutes and saves valid completed reviews without requiring an open browser. It reads sessions only. It does not start a review, request a correction, send correspondence, or change any budget. The browser's status button still reads the same session and can save a result sooner.
+The `crewpoll` Neon Function checks existing Naïve sessions every five minutes and saves valid completed reviews without requiring an open browser. It reads sessions only. It does not start a review, request a correction, send correspondence, or change any budget. The API's crew status read uses the same session and can save a result sooner.
 
 `backend/crew-completion.ts` is shared by the API and worker. It validates the provider result against the run's captured amounts, confirmed documents, research, and correspondence. Later case edits do not change those inputs. The first valid completion wins; intermediate output, failed evidence checks, and pending approvals never become saved reviews. Earlier revisions remain separate from the current case.
 
 `backend/crew-monitor.ts` claims at most five due runs per delivery using `FOR UPDATE SKIP LOCKED` and a ten-minute lease. The network read occurs after the claim commits. A lease UUID prevents an expired worker from clearing another worker's lease. Active runs are checked again after five minutes; provider failures retry after fifteen minutes. Completed but invalid results and pending approvals stop automatic checks and need operator attention. Sending the existing one-time correction makes the run due again. A correction submitted during a status read keeps its new schedule.
 
-Automatic checks cover runs created within the last 30 days. Older or never-started runs require manual reconciliation. A `start_pending` row without a provider session ID is not retried by this worker. Checks can be delayed by backlog or service downtime. The app currently shows a newly saved result on status refresh or page reload; this change does not add a live review subscription.
+Automatic checks cover runs created within the last 30 days. Older or never-started runs require manual reconciliation. A `start_pending` row without a provider session ID is not retried by this worker. `src/progress.ts` reads the run for section progress.
 
 Next-check times are rounded down to the minute before adding the delay. Otherwise a check ending a few seconds after a cron tick would miss the next five-minute tick and wait another full cycle.
 

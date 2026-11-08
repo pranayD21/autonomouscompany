@@ -12,6 +12,6 @@ npx tsx --test --test-concurrency=1 scripts/mac-messages-bridge.test.ts
 
 The suite applies repository migrations, requires no unrelated queued notifications, creates its own cases/permissions/preferences, and removes its fixture records afterward. It uses fake bridge configuration and fictional numbers that are not in `PHONE_TEST_NUMBERS`; configured public test numbers intentionally cannot receive messages. Never use the production database for this suite.
 
-Local automation, macOS permissions, actual sender identity, delivery, incoming Messages parsing, and a complete call-to-message workflow need separate verification. A submitted bridge receipt is not proof of recipient delivery.
+This suite does not cover local automation, macOS permissions, actual sender identity, delivery, incoming Messages parsing, or a complete call-to-message workflow. A submitted bridge receipt is not proof of recipient delivery.
 
 Verification on November 8, 2026 UTC: all nine tests passed serially against the disposable branch, with fixture cleanup. The final rerun includes bare-token rejection and blocked-recipient starvation regressions after the service fixes. TypeScript and diff checks also passed. No real messages were sent.

@@ -17,7 +17,7 @@ app.all('/auth/*',async c=>{
  auth??=createPhoneAuth(pool,{baseURL:process.env.PHONE_AUTH_BASE_URL,secret:process.env.PHONE_AUTH_SECRET});return auth.handler(c.req.raw);
 });
 app.post('/agentphone/webhook',async c=>{
- if(process.env.PHONE_FLOW_ENABLED!=='true')return c.json({text:'Assurance phone intake is not active yet. Please visit assurance dot claims.'});
+ if(process.env.PHONE_FLOW_ENABLED!=='true')return c.json({text:'Assurance phone intake is not available on this line. Please visit assurance dot claims.'});
  const raw=await c.req.text();if(!validPhoneWebhook(raw,c.req.raw.headers,process.env.AGENTPHONE_WEBHOOK_SECRET??''))return c.json({error:'Invalid webhook.'},401);
  const id=c.req.header('x-webhook-id');if(!id||id.length>180)return c.json({error:'Invalid webhook identity.'},400);
  const response=await handlePhoneEvent(pool,id,raw);

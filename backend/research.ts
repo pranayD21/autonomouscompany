@@ -13,8 +13,8 @@ export const SOURCE_CATALOG:Readonly<Record<string,SourceSpec>>={
 export function selectResearchSources(caseType:string,intake:Partial<ClaimIntake>):{specs:SourceSpec[];gaps:string[]}{
  if(caseType==="workplace_injury"){
   const jurisdiction=intake.jurisdiction?.trim().toLowerCase();
-  if(!jurisdiction)return {specs:[],gaps:["Jurisdiction is missing. Do not assume California from the demo location."]};
-  if(!["ca","california","us-ca"].includes(jurisdiction))return {specs:[],gaps:["This jurisdiction does not yet have a configured official-source research adapter. Do not substitute California rules."]};
+  if(!jurisdiction)return {specs:[],gaps:["Jurisdiction is missing. Do not assume California from the service location."]};
+  if(!["ca","california","us-ca"].includes(jurisdiction))return {specs:[],gaps:["This jurisdiction has no configured official-source research adapter. Do not substitute California rules."]};
   return {specs:[SOURCE_CATALOG.ca_claim,SOURCE_CATALOG.ca_injury],gaps:["Employer carrier and actual policy/claim documents are still needed to determine this person's coverage. Personal health-plan coordination is not established by these general sources."]};
  }
  return {specs:[SOURCE_CATALOG.health_appeal],gaps:["Confirm the plan type and actual insurer notice. This general US guide does not establish this claim's appeal procedure or deadlines."]};

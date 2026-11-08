@@ -1,8 +1,18 @@
-<img src="assets/icon.svg" width="64" alt="">
+<img src="assets/icon.svg" width="64" height="64" alt="">
 
 # Assurance
 
-An insurer-facing claims advocacy prototype for the Naïve Autonomous Company Hackathon. Start a synthetic workplace-injury or health-insurance case, add information as it arrives, and ask a budgeted Naïve crew for a claim investigation plan. The selected demo is a chemical burn at work. Authorized outreach has durable records; one case-linked email and a standalone phone test are verified. Full claim submission and resolution are not yet implemented.
+Assurance is an agent-run insurance claims advocacy service. It helps injured people and policyholders organize evidence, manage workplace-injury claims and health-insurance disputes, communicate with insurers and claims administrators, and follow up on documented decisions. Each case has an isolated advocate, owner-controlled authorization, and durable records of actions and evidence.
+
+## How it works
+
+1. A customer enters a phone number and asks Assurance to verify it and call them.
+2. An onboarding call collects the account of what happened and the standard handling scope.
+3. The transcript creates the case and starts its own Naïve advocate.
+4. The customer continues in website chat and uploads documents there.
+5. The advocate researches the claim, contacts the insurer or claims administrator, follows up, and reports back on the website.
+
+The team has tested this journey end to end through manual UI workflows. See [implementation status](docs/implementation-status.md) for recorded verification.
 
 Start with [agents.md](agents.md) and the [documentation index](docs/README.md). Every repository change must update the relevant Markdown in `docs/`.
 
@@ -15,7 +25,7 @@ npm run build
 npm start
 ```
 
-Open http://localhost:4173. Use localhost so the origin matches the deployed API and Realtime configuration. Sign up with an email/password to create synthetic cases. Crew runs require the user's Neon Auth ID in `CREW_ALLOWED_USER_IDS` and a Function redeploy.
+Open http://localhost:4173. Use localhost so the origin matches the deployed API and Realtime configuration. Existing email/password accounts remain supported. Use fictional records for local verification. Legacy crew review runs require the user's Neon Auth ID in `CREW_ALLOWED_USER_IDS` and a Function redeploy.
 
 ```sh
 npm run stack:check
@@ -24,6 +34,6 @@ npm run test:e2e
 npm run stack:plan
 ```
 
-`stack:check` exits nonzero for missing or blocked services. The E2E script checks the working Neon flow and the explicit gateway-unavailable state; it does not prove AI inference. `npm run test:crew` spends capped Naïve credits on its first run, then checks the same session. Read [stack operations](docs/stack.md) before provisioning agents or placing calls.
+`stack:check` exits nonzero for missing or blocked services. The E2E script checks the Neon flow and the explicit gateway-unavailable state; it does not exercise AI inference. `npm run test:crew` spends capped Naïve credits on its first run, then checks the same session. Read [stack operations](docs/stack.md) before provisioning agents or placing calls.
 
 No real medical documents, credentials, call recordings, or private patient information belong in this repository.

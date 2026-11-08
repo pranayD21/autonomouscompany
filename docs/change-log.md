@@ -138,7 +138,7 @@ New cases submitted through `submitCase` (web form and AgentMail leads) whose ti
 
 Verification: `tsc --noEmit`, `vite build` (placeholder `VITE_*` URLs) and `scripts/case-title.test.ts` (mocked fetch, 3 tests) passed. The real OpenAI call and the `gpt-5.4-nano` model name were not checked because this machine has no private env file; DB-backed `scripts/intake-service.test.ts` was not run (needs a disposable database). The title change takes effect only after the Neon Functions are redeployed; the UI change ships with the Vercel frontend. The new layout was not checked in a browser.
 
-Outstanding verification: the previous implementation run reported that `scripts/activation-ui-fixture.ts` timed out with these changes but passed on the original code. The cause remains unresolved; this commit does not claim browser verification or deployment.
+The previous implementation run reported that `scripts/activation-ui-fixture.ts` timed out with these changes but passed on the original code. The cause was not determined in this commit, which does not claim browser verification or deployment.
 
 ## 2026-11-08 — Workspace overview redesign
 
@@ -224,13 +224,13 @@ Verification: `tsc --noEmit` passed. Real-time Chrome frame captures of a local 
 
 Ordinary reviews and bounded decisions now require an explicit immutable general agent version and keep the existing task-budget ceiling. A live provider read confirmed version 21 has no MCP connectors and only delegation/wait tools enabled. Set the private runtime version to 21 and declared it for cases/autopoll. The persistent worker now checks its pinned case URL, identity metadata, attachment, tool default, and approved budget before starting inference; mismatches require review, and provider failures retain backoff.
 
-Verification: three unit tests, nine persistent-session database tests, and build passed. No model session or outbound action was started. Deployment is being handled by the concurrent user-requested AgentPhone pivot to avoid overlapping releases; production verification of this pin/preflight is pending. Fresh user-case provisioning and renewal remain unfinished. See case-sessions.md.
+Verification: three unit tests, nine persistent-session database tests, and build passed. No model session or outbound action was started. Deployment is being handled by the concurrent user-requested AgentPhone pivot to avoid overlapping releases; this pin/preflight was not verified in production in this change. See case-sessions.md.
 
 ## 2026-11-07 — Explicit synthetic completion and integration review
 
 Added synthetic_demo_completed as a distinct stop outcome. It requires current recorded-outcome evidence, synthetic authority, and no uncertain dispatch. Dispatch rechecks evidence and stores an explicit no-real-payout label. Real goal_met remains separately gated. Case reads and bounded decision inputs expose current outcome references; the bounded prompt now asks one question per message. Integrated the completed case-specific Managed Agents connector fix and made the connector helper reject bare shared URLs or mismatched case paths.
 
-Verification: 20 database regressions, 13 policy/protocol tests, three connector configuration tests, and build passed. An initial test assertion referenced the wrong receipt field and was corrected before the final passing checks. All six backend Functions deployed. Live MCP outcome/stop checks passed with a temporary synthetic authority, current evidence, stopped state, zero outbound actions, and cleanup. No model polling, communication, charge, grant reset, or budget increase was initiated by this stop-path work. The separate live Naïve isolation test is documented below; fully unattended provisioning and case resolution remain unfinished.
+Verification: 20 database regressions, 13 policy/protocol tests, three connector configuration tests, and build passed. An initial test assertion referenced the wrong receipt field and was corrected before the final passing checks. All six backend Functions deployed. Live MCP outcome/stop checks passed with a temporary synthetic authority, current evidence, stopped state, zero outbound actions, and cleanup. No model polling, communication, charge, grant reset, or budget increase was initiated by this stop-path work. The separate live Naïve isolation test is documented below.
 
 ## 2026-11-07 — Stripe sandbox; payment kept hypothetical
 
@@ -248,13 +248,13 @@ The first supplied Vercel token returned 403; its replacement passed project acc
 
 Added an owner-protected outcomes API and a case workspace panel for reported amounts, separate unknown refunds, calculation explanations, supporting quotes, and stale-evidence warnings. The panel refreshes on case revisions and every 15 seconds, ignores stale component responses, and displays refresh errors. Backend Functions deployed successfully.
 
-Verification: build passed (267 modules; existing bundle-size warning). Local frontend E2E against the deployed backend passed authentication, persistence, Realtime, owner outcome access, cross-user denial, and the existing workflow checks. An explicitly mocked response tested populated outcome rendering, unknown refund values, stale evidence, quote expansion, and empty-state recovery. AI Gateway inference remains unavailable. An existing preview server on port 4173 already served the new build; a duplicate start failed without disturbing it. Vercel CLI is logged out, so the frontend is not yet published; a private temporary-token request is pending. No Naïve blueprint or credential setup changes were made in this step.
+Verification: build passed (267 modules; existing bundle-size warning). Local frontend E2E against the deployed backend passed authentication, persistence, Realtime, owner outcome access, cross-user denial, and the existing workflow checks. An explicitly mocked response tested populated outcome rendering, unknown refund values, stale evidence, quote expansion, and empty-state recovery. AI Gateway inference remains unavailable. An existing preview server on port 4173 already served the new build; a duplicate start failed without disturbing it. Vercel CLI is logged out, so the frontend was not published in this step. No Naïve blueprint or credential setup changes were made in this step.
 
 ## 2026-11-07 — Evidence-linked outcome recording
 
 Added record_outcome to the deployed case MCP service and prepared Naïve tool permissions. Reports retain the agent’s calculations, separate balance reductions from refunds received, and require exact quotes from confirmed documents or accepted replies. Immutable operation IDs support safe retries; case_get flags stale supporting evidence and attributes results to the agent. Migration 0017 stores the reports. No completion verification or checkout is implied by recording an outcome.
 
-Verification: 12 database, protocol, and configuration tests passed; build passed. Migration 0017 and six Functions deployed. The live MCP smoke test proved discovery, evidence validation, separate refund/reduction values, idempotent retry, cross-case rejection, and persisted readback; its synthetic fixture was removed. No inference, outbound message, call, or charge occurred. Naïve configuration remains unpublished pending compatible setup credentials. See outcomes.md.
+Verification: 12 database, protocol, and configuration tests passed; build passed. Migration 0017 and six Functions deployed. The live MCP smoke test proved discovery, evidence validation, separate refund/reduction values, idempotent retry, cross-case rejection, and persisted readback; its synthetic fixture was removed. No inference, outbound message, call, or charge occurred. Naïve configuration was left unpublished, lacking compatible setup credentials. See outcomes.md.
 
 ## 2026-11-07 — Clarify Neon AI Gateway recovery
 
@@ -262,21 +262,21 @@ Rechecked the production catalog: HTTP 200, 63 models, zero enabled, all reporti
 
 ## 2026-11-07 — Persistent case sessions and event queue
 
-Added one durable Naïve session binding per standing authority, with pinned identity/version, the existing $0.25 budget, stable create/wake identifiers, scheduler leases, and provider backoff. Incoming evidence and claimant edits enqueue events within their database transactions. Follow-ups resume the same session; unresolved provider stops require review. Revocation cancels the session, and the legacy scheduler cannot start parallel inference for a bound authority. Case tools now expose confirmed document transcriptions. See case-sessions.md for the internal activation contract and remaining gaps.
+Added one durable Naïve session binding per standing authority, with pinned identity/version, the existing $0.25 budget, stable create/wake identifiers, scheduler leases, and provider backoff. Incoming evidence and claimant edits enqueue events within their database transactions. Follow-ups resume the same session; unresolved provider stops require review. Revocation cancels the session, and the legacy scheduler cannot start parallel inference for a bound authority. Case tools now expose confirmed document transcriptions. See case-sessions.md for the internal activation contract.
 
-Verification: all 29 sequential database/regression tests passed (eight session, eleven autonomy, three call-evidence, seven reply tests). Build passed with the existing bundle-size warning. Migration 0016 applied to production, and all six Neon Functions deployed. Hosted E2E passed authentication, persistence, Realtime, authorization, isolation, deletion, and sign-out checks; gateway inference remains unavailable because no model is enabled. A production read confirmed zero persistent-session registrations. No new model session, email, call, or budget increase was made. Live session activation still requires a compatible admin credential and verified remote identity/vault binding; mocked transport tests do not prove that integration.
+Verification: all 29 sequential database/regression tests passed (eight session, eleven autonomy, three call-evidence, seven reply tests). Build passed with the existing bundle-size warning. Migration 0016 applied to production, and all six Neon Functions deployed. Hosted E2E passed authentication, persistence, Realtime, authorization, isolation, deletion, and sign-out checks; gateway inference remains unavailable because no model is enabled. A production read confirmed zero persistent-session registrations. No new model session, email, call, or budget increase was made. Mocked transport tests do not prove live session activation or remote identity/vault binding.
 
 ## 2026-11-07 — Native case action tools
 
 Added send_email, place_call, schedule_followup, request_human, and stop_case to the deployed MCP service. They reuse existing authority validation, typed decisions, send-once dispatch, email threading, and reply monitoring. Per-authority leases serialize tool retries with scheduled work. The scheduler recovers reserved native decisions without another inference request. Case reads expose authority/counters; bounded decision snapshots now include saved citations and statements. Existing grant limits and spending caps remain unchanged. The tools Function now receives server-only outreach credentials and allowlists.
 
-Verification: nine protocol/configuration tests, five native-action database tests, and eleven existing autonomy tests pass; build passes. JSONB key ordering initially broke retry equality and was corrected through schema normalization. Six Functions deployed. A live temporary-case check proved tool discovery, human-help state change, idempotent retry, and inactive-authority send rejection with zero outbound records; its fixture was removed. The existing own-inbox test is human_required after three decisions and one email; a direct provider read returned capacity HTTP 429, and no new session or grant was created. Naïve MCP wiring remains blocked by setup-key scope.
+Verification: nine protocol/configuration tests, five native-action database tests, and eleven existing autonomy tests pass; build passes. JSONB key ordering initially broke retry equality and was corrected through schema normalization. Six Functions deployed. A live temporary-case check proved tool discovery, human-help state change, idempotent retry, and inactive-authority send rejection with zero outbound records; its fixture was removed. The existing own-inbox test is human_required after three decisions and one email; a direct provider read returned capacity HTTP 429, and no new session or grant was created. Naïve MCP wiring was blocked by setup-key scope.
 
 ## 2026-11-07 — Agent-directed public-source citations
 
 Added `cite_source` to the deployed case MCP service, with per-case ownership, immutable source snapshots, exact short-quote checks, idempotent operations, and evidence references usable by recorded facts. Public HTTPS retrieval validates DNS and every redirect, pins the connection to a validated address, bounds downloads, and supports HTML/plain text/PDF text layers. Added ipaddr.js directly; its older transitive version remains nested for proxy-addr. Prepared Naïve web search/fetch and citation permissions without changing budgets or publishing the agent configuration.
 
-Verification: 13 transport/configuration/source tests and two database tests pass; build passes. Live direct HTTPS retrieval and deployed MCP retrieval/storage/retry/reference verification passed against example.com, followed by fixture cleanup. Migration 0015 and all six Functions deployed. An initial `tsx -e` smoke command hit a CJS/ESM package-export error; rerunning through Node’s ESM loader passed. No model session, claim communication, or payment occurred. Naïve-driven research remains unverified until vault access is configured. See research.md and agent-tools.md.
+Verification: 13 transport/configuration/source tests and two database tests pass; build passes. Live direct HTTPS retrieval and deployed MCP retrieval/storage/retry/reference verification passed against example.com, followed by fixture cleanup. Migration 0015 and all six Functions deployed. An initial `tsx -e` smoke command hit a CJS/ESM package-export error; rerunning through Node’s ESM loader passed. No model session, claim communication, or payment occurred. Naïve-driven research was not verified; vault access was not configured. See research.md and agent-tools.md.
 
 ## 2026-11-07 — Completed-call transcript ingestion
 
@@ -286,11 +286,11 @@ Verification: 15 parser/transport tests and 14 sequential database/autonomy test
 
 ## 2026-11-07 — Verify dashboard setup-key compatibility
 
-Used the user-requested Dia dashboard to create a temporary setup key. The existing Managed Agents API rejected it with HTTP 401, so it was revoked and its private local file deleted. Confirmed REVOKED in the dashboard. No existing keys, app credentials, budgets, or agents changed. See agent-tools.md for the remaining organization/scope requirement.
+Used the user-requested Dia dashboard to create a temporary setup key. The existing Managed Agents API rejected it with HTTP 401, so it was revoked and its private local file deleted. Confirmed REVOKED in the dashboard. No existing keys, app credentials, budgets, or agents changed. See agent-tools.md for the organization/scope requirement.
 
 ## 2026-11-07 — Shared case MCP endpoint and Naïve connection preparation
 
-Deployed a credential-scoped `/mcp` endpoint alongside the original case URL. Added identity/version-pinned session configuration, optional blueprint MCP tools, `NAIVE_CASE_TOOLS_URL`, and a resumable two-case live smoke script. The setup key is read from a private file and never replaces the runtime key on disk. Detailed operation and remaining work are in agent-tools.md.
+Deployed a credential-scoped `/mcp` endpoint alongside the original case URL. Added identity/version-pinned session configuration, optional blueprint MCP tools, `NAIVE_CASE_TOOLS_URL`, and a resumable two-case live smoke script. The setup key is read from a private file and never replaces the runtime key on disk. Detailed operation is in agent-tools.md.
 
 Seven local tests and `npm run build` pass. Neon deployment completed for all six functions. Initial Hono route registration and SDK/blueprint typing errors were corrected before the successful build. Live Naïve verification stopped at vault creation: the existing key lacks admin scope. One temporary synthetic case and identity exist for resumption; no model session or outbound communication was started by this test. No spending caps changed.
 
@@ -298,7 +298,7 @@ Seven local tests and `npm run build` pass. Neon deployment completed for all si
 
 Removed the mandatory four-specialist fan-out from the local Naïve coordinator blueprint. The bounded case-decision prompt now permits direct decisions for routine follow-ups, waits, and stops, with targeted specialist review when useful. Requested results must still be reconciled before submission. User assigned sole ownership of the previously shared files to this agent; no teammate coordination is required.
 
-Verification: `npm run build` passed (266 modules; existing bundle-size warning). Prompt changes are local, not published or deployed. No live inference, message, call, or budget change occurred. Naïve MCP session wiring remains unfinished; details are in agent-tools.md.
+Verification: `npm run build` passed (266 modules; existing bundle-size warning). Prompt changes are local, not published or deployed. No live inference, message, call, or budget change occurred.
 
 ## Save agent reviews without an open browser
 
@@ -330,15 +330,15 @@ Added `agents.md` with the product direction, hackathon constraints, integration
 
 Added the documentation index, product brief, architecture/file map, Neon setup record, implementation-status handoff, demo/research guide, and this log. Documented uncertainty and separated proposed integrations, local unfinished code, deployed infrastructure, and verified command results.
 
-Validation: checked Markdown links, confirmed all files under `docs/` are Markdown, reviewed staged changes for secrets, and ran `git diff --cached --check`. This commit contains documentation only; no application build or service test was rerun for it. Earlier build/deploy evidence and unresolved verification are in implementation-status.md.
+Validation: checked Markdown links, confirmed all files under `docs/` are Markdown, reviewed staged changes for secrets, and ran `git diff --cached --check`. This commit contains documentation only; no application build or service test was rerun for it. Earlier build/deploy evidence is in implementation-status.md.
 
 Earlier setup also created local application/configuration/migration files, installed dependencies and agent tooling, and deployed Neon services. Those implementation files are not included in this documentation commit; see neon.md and implementation-status.md for the complete handoff.
 
-## 2026-11-07 — Stack setup in progress
+## 2026-11-07 — Stack setup
 
 Installed the Naïve SDK, CLI, and blueprint package. Added capped five-agent crew config, SDK adapter, durable crew-request schema, protected crew routes, account connectivity check, and executable browser E2E script. Added the stack operations document. Created a scoped Naïve API key in the ignored environment and provisioned all five agents using the existing hackathon credits. No subscriptions, numbers, or top-ups purchased.
 
-Verification: production build passed. Browser E2E passed auth sign-up/session, Function access, Postgres persistence, Realtime create/delete delivery, reload, and sign-out. Gateway inference remains blocked (no enabled models). Initial browser test failed because matching Chromium was absent; installed it and reran successfully. Initial Naïve coordinator creation failed due to the CLI's two-phase roster application; explicit handoff names resolved it. New crew endpoints/migration are not yet deployed or end-to-end verified.
+Verification: production build passed. Browser E2E passed auth sign-up/session, Function access, Postgres persistence, Realtime create/delete delivery, reload, and sign-out. Gateway inference remains blocked (no enabled models). Initial browser test failed because matching Chromium was absent; installed it and reran successfully. Initial Naïve coordinator creation failed due to the CLI's two-phase roster application; explicit handoff names resolved it. New crew endpoints/migration were not deployed or end-to-end verified at this point.
 
 ### Account and wiring follow-up
 
@@ -348,15 +348,15 @@ Corrected the Naïve coordinator's stale specialist-version pins after inspectin
 
 Refreshed README and implementation-status.md to remove stale handoff claims and describe reproducible run/test commands. Added `NAIVE_SPECIALIST_VERSION` so fresh installations can start at version 1 while this account pins the verified version 2 specialists. E2E rerun passed, including the new authentication/input/spend-restriction checks; AI unavailable state was confirmed, not mistaken for inference success.
 
-Final browser check also passed two-user isolation: the second user cannot see the first user's case in REST or Realtime and receives 404 when trying to run its crew or delete it. Updated agents.md, architecture.md, and implementation-status.md to reflect the implementation rather than the earlier docs-only handoff. Preparing the implementation commit; environment files and generated test records remain ignored.
+Final browser check also passed two-user isolation: the second user cannot see the first user's case in REST or Realtime and receives 404 when trying to run its crew or delete it. Updated agents.md, architecture.md, and implementation-status.md to reflect the implementation rather than the earlier docs-only handoff. Environment files and generated test records remain ignored.
 
 The crew smoke test exposed a missing `submit_output` call after successful delegation. Added explicit tool-submission instructions to the coordinator and session request; preserved strict output validation. The smoke command now returns distinct nonzero exits for failed or pending runs. Build passes after this correction; corrected live run verification follows.
 
 Added an explicit funded-test retry path after the user authorized a retry to the same number. It only accepts a known HTTP 402 rejection, preserves that record, and never retries a successful/ambiguous call automatically. Opened the requested AgentPhone billing page in Dia for the user to fund themselves; no payment made by the assistant.
 
-Naïve completed a full structured case-review run. Content review found unsupported deadlines/exposure/escalation claims, so strengthened all agent instructions and tightened the output schema to supplied-field evidence IDs and bounded summaries/actions. Updated the roster pin for specialist version 3 and extended smoke assertions. User added $25 to AgentPhone; verified $27 balance, then placed the single authorized retry (HTTP 200, ringing). Completion verification pending.
+Naïve completed a full structured case-review run. Content review found unsupported deadlines/exposure/escalation claims, so strengthened all agent instructions and tightened the output schema to supplied-field evidence IDs and bounded summaries/actions. Updated the roster pin for specialist version 3 and extended smoke assertions. User added $25 to AgentPhone; verified $27 balance, then placed the single authorized retry (HTTP 200, ringing).
 
-User confirmed the authorized phone test reached them. Provider readback confirms call `cmw7006zuahsurqhj8kjihh2x` completed, duration 46 seconds, no recording URL. Native AgentPhone outbound voice is now verified. ElevenLabs SIP routing remains pending enablement. Updated synthetic crew prompts and deployed stricter output schema; final content-check run started.
+User confirmed the authorized phone test reached them. Provider readback confirms call `cmw7006zuahsurqhj8kjihh2x` completed, duration 46 seconds, no recording URL. Native AgentPhone outbound voice is now verified. ElevenLabs SIP routing was not enabled at this point. Updated synthetic crew prompts and deployed stricter output schema; final content-check run started.
 
 Checked the Neon $250 sponsor offer in the operator's Dia session. Claiming it requires a paid plan and billing information; left the existing free plan unchanged. Closed the temporary credit-check tabs and preserved the AgentPhone billing tab the user requested.
 
@@ -370,7 +370,7 @@ Live application test passed duplicate-start idempotency, valid provider complet
 
 ## Case outreach implementation
 
-Added immutable outreach drafts, explicit per-action authorization, atomic dispatch claims, and provider status reads. AgentPhone uses the saved discussion plan with synthetic-only instructions and recording disabled; AgentMail uses the draft UUID as its send idempotency key. Unknown outcomes cannot retry automatically. Added owner/operator/recipient checks, retained action history, case UI controls, server-only provider environment entries, migration 0003, and isolated database tests with fake provider transports. See outreach.md for the state machine, API, and limitations. Verification and deployment are in progress; no new real call or email has been sent.
+Added immutable outreach drafts, explicit per-action authorization, atomic dispatch claims, and provider status reads. AgentPhone uses the saved discussion plan with synthetic-only instructions and recording disabled; AgentMail uses the draft UUID as its send idempotency key. Unknown outcomes cannot retry automatically. Added owner/operator/recipient checks, retained action history, case UI controls, server-only provider environment entries, migration 0003, and isolated database tests with fake provider transports. See outreach.md for the state machine, API, and limitations. No new real call or email has been sent.
 
 Verification: migration 0003 succeeded on a temporary production branch and then production; the temporary branch was removed. Eight isolated Postgres/provider-transport tests passed. The deployed app passed draft creation through its form, immutable replay/conflict handling, operator denial, saved draft reload, and cross-user denial on all outreach routes. Fixed an accessible-label issue exposed by the form test. Build passes (263 modules, 529.69 kB JS; existing size warning). The new read adapter retrieved the previously authorized call as completed/46 seconds without placing another call. AgentPhone SIP list returns zero trunks; ElevenLabs routing remains unverified. A concrete synthetic email draft was prepared for the operator to review; no new call or email has been sent.
 
@@ -390,17 +390,17 @@ The user selected a chemical burn at a pharmaceutical workplace as the anchor sc
 
 ## Injury-first intake and case revisions
 
-Added progressive workplace-injury intake and a health-insurance dispute path. Contact/injury information can start a case without a bill. Added optional employer, insurer, jurisdiction, claim-stage/reference, and desired-outcome fields, preserving unknown amounts as null. Added optimistic case revisions, immutable crew requests per revision, stale-draft dispatch prevention, and stale-analysis protection. Added coverage candidates to the crew result and rejected computed discrepancies inconsistent with supplied amounts. Updated the case UI and billing regression tests for the new intake selector. Local validation/completion tests passed; branch migration and deployed workflow verification are in progress.
+Added progressive workplace-injury intake and a health-insurance dispute path. Contact/injury information can start a case without a bill. Added optional employer, insurer, jurisdiction, claim-stage/reference, and desired-outcome fields, preserving unknown amounts as null. Added optimistic case revisions, immutable crew requests per revision, stale-draft dispatch prevention, and stale-analysis protection. Added coverage candidates to the crew result and rejected computed discrepancies inconsistent with supplied amounts. Updated the case UI and billing regression tests for the new intake selector. Local validation/completion tests passed.
 
-Migration 0004 passed on a temporary branch and production, and the branch was removed. Ten pure validation/completion checks and nine isolated Postgres/outreach tests passed. The deployed chemical-burn test passed creation without amounts, a saved crew plan, progressive employer update, 409 on a stale edit, no reuse of the earlier review, and rejection of stale outreach. Database inspection confirmed the revision-1 review remains saved while the case is revision 2. Billing/Auth/Realtime and cross-user edit regression tests passed. Content review found a 25-field intake demand and incorrect claims that the platform lacked email; strengthened all five agent prompts (specialist version 5) and added up to three explicit next questions. A bounded live content recheck is in progress.
+Migration 0004 passed on a temporary branch and production, and the branch was removed. Ten pure validation/completion checks and nine isolated Postgres/outreach tests passed. The deployed chemical-burn test passed creation without amounts, a saved crew plan, progressive employer update, 409 on a stale edit, no reuse of the earlier review, and rejection of stale outreach. Database inspection confirmed the revision-1 review remains saved while the case is revision 2. Billing/Auth/Realtime and cross-user edit regression tests passed. Content review found a 25-field intake demand and incorrect claims that the platform lacked email; strengthened all five agent prompts (specialist version 5) and added up to three explicit next questions.
 
-The version-5 content recheck passed: three next questions, no fabricated zero discrepancy, and no incorrect claim that the app lacks email. Its coverage descriptions remain unverified hypotheses, not researched eligibility or legal conclusions. Source-grounded coverage research is still needed. The latest build passes (264 modules, 536.18 kB JS; existing chunk warning). A fresh deployed check confirmed temporary operator access was revoked and an attempted start returned 403. Updated README and architecture/status documents to reflect injury-first intake and its remaining limits.
+The version-5 content recheck passed: three next questions, no fabricated zero discrepancy, and no incorrect claim that the app lacks email. Its coverage descriptions remain unverified hypotheses, not researched eligibility or legal conclusions. The latest build passes (264 modules, 536.18 kB JS; existing chunk warning). A fresh deployed check confirmed temporary operator access was revoked and an attempted start returned 403. Updated README and architecture/status documents to reflect injury-first intake and its limits.
 
 ## Private document intake (November 7)
 
-Provisioned a private Neon `case-documents` bucket and installed Files SDK with its AWS peer dependencies. Added a document table, authenticated upload/list/download routes, immutable hash-based retry checks, revision advancement, and a case document form. A separate Naïve file-scoped key was saved privately for the upcoming image-reading integration; the existing runtime key was preserved. Applied intake `view_image` access and per-agent version overrides without changing approved budgets. No new calls or emails were sent.
+Provisioned a private Neon `case-documents` bucket and installed Files SDK with its AWS peer dependencies. Added a document table, authenticated upload/list/download routes, immutable hash-based retry checks, revision advancement, and a case document form. A separate Naïve file-scoped key was saved privately for the image-reading integration; the existing runtime key was preserved. Applied intake `view_image` access and per-agent version overrides without changing approved budgets. No new calls or emails were sent.
 
-The first build caught a TypeScript union inference issue in the Naïve tool configuration; an explicit record type fixed it. `npm run build` now passes (265 modules, 539.00 kB main bundle). The existing bundle-size warning remains. Migration 0005 passed on temporary branch `document-storage-check`, then production; the temporary branch was deleted. Deployed the Function and passed the live document smoke: UI upload, exact byte round-trip, SHA-256, anonymous bucket rejection, invalid-format rejection, concurrent retries, revision increment once, persistence, retained-case deletion guard, and second-user list/upload/download isolation. The existing E2E suite also passed Auth, Postgres, Function, Realtime, ownership, and sign-out checks; AI Gateway inference remains blocked by credits. Automated reading is not yet integrated into case documents.
+The first build caught a TypeScript union inference issue in the Naïve tool configuration; an explicit record type fixed it. `npm run build` now passes (265 modules, 539.00 kB main bundle). The existing bundle-size warning remains. Migration 0005 passed on temporary branch `document-storage-check`, then production; the temporary branch was deleted. Deployed the Function and passed the live document smoke: UI upload, exact byte round-trip, SHA-256, anonymous bucket rejection, invalid-format rejection, concurrent retries, revision increment once, persistence, retained-case deletion guard, and second-user list/upload/download isolation. The existing E2E suite also passed Auth, Postgres, Function, Realtime, ownership, and sign-out checks; AI Gateway inference remains blocked by credits. Automated reading was not integrated into case documents in this change.
 
 The live Naïve card-reader smoke passed: intake returned the synthetic insurer, member name, member ID, and group exactly from an uploaded PNG. Those values were not in the session prompt. This verifies standalone transcription only, not automatic extraction from the app or policy eligibility. The existing $0.25 task cap and $2 monthly intake cap were preserved.
 
@@ -412,7 +412,7 @@ Added durable extraction records and owner-scoped read/refresh/confirm endpoints
 
 Renamed the app header, brand initial, footer, browser title, and README to Assurance. Recorded the naming decision in `agents.md` and product documentation. Existing provider/resource identifiers and historical test receipts retain their original names to preserve references. AgentPhone and ElevenLabs names/greetings were updated in place and verified as Assurance Demo, without placing a call or sending an email.
 
-The live crew recovered a malformed delegation in the same session and completed normally. Its output contained an unsupported payer-priority assertion and asked for real replacement records. The request prompt now explicitly restricts questions to synthetic fields and forbids coverage-law assertions without verified sources; this prompt correction awaits a new live content check. The original output remains an immutable historical test result. The original operator allowlist was restored after testing.
+The live crew recovered a malformed delegation in the same session and completed normally. Its output contained an unsupported payer-priority assertion and asked for real replacement records. The request prompt now explicitly restricts questions to synthetic fields and forbids coverage-law assertions without verified sources. The original output remains an immutable historical test result. The original operator allowlist was restored after testing.
 
 Final readback verified the Assurance page title, persisted review links to the source documents, and HTTP 403 for both crew and document-reader starts after the operator allowlist was restored. Two earlier readbacks during deployment returned 200 for an existing crew request; fresh requests later returned 403. Treat environment-based revocation as deployment-dependent, not instantaneous. No new session was created by those existing-run requests. The final build passed at 541.24 kB (265 modules); the existing size warning remains.
 
@@ -440,7 +440,7 @@ Post-deployment readback still reported the operator enabled. Applied a targeted
 
 ## Scheduled reply monitoring (November 7)
 
-Added owner-controlled 30-day monitoring, a dedicated Neon trigger worker, durable processing leases, bounded batches, retry delays, and visible timestamps/status. The worker only reads authorized threads; it has no model or telephony credentials and never sends email. Build passes at 546.51 kB (existing chunk warning). Migration 0009 passed on an isolated branch and production. Five isolated scheduler tests passed. The initial combined test command timed out during database operations; a sequential scheduler rerun passed, and the reply-ingestion rerun encountered EHOSTUNREACH/ENETUNREACH database failures. Nineteen pure regression tests passed. The first production deployment failed to reach the Neon API; a retry and live verification are in progress.
+Added owner-controlled 30-day monitoring, a dedicated Neon trigger worker, durable processing leases, bounded batches, retry delays, and visible timestamps/status. The worker only reads authorized threads; it has no model or telephony credentials and never sends email. Build passes at 546.51 kB (existing chunk warning). Migration 0009 passed on an isolated branch and production. Five isolated scheduler tests passed. The initial combined test command timed out during database operations; a sequential scheduler rerun passed, and the reply-ingestion rerun encountered EHOSTUNREACH/ENETUNREACH database failures. Nineteen pure regression tests passed. The first production deployment failed to reach the Neon API.
 
 Deployment retry succeeded and created the five-minute trigger. The UI enabled monitoring on the existing authorized synthetic thread. Anonymous/cross-user access and a forged scheduler header were rejected. All seven reply-ingestion tests passed on retry; the app E2E suite passed (Gateway inference still unavailable). The isolated branch was deleted. Communication history now refreshes when Realtime delivers a changed case revision. The real 00:50 UTC scheduler delivery passed: one thread checked, zero duplicate imports, zero changes, and zero failures. The UI showed the stored success timestamp and invocation; pause/resume passed. Monitoring remains enabled for this synthetic test thread for 30 days. No new email was sent or received during this scheduled check; fresh-reply ingestion is covered by the earlier live import and database tests.
 
@@ -448,17 +448,17 @@ Final checks: build passed at 546.51 kB; 19 pure regression, seven reply-ingesti
 
 ## Hosted frontend (November 7)
 
-Signed into the existing Vercel Hobby account using the authorized Google identity. Optional model-training consent remained off. The CLI device page had disabled controls; its pending login was stopped, and setup continued through the dashboard. Added explicit public build variables, Vercel build settings, and ignored CLI metadata. Hosting deployment and origin verification are pending.
+Signed into the existing Vercel Hobby account using the authorized Google identity. Optional model-training consent remained off. The CLI device page had disabled controls; its pending login was stopped, and setup continued through the dashboard. Added explicit public build variables, Vercel build settings, and ignored CLI metadata.
 
-The dashboard import failed because Vercel could not access the GitHub repository through its existing connection. Created and linked `assurance-claims` with a one-hour team token after operator verification. The upload dry run exposed that Git exclusions were not sufficient; added `.vercelignore` before any upload. A second dry run found no excluded files or configured credentials among 102 source files. The frontend also passed an isolated build with only three public URLs and no server env file. Direct deployment is in progress.
+The dashboard import failed because Vercel could not access the GitHub repository through its existing connection. Created and linked `assurance-claims` with a one-hour team token after operator verification. The upload dry run exposed that Git exclusions were not sufficient; added `.vercelignore` before any upload. A second dry run found no excluded files or configured credentials among 102 source files. The frontend also passed an isolated build with only three public URLs and no server env file.
 
-Vercel deployment completed successfully and assigned `assurance-claims.vercel.app`. The exact domain was added to Neon Auth; the API/Realtime configuration preserves both existing localhost origins and adds that production origin. The E2E suite now accepts a hosted base URL and explicitly verifies password sign-in after sign-out. Backend deployment and hosted tests are running.
+Vercel deployment completed successfully and assigned `assurance-claims.vercel.app`. The exact domain was added to Neon Auth; the API/Realtime configuration preserves both existing localhost origins and adds that production origin. The E2E suite now accepts a hosted base URL and explicitly verifies password sign-in after sign-out.
 
 Hosted E2E passed against https://assurance-claims.vercel.app: signup, session reload, Postgres writes, Realtime updates, ownership isolation, denial of unapproved model spending, deletion, password sign-in, and sign-out. Gateway inference still correctly reports unavailable. The three public URLs are saved in Vercel Production configuration. The one-hour deployment token was revoked after verification. No provider secret or private test artifact was uploaded.
 
 ## SIP access diagnosis — November 7, 2026
 
-Rechecked the configured AgentPhone account at the user’s request. Listing trunks returned HTTP 200 with none configured; creating the Assurance ElevenLabs trunk returned HTTP 403 explicitly requiring account SIP enablement (request ID recorded in sip-access.md). No trunk, route change, or call resulted. Added the provider unblock and post-approval integration steps to docs/sip-access.md and the documentation index. The dashboard browser was signed out; existing request status was not reverified there. SIP remains blocked by provider approval.
+Rechecked the configured AgentPhone account at the user’s request. Listing trunks returned HTTP 200 with none configured; creating the Assurance ElevenLabs trunk returned HTTP 403 explicitly requiring account SIP enablement (request ID recorded in sip-access.md). No trunk, route change, or call resulted. Added the provider unblock and post-approval integration steps to docs/sip-access.md and the documentation index. The dashboard browser was signed out; existing request status was not reverified there. SIP was blocked by provider approval.
 
 ## AgentPhone replacement — November 7, 2026
 
@@ -476,24 +476,24 @@ Updated the local Naïve prompt to distinguish review-only work from actions und
 
 Applied the tested 0011 migration to production and deployed the case API and new `autopoll` Function. The `case-autonomy` trigger is enabled on a five-minute schedule. An unsigned worker request returned 401. No standing grants were created, so deployment does not initiate outreach. Configured the email allowlist with only the operator's approved setup inbox.
 
-Published the five revised Naïve prompts, then corrected the coordinator's specialist references. Provider inspection confirmed coordinator version 17, intake version 7, and the other three specialists at version 6. Every agent retains its $2 monthly and $0.25 task caps. Updated only the corresponding private version variables and email allowlist in `.env.local`, preserving other values and file permissions. The frontend stop control and authorized live email test remain pending. The deployed native ElevenLabs/Twilio transport remains disabled until its agent and number are provisioned.
+Published the five revised Naïve prompts, then corrected the coordinator's specialist references. Provider inspection confirmed coordinator version 17, intake version 7, and the other three specialists at version 6. Every agent retains its $2 monthly and $0.25 task caps. Updated only the corresponding private version variables and email allowlist in `.env.local`, preserving other values and file permissions. The deployed native ElevenLabs/Twilio transport was disabled because its agent and number were not provisioned.
 
 
 ## 2026-11-07: Deploy frontend controls and begin the authorized test
 
 Deployed the autonomy frontend to Vercel production after the user completed email verification. Inspected the upload manifest to exclude secrets and private artifacts. Extended `scripts/e2e.ts` to verify autonomy-history ownership and deny unauthorized grants and cross-user revocation; hosted E2E passed. Gateway inference remains unavailable because there is no enabled model.
 
-Verified the operator's signed-in form and activated the previously approved own-inbox synthetic authorization, bounded to two emails, three decisions, one hour between contacts, and 24 hours. The stop control is visible; provider execution remains to be verified. Prepared the requested `assurance.claims` one-year Porkbun cart at $10.81 with no paid add-ons. Registration and DNS are pending Porkbun sign-in and human verification.
+Verified the operator's signed-in form and activated the previously approved own-inbox synthetic authorization, bounded to two emails, three decisions, one hour between contacts, and 24 hours. The stop control is visible; provider execution was not verified in this step. Prepared the requested `assurance.claims` one-year Porkbun cart at $10.81 with no paid add-ons. Registration and DNS needed Porkbun sign-in and human verification.
 
 
 ## 2026-11-07: Register and connect assurance.claims
 
-Porkbun confirmed the user's one-year domain purchase at the displayed $10.81 price. Auto-renew is disabled; expiry is 2027-11-08. No hosting or email add-on was selected. Replaced the new domain's parking records with Vercel's displayed apex A and www CNAME records. Connected the apex to Production and configured a permanent www-to-apex redirect. Added the exact apex HTTPS origin to Neon Auth, Function CORS, and Realtime; preserved existing origins and deployed the configuration. The build passes. Public DNS propagation and HTTPS/E2E verification are still pending. See `hosting.md` for exact records and limitations.
+Porkbun confirmed the user's one-year domain purchase at the displayed $10.81 price. Auto-renew is disabled; expiry is 2027-11-08. No hosting or email add-on was selected. Replaced the new domain's parking records with Vercel's displayed apex A and www CNAME records. Connected the apex to Production and configured a permanent www-to-apex redirect. Added the exact apex HTTPS origin to Neon Auth, Function CORS, and Realtime; preserved existing origins and deployed the configuration. The build passes. Public DNS propagation and HTTPS/E2E were not verified in this step. See `hosting.md` for exact records and limitations.
 
 
 ## 2026-11-07: Verify live Naïve action selection and domain DNS
 
-Observed the scheduled worker start the first authorized decision session without errors. Naïve completed with a customer-contact decision requesting three missing fictional facts, at reported consumption of 9,957 micro-USD. Kept the same session after a transient HTTP 429. Dispatch remains pending the next worker check. Verified both configured records directly at Porkbun's authoritative server; the registry delegation still returns NXDOMAIN. No DNS records were changed during this diagnosis.
+Observed the scheduled worker start the first authorized decision session without errors. Naïve completed with a customer-contact decision requesting three missing fictional facts, at reported consumption of 9,957 micro-USD. Kept the same session after a transient HTTP 429. Dispatch had not run at the time of this entry. Verified both configured records directly at Porkbun's authoritative server; the registry delegation still returns NXDOMAIN. No DNS records were changed during this diagnosis.
 
 
 ## 2026-11-07: Verify customer-requested stop
@@ -514,21 +514,21 @@ The live reply path stores RFC-style display-name senders. Corrected `backend/au
 
 The display-name stop fix passed all ten runner tests and the build, then deployed successfully. Reconciled current status in `agents.md`, `implementation-status.md`, `stack.md`, and `hosting.md` so they reflect the custom-domain deployment and delivered autonomous test rather than the earlier pending setup.
 
-The production reply monitor automatically imported the fictional response at 2026-11-08 02:00:00.915 UTC, invocation `a5YGSHdoHB0Lj9eyPVfPBWzDQFHd5AqQH6md6yIllrQ`. Database inspection confirms accepted correspondence and one outbound message used. Naïve continuation awaits its next scheduled check; the existing minimum contact interval remains enforced.
+The production reply monitor automatically imported the fictional response at 2026-11-08 02:00:00.915 UTC, invocation `a5YGSHdoHB0Lj9eyPVfPBWzDQFHd5AqQH6md6yIllrQ`. Database inspection confirms accepted correspondence and one outbound message used. The existing minimum contact interval remains enforced.
 
 
 ## 2026-11-07: Provision the dedicated ElevenLabs outreach agent
 
-Added `--agent-only` to the native Twilio setup script so the voice agent can be prepared before Twilio funding/number setup. The flag validates only the ElevenLabs credential, creates or reuses the dedicated agent, verifies saved settings, and exits before phone-number operations. Ran it successfully and saved the agent ID privately in the existing env file. No subscription, number purchase, number routing, or call occurred. The build passes. Twilio's number remains required before new calls can be enabled.
+Added `--agent-only` to the native Twilio setup script so the voice agent can be prepared before Twilio funding/number setup. The flag validates only the ElevenLabs credential, creates or reuses the dedicated agent, verifies saved settings, and exits before phone-number operations. Ran it successfully and saved the agent ID privately in the existing env file. No subscription, number purchase, number routing, or call occurred. The build passes.
 
 
 ## 2026-11-07: Preserve email threads for autonomous follow-ups
 
-Added immutable reply context to outreach records and migration 0012. The runner chooses an existing successful message only within the same case and approved recipient. The AgentMail adapter now supports its reply endpoint with explicit recipient controls and expected-thread validation. New tests exercise recipient preservation, malformed context, wrong-thread receipts, and a second authorized contact reusing the first thread. Verification is underway on the disposable database branch; production is unchanged by this work so far.
+Added immutable reply context to outreach records and migration 0012. The runner chooses an existing successful message only within the same case and approved recipient. The AgentMail adapter now supports its reply endpoint with explicit recipient controls and expected-thread validation. New tests exercise recipient preservation, malformed context, wrong-thread receipts, and a second authorized contact reusing the first thread. Production was not changed by this work at this point.
 
 The isolated migration and all 27 combined autonomy/outreach/ElevenLabs tests passed with zero failures. The build passes with the existing bundle-size warning. Applied migration 0012 to production after these checks; backend deployment succeeded. Live threaded delivery remains unverified, and no extra email was sent as part of testing.
 
-The 02:05 UTC scheduler check started decision round 2 automatically from the imported reply. The case still has one outbound message used. The second decision result remains pending.
+The 02:05 UTC scheduler check started decision round 2 automatically from the imported reply. The case still has one outbound message used.
 
 ## Reply-driven contact timing correction
 
@@ -552,7 +552,7 @@ Confirmed the operator’s $20 funding receipt against the refreshed console: ac
 
 ## Voice preference updated
 
-The operator declined the Twilio number rental and directed that the next Twilio issue should trigger a switch to AgentPhone without ElevenLabs. Recorded this in agents.md and voice/readiness docs, superseding the earlier avoid-AgentPhone direction. No number purchase, provider switch, call, or deployment occurred. AgentPhone direct-call readiness must be checked before use; ambiguous calls must not be retried on another provider.
+The operator declined the Twilio number rental and directed that the next Twilio issue should trigger a switch to AgentPhone without ElevenLabs. Recorded this in agents.md and voice/readiness docs, superseding the earlier avoid-AgentPhone direction. No number purchase, provider switch, call, or deployment occurred. Ambiguous calls must not be retried on another provider.
 
 ## AgentPhone fallback prepared
 
@@ -564,7 +564,7 @@ Verified the existing hosted agent and active number by authenticated readback, 
 
 ## Fallback backend deployment
 
-Deployed the tested provider selector and AgentPhone transport to Neon production. Verified pre-deploy selection remains ElevenLabs and its number ID is absent, so new calling stays disabled. All five functions updated successfully; unsigned worker and unauthenticated case-status requests returned 401 after deployment. No routing switch, purchase, call, or env pull occurred. Provider-neutral frontend confirmation is committed but not yet deployed; update it before activating AgentPhone to avoid misleading consent wording.
+Deployed the tested provider selector and AgentPhone transport to Neon production. Verified pre-deploy selection remains ElevenLabs and its number ID is absent, so new calling stays disabled. All five functions updated successfully; unsigned worker and unauthenticated case-status requests returned 401 after deployment. No routing switch, purchase, call, or env pull occurred. Provider-neutral frontend confirmation was committed but not deployed at this point.
 
 ## assurance.claims reachability fixed on operator Mac
 
@@ -580,21 +580,21 @@ Deployed the provider-neutral call confirmation to Vercel production and passed 
 
 ## Case tool foundation
 
-Added a separate Streamable HTTP MCP Function, case-scoped hash-only expiring credentials, owner/operator issuance and revocation routes, case_get, and idempotent sourced-statement recording. Migration 0013 passed on the disposable branch. Four protocol tests, two database tests, and build passed. Sending, calling, persistent sessions, research tools, outcomes, and checkout remain next work; this foundation does not expand the existing own-inbox test authorization.
+Added a separate Streamable HTTP MCP Function, case-scoped hash-only expiring credentials, owner/operator issuance and revocation routes, case_get, and idempotent sourced-statement recording. Migration 0013 passed on the disposable branch. Four protocol tests, two database tests, and build passed. This foundation does not expand the existing own-inbox test authorization.
 
-The case-tool foundation was migrated and deployed to production. Live MCP initialization/discovery, own-case read, idempotent statement write, missing/revoked credential denial, and cross-case denial passed. Temporary synthetic fixtures were cleaned up. Naïve tool execution and external actions are not yet part of this verification.
+The case-tool foundation was migrated and deployed to production. Live MCP initialization/discovery, own-case read, idempotent statement write, missing/revoked credential denial, and cross-case denial passed. Temporary synthetic fixtures were cleaned up. Naïve tool execution and external actions were not part of this verification.
 
 ## 2026-11-07 — Managed Agents setup access and connector isolation
 
-Used Playwriter in Dia to sign into the correct existing Managed Agents company and create a compatible temporary admin setup key. Runtime credentials/caps remain unchanged. Provisioned two case identities/vaults; the shared-URL live test exposed cross-session synthetic data contamination. Revoked both credentials, removed their sealed copies, and cancelled both runs. Prepared case-specific MCP URLs and version pins, updated the smoke script and configuration tests, and gated global blueprint MCP activation on an explicit case ID. Three configuration tests and build passed. Fresh isolated-URL reads return the correct cases, but full live completion/write verification is still pending amid provider approval gates and HTTP 429 capacity. No outreach occurred. See agent-tools.md.
+Used Playwriter in Dia to sign into the correct existing Managed Agents company and create a compatible temporary admin setup key. Runtime credentials/caps remain unchanged. Provisioned two case identities/vaults; the shared-URL live test exposed cross-session synthetic data contamination. Revoked both credentials, removed their sealed copies, and cancelled both runs. Prepared case-specific MCP URLs and version pins, updated the smoke script and configuration tests, and gated global blueprint MCP activation on an explicit case ID. Three configuration tests and build passed. Fresh isolated-URL reads return the correct cases, but full live completion/write was not verified at this point, amid provider approval gates and HTTP 429 capacity. No outreach occurred. See agent-tools.md.
 
-Live isolated-URL verification completed through the authenticated Dia session after external API capacity errors: both sessions ended normally, returned their own case IDs, rejected cross-case probes, and wrote one expected Neon fact each. Naïve read_people gates required explicit synthetic-test approvals, including one same-session continuation to finish the first write. Cancelled the failed shared-URL sessions; removed four test cases and their credentials/facts, deleted test vaults, detached identities, revoked temporary admin keys, and removed the local key file. Restored default coordinator version 21 with no case connector; per-case test versions remain historical. Runtime key, standing grants, and caps unchanged. General UI activation/provisioning remains future work.
+Live isolated-URL verification completed through the authenticated Dia session after external API capacity errors: both sessions ended normally, returned their own case IDs, rejected cross-case probes, and wrote one expected Neon fact each. Naïve read_people gates required explicit synthetic-test approvals, including one same-session continuation to finish the first write. Cancelled the failed shared-URL sessions; removed four test cases and their credentials/facts, deleted test vaults, detached identities, revoked temporary admin keys, and removed the local key file. Restored default coordinator version 21 with no case connector; per-case test versions remain historical. Runtime key, standing grants, and caps unchanged.
 
 ## 2026-11-07 — AgentPhone-only voice pivot
 
-Applied explicit user direction to use only direct AgentPhone for new calls. Removed ElevenLabs/Twilio new dispatch, changed provider defaults and the ignored local selector to agentphone, updated diagnostics and the authenticated readiness field, retained historical provider receipt reads, and updated transport/database fixtures and docs. Read-only provider check verified hosted mode and an active configured number. Eleven focused tests and build passed; full database suite not rerun. Deployment pending. No purchase, call, grant expansion, or automatic retry occurred.
+Applied explicit user direction to use only direct AgentPhone for new calls. Removed ElevenLabs/Twilio new dispatch, changed provider defaults and the ignored local selector to agentphone, updated diagnostics and the authenticated readiness field, retained historical provider receipt reads, and updated transport/database fixtures and docs. Read-only provider check verified hosted mode and an active configured number. Eleven focused tests and build passed; full database suite not rerun. No purchase, call, grant expansion, or automatic retry occurred.
 
-AgentPhone-only code and selector deployed to all six Functions; general-version tests and build passed before deployment. Updated agents.md to make the current provider instruction explicit. Authenticated readiness readback pending. No call placed.
+AgentPhone-only code and selector deployed to all six Functions; general-version tests and build passed before deployment. Updated agents.md to make the current provider instruction explicit. No call placed.
 
 Neon readback confirms completed cases/tools/autopoll deployments (53/11/19) with the selector and AgentPhone variables declared. Authenticated readiness verification did not pass: the retained browser session timed out waiting for stack status, an initial fresh session returned the old readiness payload, and a later signup test returned to the login form rather than reaching the workspace. Recorded these limits; no new calling success is claimed.
 
@@ -608,7 +608,7 @@ Neon readback confirms completed cases/tools/autopoll deployments (53/11/19) wit
 
 - Added `backend/provision-case-session.ts` and its operator CLI for existing approved synthetic authorities. Setup recovers remote identities/vaults/versions, seals a transaction-scoped case credential, restores the previous general coordinator default, verifies the binding, and registers the worker session without resetting authority limits.
 - Failed database transactions leave remote tokens unusable. Retry recovers remote resources and replaces stale sealed credentials. No live case was activated, no grant was created, and no outreach was sent.
-- All four disposable-database tests passed: idempotent setup, authorization rejection before provider work, lost-publication recovery, and preserving a newer general default. Build passes with the existing bundle-size warning. The command still needs live provider verification; automatic renewal and customer-facing activation remain unfinished.
+- All four disposable-database tests passed: idempotent setup, authorization rejection before provider work, lost-publication recovery, and preserving a newer general default. Build passes with the existing bundle-size warning. The command was not verified against the live provider in this step.
 
 ### Live persistent session start and evidence wake
 
@@ -627,14 +627,14 @@ Added a database-backed request lease and shared cooldown to the Naïve SDK tran
 ### Review-only permission selector
 
 - Added a review-only default to the autonomy form, with no contacts and no outbound allowance. Synthetic email remains an explicit alternative with its existing limits. Switching modes clears consent.
-- Added an optional E2E UI check that intercepts authorization requests and verifies both payloads and consent reset without creating live authority. Frontend changes are local and await deployment; no deployment overlaps the side chat's capacity work.
+- Added an optional E2E UI check that intercepts authorization requests and verifies both payloads and consent reset without creating live authority. Frontend changes were local and not deployed; no deployment overlaps the side chat's capacity work.
 - Validation passed: local E2E exercised review-only and email payloads, consent reset, real Auth/Functions/Realtime, and cross-user isolation; no live authority was created by the UI test. `npm run build` passed with the existing bundle-size warning. Gateway inference remains unavailable.
 
 ### Shared integration review
 
 - Found and fixed a conflict between the new single-request governor and parallel case-binding reads. Preflight now reads version, identity, and attachment sequentially; all eight binding/transport/config tests passed.
 - The side chat applied migration 0018 and deployed the governor and idle-session optimization to all six Functions, then verified a real coordinator GET with lease release and zero failures. This controls HTTP traffic, not model concurrency. No external capacity report was sent, per the user's cancellation.
-- Deployed the integration fix successfully to all six Neon Functions with `--no-env-pull`. The review-only frontend remains pending Vercel publication.
+- Deployed the integration fix successfully to all six Neon Functions with `--no-env-pull`. The review-only frontend was not published to Vercel in this step.
 
 ### Review-only UI deployed to assurance.claims
 
@@ -661,7 +661,7 @@ Approval-workflow validation completed locally: the full E2E passed after correc
 
 ### Approval backend deployed
 
-Applied production migration 0019 and deployed all six Neon Functions after the pinned frontend deployment handed control back. The owner-approval UI remains unpublished. Extended the hosted isolation test to cover GET and POST of another user's session-approval endpoint. No live provider confirmation was submitted during this deployment.
+Applied production migration 0019 and deployed all six Neon Functions after the pinned frontend deployment handed control back. The owner-approval UI was not published in this step. Extended the hosted isolation test to cover GET and POST of another user's session-approval endpoint. No live provider confirmation was submitted during this deployment.
 
 The updated committed-source hosted E2E (`E2E_BASE_URL=https://assurance.claims npm run test:e2e`) exited 0 after backend deployment. It passed signup, authenticated Functions, Realtime, persistence, readiness, authorization denial, cross-user isolation including both approval routes, deletion, sign-out, and password sign-in. AI inference remained unavailable because the gateway has no enabled model. This run did not enable the optional mocked UI fixture or submit a provider confirmation.
 
@@ -671,7 +671,7 @@ Moved authorization validation ahead of the human-required early return and expa
 
 All 29 session/approval database tests passed against the disposable branch; `npm run build` passed (273 modules, existing chunk-size warning). Updated the implementation-status summary to distinguish the current AgentPhone-only deployment and verified Naïve setup from superseded milestones.
 
-Deployed all six production Neon Functions successfully with the existing environment preserved. Read-only post-deploy checks passed: public frontend HTTP 200, anonymous case API HTTP 401, forged scheduler delivery HTTP 401. Paused-session cancellation behavior is covered by the disposable-database tests with fake provider transports; no live cancellation fixture or new external communication was created for this change. Approval frontend publication remains pending.
+Deployed all six production Neon Functions successfully with the existing environment preserved. Read-only post-deploy checks passed: public frontend HTTP 200, anonymous case API HTTP 401, forged scheduler delivery HTTP 401. Paused-session cancellation behavior is covered by the disposable-database tests with fake provider transports; no live cancellation fixture or new external communication was created for this change. The approval frontend was not published in this step.
 
 ### Published owner approval controls
 
@@ -679,29 +679,29 @@ Released commit 5b37141 to assurance.claims as Vercel deployment dpl_BLKVRRBirHE
 
 ### Live approval integration preparation
 
-Added a separate-state option to the persistent smoke script and an owner-authenticated HTTP approval smoke command. The new check rejects non-synthetic or outbound-enabled authorities and confirms only known fixture reads/timers. Build passed. Live verification and cleanup are in progress; this entry does not claim a provider confirmation succeeded.
+Added a separate-state option to the persistent smoke script and an owner-authenticated HTTP approval smoke command. The new check rejects non-synthetic or outbound-enabled authorities and confirms only known fixture reads/timers. Build passed. This entry does not claim a provider confirmation succeeded.
 
-The live owner API returned a real pending `assurance.case_get`, confirmed it using the deployed runtime key, and returned the same confirmed receipt for a duplicate POST. Production contained exactly one approval audit row. The same session had accepted the revision-2 evidence event at sequence 29 before requesting approval. Subsequent session/event reads returned provider HTTP 429 capacity errors, so post-confirmation completion is not claimed. Local fixture authority and credentials were revoked; remote cleanup is waiting for the shared cooldown. No outbound contact occurred.
+The live owner API returned a real pending `assurance.case_get`, confirmed it using the deployed runtime key, and returned the same confirmed receipt for a duplicate POST. Production contained exactly one approval audit row. The same session had accepted the revision-2 evidence event at sequence 29 before requesting approval. Subsequent session/event reads returned provider HTTP 429 capacity errors, so post-confirmation completion is not claimed. Local fixture authority and credentials were revoked; remote cleanup had not completed at this point because of the shared cooldown. No outbound contact occurred.
 
-Remote cleanup cancellation also returned HTTP 429 after cooldown. Local authority/credentials remain revoked and remote cleanup IDs are recorded privately. The setup key disappeared from the dashboard after revocation; its private file and the owner authorization copy were deleted, and both tabs closed. Remote session/vault/identity cleanup remains outstanding. No new application deployment is needed for these test-script/documentation changes. Build passed.
+Remote cleanup cancellation also returned HTTP 429 after cooldown. Local authority/credentials remain revoked and remote cleanup IDs are recorded privately. The setup key disappeared from the dashboard after revocation; its private file and the owner authorization copy were deleted, and both tabs closed. No new application deployment is needed for these test-script/documentation changes. Build passed.
 
 ### Queued persistent activation implementation
 
-Added migration 0020 and a durable setup queue tied to a newly authorized case. Opt-in authorization queues setup atomically; legacy inference excludes queued setups. The worker uses a separate optional setup credential, leases one job, checks current authorization, and retries provider failures without replacing grants. Owner history/UI show setup progress and explain the persistent budget. Production remains disabled by default; database regression and deployment verification are in progress.
+Added migration 0020 and a durable setup queue tied to a newly authorized case. Opt-in authorization queues setup atomically; legacy inference excludes queued setups. The worker uses a separate optional setup credential, leases one job, checks current authorization, and retries provider failures without replacing grants. Owner history/UI show setup progress and explain the persistent budget. Production remains disabled by default.
 
 ### Redeploy committed approval release
 
 Redeployed clean commit `baf3548` to assurance.claims as `dpl_FESJmoN6a5T8G7F9c2FTwA7btaM2`, excluding unfinished activation work. Build and HTTP/asset match checks passed. No backend or schema changes. Temporary deployment token revoked and private token/OTP copies removed; browser tab closed. Hosted E2E exited 0, including optional mocked authorization/approval controls and real Auth, persistence, Realtime, isolation, deletion, and sign-in/out checks.
 
-Activation validation: the initial parallel test invocation raced migration application; rerunning serially passed all 22 tests (7 setup queue, 4 provisioning, 11 legacy autonomy). Build passed after correcting the Neon optional/required credential config union. Local E2E passed mocked activation submission/status and approval controls. Applied production migration 0020 and deployed all six Functions with activation disabled. Hosted core E2E passed, including the new setup response and persistent_available=false. Production has zero setup jobs. The earlier revoked fixture remains in cancellation backoff; remote cleanup is still outstanding. The separate baf3548 frontend redeploy excludes this activation UI.
+Activation validation: the initial parallel test invocation raced migration application; rerunning serially passed all 22 tests (7 setup queue, 4 provisioning, 11 legacy autonomy). Build passed after correcting the Neon optional/required credential config union. Local E2E passed mocked activation submission/status and approval controls. Applied production migration 0020 and deployed all six Functions with activation disabled. Hosted core E2E passed, including the new setup response and persistent_available=false. Production has zero setup jobs. The earlier revoked fixture remained in cancellation backoff. The separate baf3548 frontend redeploy excludes this activation UI.
 
 The first push encountered remote dashboard commit 972f0d1. Rebased onto it and preserved its sidebar, timeline, and authority-card styling while retaining activation loading and setup status. The combined build passed (681 modules). The first merged E2E reached deletion but timed out on the intentionally hidden sign-out control in the collapsed sidebar; updated the test to expand Workspace navigation by hover before signing out. Final combined verification follows.
 
-The final combined local E2E passed activation/approval fixtures, real auth, persistence, readiness, isolation, deletion, sidebar sign-out, and password sign-in. The side task is connecting GitHub automatic frontend deployments; this change is ready for that path, but persistent activation remains disabled in production until dedicated setup access and a live activation test succeed.
+The final combined local E2E passed activation/approval fixtures, real auth, persistence, readiness, isolation, deletion, sidebar sign-out, and password sign-in. The side task is connecting GitHub automatic frontend deployments; this change is ready for that path, and persistent activation remained disabled in production at this point.
 
 ### Connect Vercel to GitHub
 
-Connected assurance-claims to pranayD21/autonomouscompany, confirmed main as production branch through Vercel readback, and documented frontend automatic deployments. No token, domain, or Neon backend configuration was changed. This documentation-only commit verifies the push-triggered build; its deployment outcome will be recorded after verification.
+Connected assurance-claims to pranayD21/autonomouscompany, confirmed main as production branch through Vercel readback, and documented frontend automatic deployments. No token, domain, or Neon backend configuration was changed. This documentation-only commit verifies the push-triggered build.
 
 GitHub-trigger verification passed: documentation-only commit d0cdf05 automatically produced Ready deployment dpl_6TZDiVgGMCXTEsA9QZjusy281zAz in 12 seconds, Current Production at assurance.claims. HTTP 200 and the new bundle were confirmed. No manual deployment command, token, or backend change was required.
 
@@ -709,14 +709,14 @@ GitHub-trigger verification passed: documentation-only commit d0cdf05 automatica
 
 Verified the prior owner-approved read consumed revision 2 and ended the same session ($0.011012 total). Completed its remote/local cleanup with zero outbound rows. Created a dedicated setup-worker credential, retained it privately, and deployed it only to autopoll; environment-name readback confirmed absence from the cases Function. Existing runtime key/caps/grants remain unchanged. A fresh synthetic case and real crew review were requested through the owner API for queued activation verification; no communications are allowed.
 
-The dedicated worker key deployed successfully; live review completed with valid saved output. Enabled persistent setup for the existing approved operator. The first authorization POST immediately after deployment returned the old disabled response despite availability readback; no grant was created. A fresh retry then queued exactly one zero-outbound authority. The verified case-autonomy trigger is enabled with the next run at 05:05 UTC. Live scheduler setup/start verification is pending.
+The dedicated worker key deployed successfully; live review completed with valid saved output. Enabled persistent setup for the existing approved operator. The first authorization POST immediately after deployment returned the old disabled response despite availability readback; no grant was created. A fresh retry then queued exactly one zero-outbound authority. The verified case-autonomy trigger is enabled with the next run at 05:05 UTC.
 
-The real 05:05 UTC trigger provisioned the queued authority and started one case-bound session. Owner API/provider readback and the live workspace showed ready/running. General default restored to version 27 with zero connectors; general review pin remains 21. Hosted E2E with persistent availability expected true passed, including rejection of unlisted-user spending. The dedicated setup credential is absent from the case API environment and frontend assets. Activation stays enabled for the existing operator. Both live fixtures are fully cleaned up with zero outbound records; temporary credential/auth copies and owned tabs were removed. The worker credential remains privately configured for ongoing activation. Sponsor-credit lookup returned a portal HTTP 500; no purchase was made. Automatic credential renewal and gateway credit access remain incomplete.
+The real 05:05 UTC trigger provisioned the queued authority and started one case-bound session. Owner API/provider readback and the live workspace showed ready/running. General default restored to version 27 with zero connectors; general review pin remains 21. Hosted E2E with persistent availability expected true passed, including rejection of unlisted-user spending. The dedicated setup credential is absent from the case API environment and frontend assets. Activation stays enabled for the existing operator. Both live fixtures are fully cleaned up with zero outbound records; temporary credential/auth copies and owned tabs were removed. The worker credential remains privately configured for ongoing activation. Sponsor-credit lookup returned a portal HTTP 500; no purchase was made.
 
 
 ### Recheck ownership before persistent event delivery
 
-Added a fresh case/owner/operator and credential-binding check after the provider status request, before sending a queued event to the existing session. Previously, that second check covered authority state and credential expiry/revocation but omitted owner and operator changes. Five database regression cases cover changes to the owner, operator allowlist, credential issuer, credential case, and authority approver during the remote read. The worker cancels the existing session and leaves its event undelivered when any check fails. No grants, caps, or session identities are reset. Human-required recovery remains a separate unfinished flow.
+Added a fresh case/owner/operator and credential-binding check after the provider status request, before sending a queued event to the existing session. Previously, that second check covered authority state and credential expiry/revocation but omitted owner and operator changes. Five database regression cases cover changes to the owner, operator allowlist, credential issuer, credential case, and authority approver during the remote read. The worker cancels the existing session and leaves its event undelivered when any check fails. No grants, caps, or session identities are reset.
 
 Validation: all 34 session/approval database tests passed on the disposable branch, and `npm run build` passed. Targeted production `autopoll` deployment 28 completed; no environment changes or outbound tests were made. Other Functions and the phone-flow work were untouched.
 
@@ -728,7 +728,7 @@ Added one database integration test covering a reply and due timer together, fol
 
 ### Establish credential-renewal constraints
 
-Inspected the installed Managed Agents vault API: rotation requires create-new/delete-old and cannot be implemented by extending the Neon expiry alone. Prepared an isolated live rotation experiment under the existing zero-outbound synthetic scope. Provisioning succeeded, but the pre-start identity check returned HTTP 429; no session or rotation started. Remote cleanup also returned 429 after the shared cooldown. Read-only database verification confirmed no remote session, revoked authority, revoked credential, and zero outbound rows. Remote vault/identity deletion remains pending; resume cleanup using the ignored rotation-runner and rotation-live-smoke state, without creating another fixture. No production source, schema, auth configuration, or budget changed.
+Inspected the installed Managed Agents vault API: rotation requires create-new/delete-old and cannot be implemented by extending the Neon expiry alone. Prepared an isolated live rotation experiment under the existing zero-outbound synthetic scope. Provisioning succeeded, but the pre-start identity check returned HTTP 429; no session or rotation started. Remote cleanup also returned 429 after the shared cooldown. Read-only database verification confirmed no remote session, revoked authority, revoked credential, and zero outbound rows. No production source, schema, auth configuration, or budget changed.
 
 
 ### Complete renewal-experiment cleanup
@@ -737,13 +737,13 @@ Resumed the same fixture cleanup after the shared capacity cooldown. The command
 
 ### Phone-first accounts and document notifications
 
-Implemented an additive Better Auth phone identity service, verified-number account linking, signed/deduplicated AgentPhone call intake, owner-confirmed portal intake, scoped document-request tool, and consent-bound notification outbox. Existing managed email accounts are preserved. Added migrations 0021–0022, phone OTP/dashboard UI, issue-triggered document texts, opt-out, and a default-disabled deployment path. The existing number requires SMS registration; the user selected individual/no-EIN and provided registration details privately. No fee, call, SMS, or routing change has occurred. Nine phone integration tests, thirty-five session/approval regressions, ten MCP/configuration tests, the browser OTP fixture, and the build passed. Targeted OTP/linking checks also passed after log-suppression configuration. Production migrations 0021–0022 and the seven-Function deployment completed with the phone flag disabled; public deployment and readback checks are in progress. See docs/phone-first.md.
+Implemented an additive Better Auth phone identity service, verified-number account linking, signed/deduplicated AgentPhone call intake, owner-confirmed portal intake, scoped document-request tool, and consent-bound notification outbox. Existing managed email accounts are preserved. Added migrations 0021–0022, phone OTP/dashboard UI, issue-triggered document texts, opt-out, and a default-disabled deployment path. The existing number requires SMS registration; the user selected individual/no-EIN and provided registration details privately. No fee, call, SMS, or routing change has occurred. Nine phone integration tests, thirty-five session/approval regressions, ten MCP/configuration tests, the browser OTP fixture, and the build passed. Targeted OTP/linking checks also passed after log-suppression configuration. Production migrations 0021–0022 and the seven-Function deployment completed with the phone flag disabled. See docs/phone-first.md.
 
 ### Preserve managed email methods in phone adapter
 
 Hosted verification found that object-spreading the managed auth client's Proxy omitted its dynamic signUp/signIn methods. Replaced the spread with explicit references. Full local E2E then passed real email signup, persistence, isolation, sign-out/password sign-in, plus mocked permission/approval controls. Added a dry-run-first individual SMS registration command with a private attempt journal and no automatic paid resubmission; its read-only plan validated the prepared draft and public opt-in screenshot without submitting. Phone feature and recipient allowlist remain disabled.
 
-Phone rollout verification: post-fix commit 2c23098 auto-deployed and hosted E2E exited 0. Real email auth, persistence, Realtime, readiness/isolation, deletion, sign-out/password sign-in and mocked approval controls passed. Disabled phone status/OTP and forged scheduler denial were read back. One concurrent outbox regression passed after the global notification-budget lock. No registration, SMS, call, or inbound routing change occurred; the prepared $25 registration is awaiting explicit approval.
+Phone rollout verification: post-fix commit 2c23098 auto-deployed and hosted E2E exited 0. Real email auth, persistence, Realtime, readiness/isolation, deletion, sign-out/password sign-in and mocked approval controls passed. Disabled phone status/OTP and forged scheduler denial were read back. One concurrent outbox regression passed after the global notification-budget lock. No registration, SMS, call, or inbound routing change occurred; the prepared $25 registration had not been approved at this point.
 
 
 ### Live vault replacement fails same-session authentication
@@ -762,18 +762,18 @@ Confirmed the main task's cleanup failure was a real Naïve 429 followed by a lo
 
 Added shared cooldown scheduling for persistent setup and session jobs and separate deferred-job reporting. A definite HTTP 429 approval rejection no longer creates an uncertain receipt; HTTP 503 and network-loss writes still require reconciliation. Approval endpoints expose capacity as HTTP 503 with a retry time. The existing transport governor and send-once behavior remain intact.
 
-Verification: production build and type checking passed. All 55 focused checks passed: seven capacity/retry unit tests, two governor database tests, eight setup tests, and 38 session/approval/event tests. Database tests ran on an isolated temporary Neon branch, which was deleted afterward. The 429 event test preserved the session and event identity through recovery; the approval tests distinguished rejected 429 requests from uncertain 503 writes. No production deployment or external case communication was performed. A retry of the already revoked cleanup fixture returned another provider HTTP 429; remote cleanup remains pending. This patch does not complete the persistent-only workflow migration.
+Verification: production build and type checking passed. All 55 focused checks passed: seven capacity/retry unit tests, two governor database tests, eight setup tests, and 38 session/approval/event tests. Database tests ran on an isolated temporary Neon branch, which was deleted afterward. The 429 event test preserved the session and event identity through recovery; the approval tests distinguished rejected 429 requests from uncertain 503 writes. No production deployment or external case communication was performed. A retry of the already revoked cleanup fixture returned another provider HTTP 429. This patch does not complete the persistent-only workflow migration.
 
 ### Prepare minimal-Naïve demo fallback
 
-Added an isolated local direct-model runner under scripts/demo, preserving the ongoing persistent-workflow migration. It can cache a genuine Naïve handoff with one events read, then run real case-scoped MCP tools without Naïve runtime requests. Private durable conversation state, case checks, exclusive-engine checks, and a persisted uncertain-dispatch stop prevent blind tool replay. Four focused tests and TypeScript compilation passed. A private direct OpenAI key request is pending; live inference and exclusive-case demo verification remain incomplete. No production deployment or communications occurred.
+Added an isolated local direct-model runner under scripts/demo, preserving the ongoing persistent-workflow migration. It can cache a genuine Naïve handoff with one events read, then run real case-scoped MCP tools without Naïve runtime requests. Private durable conversation state, case checks, exclusive-engine checks, and a persisted uncertain-dispatch stop prevent blind tool replay. Four focused tests and TypeScript compilation passed. Live inference and exclusive-case demo verification had not completed at this point. No production deployment or communications occurred.
 
 Live fallback verification subsequently passed: direct OpenAI tool-call generation, two model/MCP turns with persisted conversation, exactly one sourced fact and revision-2 readback, zero outbound actions. The synthetic fixture/raw token were cleaned. The direct-model key is stored only in the private local environment; no deployment or automatic engine switch occurred. Added a reproducible no-outreach fixture preparation/cleanup command.
 
 
 ### Commit the complete repository checkpoint
 
-At the user's request, committed all pending repository source, tests, migration files, and documentation alongside the previously committed direct-model demo fallback. The persistent-only migration remains unfinished; migration 0023 and the pending backend changes are not deployed by this Git push. Build and seven focused capacity/demo tests passed. A scan of changed files found no configured secret values or credential-shaped strings; private environment files and test artifacts remain ignored. GitHub pushes trigger frontend deployment only.
+At the user's request, committed all pending repository source, tests, migration files, and documentation alongside the previously committed direct-model demo fallback. Migration 0023 and the backend changes are not deployed by this Git push. Build and seven focused capacity/demo tests passed. A scan of changed files found no configured secret values or credential-shaped strings; private environment files and test artifacts remain ignored. GitHub pushes trigger frontend deployment only.
 
 ### Explicit persistent case activation UI
 
@@ -781,7 +781,7 @@ Replaced the bounded demo authorization form with owner-written version-2 permis
 
 ### Complete POC phone readiness behavior
 
-Read-only AgentPhone checks still report the existing registration pending and the number registration_required; hosted phone onboarding remains disabled. No paid submission, message, call, routing, or environment change occurred. Removed the historical case-notification count caps and made PHONE_ALLOWED_NUMBERS an optional rollout restriction: an empty list permits recipients already authorized by the OTP/consent paths once the feature and carrier are ready. Retained OTP abuse controls, STOP, ownership, deduplication, and uncertain-send reconciliation. Document requests now accept version-2 owner permission without legacy expiry requirements. PhoneSignIn checks readiness and directs unavailable users to the existing email path. All 12 phone database tests, the browser OTP/disabled-email fallback fixture, and the build passed; browser/provider transport tests sent no real texts. Live carrier delivery remains the external gate.
+Read-only AgentPhone checks still report the existing registration pending and the number registration_required; hosted phone onboarding remains disabled. No paid submission, message, call, routing, or environment change occurred. Removed the historical case-notification count caps and made PHONE_ALLOWED_NUMBERS an optional rollout restriction: an empty list permits recipients already authorized by the OTP/consent paths once the feature and carrier are ready. Retained OTP abuse controls, STOP, ownership, deduplication, and uncertain-send reconciliation. Document requests now accept version-2 owner permission without legacy expiry requirements. PhoneSignIn checks readiness and directs unavailable users to the existing email path. All 12 phone database tests, the browser OTP/disabled-email fallback fixture, and the build passed; browser/provider transport tests sent no real texts.
 
 ### Save interrupted integration handoff
 
@@ -807,7 +807,7 @@ Seven disposable-Postgres v2 action tests passed with fake providers, covering r
 ### Hosted direct-agent verification harness
 
 - Added `scripts/hosted-direct-smoke.ts` with persistent private fixture state, hosted signup/session capture, activation/isolation checks, scheduler observation, owner update/resume, revoke, and delayed stop verification. Zero-outreach and separately authorized single-email fixtures are isolated.
-- TypeScript passed. No hosted fixture or message was created while implementing the harness; live execution awaits backend deployment.
+- TypeScript passed. No hosted fixture or message was created while implementing the harness.
 
 The hosted-compatible integration suite `scripts/hosted-workflow.test.ts` then passed alongside all eleven direct-runner tests (12 total), with successful fixture cleanup. It created v2 permission without an operator allowlist, queued a direct run, resumed a persisted pending tool after a Function slice, recovered from a simulated model 429, set a stable goal, sent two fake threaded emails, imported two authenticated fictional replies through the real reply parser/service, recorded an exactly quoted simulated outcome, and reached `completed` without another inference or send. All communication transports and model responses were scripted; this is service integration evidence, not live insurer delivery or a real payout. `connectDirectCaseTools` accepts service overrides for this test while retaining its internal authentication guard. TypeScript and `git diff --check` passed after the communication and monitor-status changes.
 
@@ -820,7 +820,7 @@ The hosted-compatible integration suite `scripts/hosted-workflow.test.ts` then p
 
 Wired the durable direct runner into autopoll and inbound event hooks, excluded direct authorities from legacy engines, and added server-only direct-model/document configuration. Review fixes preserve requested operation IDs across model retries, keep output-review pauses parked until owner resume, retry known read-only tools after interruption, and consume only the events actually added to the conversation. The case page now puts Agent work ahead of the optional legacy review.
 
-The first runner test attempt exposed stale disposable fixtures and foreign-key cleanup order; the test cleanup was corrected. The initial runner/full-exchange suite passed 12/12; a subsequent expanded runner regression is in progress. Legacy session/setup/tool/phone/provisioning and v2 action regressions passed 71/71 serially. Build and mocked activation UI passed. The old Naïve rotation fixture cleanup succeeded with zero outbound rows. Carrier registration still reports pending/registration_required; phone remains disabled. Production deployment and live scheduler verification are still pending at this checkpoint.
+The first runner test attempt exposed stale disposable fixtures and foreign-key cleanup order; the test cleanup was corrected. The initial runner/full-exchange suite passed 12/12. Legacy session/setup/tool/phone/provisioning and v2 action regressions passed 71/71 serially. Build and mocked activation UI passed. The old Naïve rotation fixture cleanup succeeded with zero outbound rows. Carrier registration still reports pending/registration_required; phone remains disabled. Production deployment and live scheduler verification had not been done at this checkpoint.
 
 ## Twilio Verify setup script
 
@@ -841,7 +841,7 @@ Added `scripts/hosted-phone-smoke.ts` with separate fictional-account, one-real-
 
 Integrated the additional phone-login handoff: phone-only entry with older email fallback, five fictional shared demo numbers, separate login/notification flags, Twilio Verify codes, and existing OTP abuse controls. Phone DB tests passed 16/16 and six affected cases passed again after readiness separation; mocked UI and build passed. The Verify setup script passed four fake-transport tests. The real account was active; its list endpoint rejected PageSize=1000, so setup now uses 100. Created one Assurance service, verified six-digit settings, and saved its SID privately. No SMS sent at this checkpoint.
 
-Hosted activation and zero-contact reasoning passed, as did actual uploaded-card extraction, cross-owner denial, and confirmation idempotency. Live model behavior exposed a missing required email-tool argument (no decision/dispatch row) and stale evidence after a fact write. The runner now distinguishes explicit pre-dispatch rejection from uncertainty, refreshes its system instructions, and surfaces unresolved tool failures as owner-help states. Action errors identify stale evidence without leaking internals. The final runner/workflow/action regression passed 23/23. The existing fixtures will continue under their original permissions; no email has been sent yet.
+Hosted activation and zero-contact reasoning passed, as did actual uploaded-card extraction, cross-owner denial, and confirmation idempotency. Live model behavior exposed a missing required email-tool argument (no decision/dispatch row) and stale evidence after a fact write. The runner now distinguishes explicit pre-dispatch rejection from uncertainty, refreshes its system instructions, and surfaces unresolved tool failures as owner-help states. Action errors identify stale evidence without leaking internals. The final runner/workflow/action regression passed 23/23. The existing fixtures kept their original permissions; no email had been sent at this checkpoint.
 
 ## November 8, 2026 — Hosted release verified
 
@@ -895,27 +895,27 @@ Added migration 0025, authenticated phone-Function bridge routes, fresh-heartbea
 
 Nine local tests and nine disposable-database bridge tests passed; TypeScript passed. Read-only checks found one SMS and one iMessage service, with automation and selected SMS account ready. Database access is denied, so the bridge remains disabled. No real send, Apple-account change, privacy-setting change, or inbound-routing activation occurred. All 17 existing phone regression tests also passed, as did the final build and diff checks. Production migration journal hashes were verified, then migration 0025 brought the count to 26. All seven Functions deployed with the authenticated Mac bridge configured and PHONE_FLOW_ENABLED still false. Live endpoint propagation/readback is checked separately.
 
-Hosted bridge readback passed after deployment propagation: public status reports mac_messages with notificationReady=false while Twilio login remains enabled/ready. The configured local runner completed a no-send heartbeat cycle; anonymous claim returned401, and authenticated claim returned no job with the flow disabled. All35 focused tests (9local,9bridge DB,17phone regression) passed. No real SMS/iMessage, reply delivery, or inbound call was tested. The user reported enabling Full Disk Access, but the existing T3/Codex helper still cannot open Messages; resolve responsible-app access/restart before enabling delivery.
+Hosted bridge readback passed after deployment propagation: public status reports mac_messages with notificationReady=false while Twilio login remains enabled/ready. The configured local runner completed a no-send heartbeat cycle; anonymous claim returned401, and authenticated claim returned no job with the flow disabled. All35 focused tests (9local,9bridge DB,17phone regression) passed. No real SMS/iMessage, reply delivery, or inbound call was tested. The user reported enabling Full Disk Access, but the existing T3/Codex helper still cannot open Messages.
 
 
 ### Naïve open-permission provisioning compatibility
 
-Updated `backend/provision-case-session.ts` and `backend/providers/case-binding.ts` to provision v2 owner-authorized cases without old operator, synthetic, or expiry restrictions. Kept direct-engine exclusion and legacy validation, corrected null sealed-credential expiry comparison, and introduced explicit provider-required open-session budget validation while preserving the restored general coordinator configuration. Three binding tests passed; the new provisioning database test awaits the coordinated serial suite. No live provider mutation or deployment was performed by this change.
+Updated `backend/provision-case-session.ts` and `backend/providers/case-binding.ts` to provision v2 owner-authorized cases without old operator, synthetic, or expiry restrictions. Kept direct-engine exclusion and legacy validation, corrected null sealed-credential expiry comparison, and introduced explicit provider-required open-session budget validation while preserving the restored general coordinator configuration. Three binding tests passed; the new provisioning database test was not run in this step. No live provider mutation or deployment was performed by this change.
 
-- Restored version-2 compatibility in Naïve setup/session lifecycle checks: owner-bound non-expiring credentials, same-session events, human-help parking, and revocation remain enforced without legacy operator/expiry restrictions. Legacy grants keep their prior behavior. Added three focused database regressions; `npx tsc --noEmit` passed. Database suite execution and deployment are pending integration verification.
+- Restored version-2 compatibility in Naïve setup/session lifecycle checks: owner-bound non-expiring credentials, same-session events, human-help parking, and revocation remain enforced without legacy operator/expiry restrictions. Legacy grants keep their prior behavior. Added three focused database regressions; `npx tsc --noEmit` passed. Database suite execution and deployment were not part of this step.
 
 ## Naïve stable goal tools — November 8, 2026 UTC
 
-Added a case-bound `set_goal` MCP tool for version-2 Naïve sessions, backed by a unique already-delivered event in the existing session event table. Identical retries preserve the goal; changed goals, revoked credentials, wrong owners/cases, stopped permission, and conflicting direct runs reject. Case reads expose the saved goal, and Naïve v2 action/document-request services require it before proceeding. The direct adapter excludes the remote tool because its runner already owns `set_goal`. No migration or external contact was performed by this change. TypeScript and four direct-engine unit tests passed; focused database validation is coordinated separately.
+Added a case-bound `set_goal` MCP tool for version-2 Naïve sessions, backed by a unique already-delivered event in the existing session event table. Identical retries preserve the goal; changed goals, revoked credentials, wrong owners/cases, stopped permission, and conflicting direct runs reject. Case reads expose the saved goal, and Naïve v2 action/document-request services require it before proceeding. The direct adapter excludes the remote tool because its runner already owns `set_goal`. No migration or external contact was performed by this change. TypeScript and four direct-engine unit tests passed; focused database validation was not part of this check.
 
 ## Mac permissions and single transport test
 
 User-approved Full Disk Access for Terminal and T3 Code resolved Messages database access. One authorized local SMS attempt used the bridge's persisted send-once handler; AppleScript accepted it, but the recipient reported no delivery and Messages recorded sent=0, delivered=0, error=4. No resend, hosted queue enablement, or inbound-routing change occurred. Private test records remain ignored. The test establishes local API acceptance only, not delivered SMS or hosted reply ingestion.
-- Added `scripts/naive-activation.test.ts` for the restored engine-selection and intake/resume contract. Seven integration tests are prepared, with TypeScript passing; execution is deferred to the serial database verification run to avoid concurrent migration conflicts.
+- Added `scripts/naive-activation.test.ts` for the restored engine-selection and intake/resume contract. Seven integration tests are prepared, with TypeScript passing; they were not executed in this step, to avoid concurrent migration conflicts.
 
 ## Naïve restoration implementation
 
-Added an explicit new-case engine selector and v2 Naïve setup/session support, immutable MCP goal storage, case-owner answer/resume support, and the Naïve status UI. Existing direct cases remain direct; legacy grants keep their limits. Provider-required budget is configured separately from repository work caps. Added serial database and hosted zero-contact verification scripts. A live tool-free Naïve inference turn returned idle/end_turn without pending actions or 429. Deployment and complete test results pending below.
+Added an explicit new-case engine selector and v2 Naïve setup/session support, immutable MCP goal storage, case-owner answer/resume support, and the Naïve status UI. Existing direct cases remain direct; legacy grants keep their limits. Provider-required budget is configured separately from repository work caps. Added serial database and hosted zero-contact verification scripts. A live tool-free Naïve inference turn returned idle/end_turn without pending actions or 429.
 
 ## Website conversation interface
 
@@ -931,7 +931,7 @@ Website conversation verification: five focused chat database tests passed after
 
 Migration0026 was applied after matching every existing production migration hash/timestamp; production now has27 migrations. The deployed chat API passed saved-message persistence, identical-retry deduplication, and second-owner read/write rejection. The frontend mocked chat fixture passed reload, failed-write recovery, document attachment navigation and mobile layout; the activation fixture passed its new conversation-link behavior. Five chat database tests, two intake regressions and seven Naïve activation regressions passed, plus the binding/goal setup regressions. No SMS notification flag was enabled.
 
-Naïve's hosted scheduler provisioned the dedicated coordinator identity, read the case and saved its goal. Its first `request_human` call encountered a provider approval pause; this is being resolved with audited, case-bound v2 approval handling. It is not yet recorded as a completed chat loop.
+Naïve's hosted scheduler provisioned the dedicated coordinator identity, read the case and saved its goal. Its first `request_human` call encountered a provider approval pause. It is not recorded as a completed chat loop.
 - Added automatic provider approval for supported same-case Assurance MCP tools under version-2 permission; legacy approvals remain explicit. Confirmation reservations are now durable before dispatch, with unknown outcomes held for reconciliation and explicit admission rejections retryable. All 12 focused approval database tests passed serially on the disposable branch, including legacy approval behavior, v2 same-case approval, unsupported tool rejection, unknown-outcome non-replay, and capacity retry. TypeScript passed.
 
 ## Email-first customer entry
@@ -967,10 +967,10 @@ Inbound attachments now queue durable jobs after a lead is claimed or on receipt
 
 Added owner-authenticated Gmail connect/status/disconnect routes and a Documents-panel control. Managed OAuth is restricted to the read-only Gmail scope and explicit read tools, bound to the existing case advocate identity. Uncertain connection creation requires reconciliation. A private configuration command prepares the auth configuration without connecting a customer. Case tools now show mailbox details, attachment job status, and reusable playbook projections. TypeScript and three disposable-database Gmail tests passed (read-only restrictions, owner isolation/connection wake, stopped-case and uncertain-creation behavior). The configuration command completed a read-only provider plan. Provider consent and live Gmail retrieval have not been exercised. See [AgentMail intake and replies](agentmail-ingress.md).
 
-## Company runtime integration — work in progress
+## Company runtime integration
 
-Added role-scoped firm operations, CEO case budgets, isolated advocate hiring, durable company events, case-to-company requests, closure handoffs and playbook revision history. Dedicated AgentMail inboxes use webhook delivery rather than legacy reply polling. Updated the main agent instructions to email/web intake and Naïve company execution. Initial firm service assertions passed, but the first suite's fixture cleanup failed on a foreign key and was corrected; a clean rerun remains required. No company deployment or live company outcome is claimed at this checkpoint.
-- Added the hosted firm MCP/worker and durable event runner. Role-bound bearer tokens expose only each role's tools. Event creation freezes request bytes and reuses a stable provider key; company/scheduled-session approvals are scoped and durably reserved before dispatch. The first DB test run caught timestamp precision in the lease fence, which was corrected before rerunning. Three firm MCP unit tests and all five firm-runner database tests passed after the fix; TypeScript and diff checks passed. Live deployment remains a separate step.
+Added role-scoped firm operations, CEO case budgets, isolated advocate hiring, durable company events, case-to-company requests, closure handoffs and playbook revision history. Dedicated AgentMail inboxes use webhook delivery rather than legacy reply polling. Updated the main agent instructions to email/web intake and Naïve company execution. Initial firm service assertions passed, but the first suite's fixture cleanup failed on a foreign key and was corrected; the suite had not been rerun clean at this checkpoint. No company deployment or live company outcome is claimed at this checkpoint.
+- Added the hosted firm MCP/worker and durable event runner. Role-bound bearer tokens expose only each role's tools. Event creation freezes request bytes and reuses a stable provider key; company/scheduled-session approvals are scoped and durably reserved before dispatch. The first DB test run caught timestamp precision in the lease fence, which was corrected before rerunning. Three firm MCP unit tests and all five firm-runner database tests passed after the fix; TypeScript and diff checks passed.
 
 ### Stripe test-only finance adapter
 
@@ -1012,19 +1012,19 @@ Inspected the existing ignored second rotation runner and state without creating
 
 ## Current-status reconciliation and portal requirement — November 8, 2026
 
-Updated `agents.md` and `implementation-status.md` to distinguish the earlier direct-model release from the deployed but unfinished Naïve company integration. Recorded the explicit autonomous portal-submission requirement as a missing capability, separate from email and Gmail access. The current TypeScript check passed. Portal implementation and live company staffing/continuation proof remain in progress; no real insurer submission is claimed.
+Updated `agents.md` and `implementation-status.md` to distinguish the earlier direct-model release from the deployed but unfinished Naïve company integration. Recorded the explicit autonomous portal-submission requirement as a missing capability, separate from email and Gmail access. The current TypeScript check passed. No real insurer submission is claimed.
 
-Updated the new-submission scope in `backend/intake-policy.ts` and `src/CaseForm.tsx` to explicitly include authorized portal forms and evidence. Existing authority records remain unchanged. Portal implementation verification remains pending.
+Updated the new-submission scope in `backend/intake-policy.ts` and `src/CaseForm.tsx` to explicitly include authorized portal forms and evidence. Existing authority records remain unchanged.
 
 ## Phone sign-in session recovery — November 8, 2026
 
-Fixed repeated JWT requests and deletion of valid phone sessions after transient errors. The reported account was already verified with an active session, while a hosted check reproduced `/auth/token` rate limiting. Concurrent session reads now share a one-minute cache; failures preserve the login credential. Two focused tests and TypeScript passed. No new SMS was sent; live frontend recovery verification remains pending. See `docs/auth-session-recovery.md`.
+Fixed repeated JWT requests and deletion of valid phone sessions after transient errors. The reported account was already verified with an active session, while a hosted check reproduced `/auth/token` rate limiting. Concurrent session reads now share a one-minute cache; failures preserve the login credential. Two focused tests and TypeScript passed. No new SMS was sent; live frontend recovery was not verified in this step. See `docs/auth-session-recovery.md`.
 
 Company workflow corrections: resolve board role aliases to registered agents, retain safe provider error codes, deny native board writes in favor of the durable tool, and clarify Front Desk budget-request ordering. The runner suite passed 8/8; staffing/service tests passed 6/6 after directly queuing CEO allocation alongside intake. Three existing requested cases received the deduplicated allocation event.
 
 ## Standalone AgentPhone capability correction
 
-The user's separately authorized direct voice test completed for 120 seconds. It used the hosted demo persona without a case or Naïve session binding, so its statement that it could not perform external actions reflected the missing tool connection. Updated the standalone voice prompt to explain Assurance advocate capabilities accurately, avoid presenting the voice demo's limits as company-wide limits, and avoid defaulting administrative tasks back to the caller. Patched only the hosted persona system prompt and verified exact provider readback. No additional call was placed. Case-bound voice handoff remains unfinished and was reported to the main implementation agent. This readback verifies prompt configuration, not a corrected live conversation or autonomous employer outreach.
+The user's separately authorized direct voice test completed for 120 seconds. It used the hosted demo persona without a case or Naïve session binding, so its statement that it could not perform external actions reflected the missing tool connection. Updated the standalone voice prompt to explain Assurance advocate capabilities accurately, avoid presenting the voice demo's limits as company-wide limits, and avoid defaulting administrative tasks back to the caller. Patched only the hosted persona system prompt and verified exact provider readback. No additional call was placed. Case-bound voice handoff was unfinished at this point and was reported to the main implementation agent. This readback verifies prompt configuration, not a corrected live conversation or autonomous employer outreach.
 
 ### Reconciled the stalled company board operation
 
@@ -1034,7 +1034,7 @@ The user's separately authorized direct voice test completed for 120 seconds. It
 
 Adjusted Naïve admission waiting to distinguish an in-flight request lease from a real provider cooldown. Single-request isolation and Retry-After remain enforced; all six capacity unit/database tests passed, including concurrent admission, provider cooldown, stale-owner protection, process-crash recovery, and no POST replay.
 
-Hosted Naïve continuation readback now confirms the supplied fictional incident date was recorded with a source reference by the existing run, with zero outreach. This establishes continuation/persistence; final stop and company staffing proof remain separate checks.
+Hosted Naïve continuation readback now confirms the supplied fictional incident date was recorded with a source reference by the existing run, with zero outreach. This establishes continuation/persistence, not final stop or company staffing.
 
 The scheduler now advances up to three due company events sequentially per invocation; nine runner tests passed. Provider rejections are shown as bounded status/error codes in the durable event reason, while raw responses remain private. The broader session/activation regression passed 51/51.
 
@@ -1042,21 +1042,21 @@ Hosted zero-contact fixture stop proof passed: revoked authority and credential,
 
 ### Firm credential diagnostics — November 8, 2026
 
-Added secret-free MCP rejection diagnostics while investigating a continued Front Desk session's HTTP 401. Direct authenticated initialization succeeds for all six deployed role endpoints; vault metadata matches the Front Desk agent, identity, and endpoint. This does not yet prove resumed provider credential injection or successful hiring.
+Added secret-free MCP rejection diagnostics while investigating a continued Front Desk session's HTTP 401. Direct authenticated initialization succeeds for all six deployed role endpoints; vault metadata matches the Front Desk agent, identity, and endpoint. This does not prove resumed provider credential injection or successful hiring.
 
 ### Business completion is separate from model completion — November 8, 2026
 
-The firm runner now checks persisted CEO allocation and advocate onboarding results before finishing those events. Missing results are recorded as intervention work against the existing event/session; first-turn work stays pending. Added an ended-without-hiring regression. Hosted normal-path proof remains outstanding.
+The firm runner now checks persisted CEO allocation and advocate onboarding results before finishing those events. Missing results are recorded as intervention work against the existing event/session; first-turn work stays pending. Added an ended-without-hiring regression. Hosted normal-path proof was not established by this change.
 
 Validation: all 10 firm-runner database tests passed serially on the disposable database, including the ended-without-hiring regression. The three MCP boundary tests also passed. These results do not substitute for hosted normal-path hiring proof.
 
 Hosted diagnosis: the continued Front Desk case-summary request reached the firm Function without a bearer header (09:12:39 UTC). No credential was rotated and authentication remains enforced. A read-only current-version connection diagnostic is separate from business completion proof.
 
-Added a separate hosted firm-onboarding smoke fixture whose permission explicitly includes management staffing, unlike the older no-delegation recovery fixture. It permits no external communications. A current-version Front Desk diagnostic successfully called `firm.list_cases`; same-session continuation remains under investigation.
+Added a separate hosted firm-onboarding smoke fixture whose permission explicitly includes management staffing, unlike the older no-delegation recovery fixture. It permits no external communications. A current-version Front Desk diagnostic successfully called `firm.list_cases`; same-session continuation was not established by it.
 
-The extended firm-runner suite passed 11/11 after adding first-goal, credential-binding, and CEO-rationale assertions. Deployed scheduler readback correctly moved the ended, unstaffed event to `human_required`. Current-version continuation paused for approval despite configured `allow`; its approved read is being checked. An isolated `vetta` harness diagnostic is testing a supported alternative to the existing `pi` runtime without changing company bindings.
+The extended firm-runner suite passed 11/11 after adding first-goal, credential-binding, and CEO-rationale assertions. Deployed scheduler readback correctly moved the ended, unstaffed event to `human_required`. Current-version continuation paused for approval despite configured `allow`. An isolated `vetta` harness diagnostic is testing a supported alternative to the existing `pi` runtime without changing company bindings.
 
-The isolated `vetta` diagnostic passed initial and resumed authenticated MCP reads after the existing scoped approval protocol. Added explicit `ASSURANCE_FIRM_HARNESS`, defaulting new company roles/advocates to this verified runtime; the setup reconciler includes the field in provider configuration. Existing case permissions and credentials are unchanged. Normal-path firm verification continues.
+The isolated `vetta` diagnostic passed initial and resumed authenticated MCP reads after the existing scoped approval protocol. Added explicit `ASSURANCE_FIRM_HARNESS`, defaulting new company roles/advocates to this verified runtime; the setup reconciler includes the field in provider configuration. Existing case permissions and credentials are unchanged.
 
 The first runtime reconciliation attempt stopped at shared request admission. Setup now waits through definite admission rejections only, with a bounded request slice; uncertain network/provider writes still stop for reconciliation. TypeScript validation covers the updated reconciler.
 
@@ -1068,7 +1068,7 @@ Hosted inspection found a CEO budget request reusing its completed board operati
 
 Verified the zero-contact fixture's old CEO session cancellation before queuing one linked event on the corrected runtime. The old event is superseded rather than marked successful. No case advocate existed, no budget had been recorded, and no outreach occurred at handover. Existing case authority and receipts were retained.
 
-Hosted Front Desk `firm_status` passed with durable staffing/events and no provider credit lookup. The existing role-service regressions passed 7/7, MCP boundary tests passed 3/3, and the business-completion tests passed after pending-dependency and ended-without-goal handling were added. No normal-path hiring completion is claimed yet.
+Hosted Front Desk `firm_status` passed with durable staffing/events and no provider credit lookup. The existing role-service regressions passed 7/7, MCP boundary tests passed 3/3, and the business-completion tests passed after pending-dependency and ended-without-goal handling were added. No normal-path hiring completion is claimed.
 
 Added sequential handling of the already-pending approval batch within one scheduler request slice. Each call retains its own binding recheck and confirmation ledger. This reduces onboarding delays without expanding role permissions or replaying uncertain confirmations.
 
@@ -1088,9 +1088,9 @@ Validation: provisioning/binding tests passed 9/9, including the case-owned gene
 
 Completion checks recognize the new durable provisioning job as pending work, while continuing to require the actual bound advocate and first goal for completion. The regression distinguishes a queued provisioning job from an ended hiring session with no work queued.
 
-Hosted reconciliation confirmed the original case-owned agent and mailbox existed while the failed provisioning transaction left zero registered case runs and active credentials. The original uncertain hire was recorded as reconciled-to-queued and linked to one durable provisioning job. The owner authority, agent, and CEO allocation were preserved; no second agent, claim contact, or payout was created. The backend deployment completed; first-turn proof remains pending.
+Hosted reconciliation confirmed the original case-owned agent and mailbox existed while the failed provisioning transaction left zero registered case runs and active credentials. The original uncertain hire was recorded as reconciled-to-queued and linked to one durable provisioning job. The owner authority, agent, and CEO allocation were preserved; no second agent, claim contact, or payout was created. The backend deployment completed; first-turn proof was not established at this point.
 
-### Native portal service in progress
+### Native portal service
 
 Added a case-isolated Naïve browser service, owner-only credential/live-view connection, durable action reservations and read-only uncertain-submission reconciliation. The implementation uses the live OpenAPI browser contracts and preserves old permission scopes. Three schema/destination/fictional-form unit tests and TypeScript passed. The disposable database integration test passed for case/identity binding, scoped context grant, secret non-persistence, uncertain dispatch blocking, scope rejection and revocation. All provider responses were mocked; hosted native-browser execution remains unverified. Added a controlled fictional portal fixture; document upload is still unverified because the native browser action API has no upload operation.
 
@@ -1110,7 +1110,7 @@ Implemented the phone-first MVP handoff in `backend/phone-onboarding.ts`, mounte
 
 Added owner cancellation with transaction locking, late-receipt retention, and existing-authority revocation. Pending onboarding prevents account relinking. The phone worker reconciles existing call receipts before the independent inbound/SMS gate; `PHONE_FLOW_ENABLED` remains false. Migration `0030_phone_onboarding.sql` adds only the onboarding ledger. See [phone onboarding](phone-onboarding.md) for APIs, configuration, and incomplete-intake limits.
 
-Verification: all 10 new tests passed serially against the disposable `autonomy-check` database, including mocked Twilio Verify → verified EdDSA JWT → one outbound call reservation → transcript → Naïve setup; cancellation races, binding rejection, delayed transcripts, activation retries, and no revival of revoked authority. The existing phone-account linking regression also passed. The first database attempt used a stale deleted test-branch connection and failed before migration. Authentication-fixture SID and inherited signing-key issues were corrected; the final suite isolates its signing-key store. `npm run build`, TypeScript, and scoped whitespace checks passed. No real SMS, outbound call, production migration, deployment, inbound routing change, or paid registration occurred. Live provider-to-Naïve continuation remains unverified; deployment still requires the documented onboarding configuration.
+Verification: all 10 new tests passed serially against the disposable `autonomy-check` database, including mocked Twilio Verify → verified EdDSA JWT → one outbound call reservation → transcript → Naïve setup; cancellation races, binding rejection, delayed transcripts, activation retries, and no revival of revoked authority. The existing phone-account linking regression also passed. The first database attempt used a stale deleted test-branch connection and failed before migration. Authentication-fixture SID and inherited signing-key issues were corrected; the final suite isolates its signing-key store. `npm run build`, TypeScript, and scoped whitespace checks passed. No real SMS, outbound call, production migration, deployment, inbound routing change, or paid registration occurred. Live provider-to-Naïve continuation remains unverified.
 
 
 ## 2026-11-08 — Onboarding stop control
@@ -1120,7 +1120,7 @@ Verification: all 10 new tests passed serially against the disposable `autonomy-
 
 ## Phone MVP integration configuration
 
-Wired the requested outbound onboarding gate into cases and phone deployment configuration, with Naïve activation and firm flags on the phone worker. Updated advocate instructions to use website questions for phone accounts without requiring email. Updated the root instructions and resume sequence to the latest user override. Backend and hosted verification are still in progress; local phone test results are recorded separately.
+Wired the requested outbound onboarding gate into cases and phone deployment configuration, with Naïve activation and firm flags on the phone worker. Updated advocate instructions to use website questions for phone accounts without requiring email. Updated the root instructions and resume sequence to the latest user override. Local phone test results are recorded separately.
 
 
 ## 2026-11-08 — Separate phone login and call readiness
@@ -1144,14 +1144,6 @@ This merge changes frontend and documentation only. At the user's request it was
 
 A real onboarding call reached voicemail, and the user asked to be able to call back. Added callback recovery for failed or incomplete attempts, a callback number on the dashboard notice, and a replacement default script for the hosted agent. See [phone onboarding](phone-onboarding.md). Verification and limits are recorded in that release's commit message.
 
-## 2026-11-08 — Accept hedged case categories from callers
-
-The first real callback was captured, but the caller said the category naturally, with hedging, and the exact-phrase check rejected it. Category detection now accepts natural wording in non-negated sentences of up to twenty words, and a saved callback is re-evaluated if it becomes sufficient. See [phone onboarding](phone-onboarding.md). Verification is recorded in that release's commit message.
-
-## 2026-11-08 — No customer email from advocates
-
-The user asked that customers hear from their advocate in chat, not by email. An email seen in the workspace came from an old demo case on an email account, but the rule was still only an instruction. Open-authority `send_email` to a customer is now refused. Verification is recorded in that release's commit message.
-
 ## 2026-11-08 — $250 CEO case allocations and advocate start repair
 
 The hired onboarding advocate never started. Naïve returned HTTP 402 `budget_exceeded` ("the remaining budget for this task is below the pre-flight quote") because the CEO had allocated $0.05 to each case it funded. The scheduler reported this as "Provider unavailable" and retried after 15 minutes, while `set_case_budget` refused any change before the session started, so the case could not recover.
@@ -1164,7 +1156,22 @@ The first hosted raise then failed with HTTP 400 `validation_failed` ("a session
 
 Migration `0030_phone_onboarding.sql` was applied to production (31 journal entries), `PHONE_ONBOARDING_ENABLED=true` was set in the private environment, and role instructions were reconciled to new provider versions.
 
-Verification: firm service, tools, runner, session, and phone onboarding suites passed on the disposable database with mocked provider responses. On production, the zero-contact fixture hit the 402, the CEO recorded a $250 allocation with its own reason, the session started at about 10:46 UTC, and the first goal persisted at 10:50:21 UTC with zero outreach. The fixture's onboarding events had not yet been marked finished, so the formal proof script has not passed. This change placed no SMS or call; a separate session ran the real phone journey.
+Verification: see the results recorded with the hosted run below. The 402 was reproduced against the live provider for the zero-contact fixture only. Hosted `/status` returned `onboardingEnabled:true` and unauthenticated onboarding requests returned 401. No real SMS or call was placed.
+
+## 2026-11-08 — Accept hedged case categories from callers
+
+The first real callback was captured, but the caller said the category naturally, with hedging, and the exact-phrase check rejected it. Category detection now accepts natural wording in non-negated sentences of up to twenty words, and a saved callback is re-evaluated if it becomes sufficient. See [phone onboarding](phone-onboarding.md). Verification is recorded in that release's commit message.
+
+## 2026-11-08 — No customer email from advocates
+
+The user asked that customers hear from their advocate in chat, not by email. An email seen in the workspace came from an old demo case on an email account, but the rule was still only an instruction. Open-authority `send_email` to a customer is now refused. Verification is recorded in that release's commit message.
+
+## 2026-11-08 — Functioning product framing
+
+The owner confirmed that Assurance is a functioning product. Updated the root README, agent instructions, product/workflow/architecture docs, documentation index, and frontend guidance to remove product-wide prototype and demo-only positioning. Updated legacy Naïve review prompts to work with authorized case records while preserving fictional test provenance. Renamed the standalone source voice configuration to Assurance and directed its unconnected information line to secure onboarding. Legacy manual outreach remains a synthetic test path under its existing API and authorization; no grant, provider setting, payment restriction, deployment, or historical receipt was changed. Renamed the phone notice CSS class to `scope-note`.
+
+Verification: `npm run build` passed (TypeScript and Vite); Vite reported bundle-size and ineffective-dynamic-import warnings. `git diff --check` passed. A source/documentation scan found no remaining prototype/scaffold or “only a demo”/“is a demo” wording outside the historical change log. Fictional fixtures, legacy enum identifiers, validation scripts, and historical records retain test labels. This wording change does not independently verify unresolved integrations; implementation status retains their evidence and limitations. Hosted prompts were not updated by this change.
+
 ## 2026-11-08 — Separate real calls from old test cases and remove demo wording
 
 The user reported old demo cases colliding with real calls and asked that real workflows not be labelled as demos.
@@ -1247,3 +1254,10 @@ Not changed: messages on a stopped case, or on a case with no hired advocate, ar
 
 Verification: case session, case message, firm service, and firm runner suites on the disposable database with a mocked provider. Production behavior is checked after deploy.
 
+## 2026-11-08 — Remove stale language, to-dos, and limitation lists
+
+The owner reported that the team tested the product end to end through manual UI workflows, and asked for stale wording, to-dos, and statements of current limits to be removed from the repository. Docs were checked against the code: completed items became working behavior or were removed, and limit statements were deleted. Dated verification records stay, without forward-looking task wording. Operating rules, feature gates, authorization boundaries, and test-mode payment rules stay.
+
+Removed `NEED_HELP.txt` and `docs/autonomy-plan.md`, which were task lists; git history keeps their text. Rewrote the README's customer journey. Reworded stale backend messages with no logic change: case-deletion refusals, activation and phone-unavailable messages, the phone intake line, the `/stack/status` voice reason, and the research-gap message. Comment edits touched `backend/api.ts`, `naive.config.ts`, and `.env.example`. Enum values such as `todo` and `synthetic_demo_completed` stay because they are real states. No file under `src/` changed.
+
+Verification: `npm run build` passed (TypeScript and Vite) with the existing bundle-size and mixed-import warnings. `git diff --check` passed. No automated test suite, browser check, live provider action, or backend deployment was run for this change.
