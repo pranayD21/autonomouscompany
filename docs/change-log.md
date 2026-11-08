@@ -1,5 +1,9 @@
 # Change log
 
+## 2026-11-07 — Stripe sandbox; payment kept hypothetical
+
+Created an isolated, claimable Stripe sandbox and restricted test key autonomously through the official CLI. Stored the key privately in ignored .env.local and recorded hypothetical payment mode; no key was deployed and no checkout/payment was created. Read-only products and Checkout Sessions queries returned HTTP 200 with empty lists. Balance read was denied by the restricted key. Sandbox expiry is November 15, 2026. Documented the user’s scope change in payments.md and agents.md: defer actual checkout and fee collection. No application code changed; no build/test rerun was needed for these documentation/private-configuration changes.
+
 ## 2026-11-07 — Publish outcomes and session status
 
 Added owner-visible session state, next check time, recorded reason, and human-help questions to the autonomy API/UI. The response excludes remote identity/session IDs and credentials. Human-help counts cover the returned decision history only. Published the outcomes and session UI to assurance.claims as deployment dpl_B2grMLravUcMQWyucSQDavtzsg6M.

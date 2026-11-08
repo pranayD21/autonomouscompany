@@ -40,3 +40,5 @@ Every repository change must update the relevant documentation in the same chang
 - [Persistent case sessions](case-sessions.md): durable session bindings, inbound event delivery, scheduler leases, and activation requirements.
 
 - [Recorded case outcomes](outcomes.md) — agent calculations, exact evidence quotes, retry handling, and verification limits.
+
+- [Hypothetical payments](payments.md) — Stripe sandbox setup and the current no-collection product scope.

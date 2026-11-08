@@ -63,3 +63,8 @@ Preserve existing configuration and user changes. Never commit `.env` files, cre
 ## Expanded autonomy direction
 
 The user supplied docs/autonomy-plan.md and explicitly assigned all files to this agent, superseding its instruction to coordinate with Shaunik. Implement the expanded agent-run synthetic-case workflow without waiting on another agent. Preserve case isolation, secrets, send-once handling, and truthful evidence attribution. The plan requires approval before increasing spending caps and test-mode-only checkout. The existing own-inbox live test remains bounded to its approved recipients and counts; new architecture does not retroactively expand that grant. Legal background in the proposal is unverified input until checked against current primary sources.
+
+
+## Payment scope update
+
+The user now wants payment to remain hypothetical. A claimable Stripe sandbox/test key was created and read-only verified; it expires November 15, 2026 unless claimed. Credentials are private and undeployed. Do not build or activate real fee collection or present hypothetical payments as completed. This supersedes the immediate working-Checkout requirement in the earlier autonomy plan. See docs/payments.md.
