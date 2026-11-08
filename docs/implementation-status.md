@@ -83,3 +83,8 @@ Naïve vault/session wiring still needs an admin-scoped key for the configured M
 ## Persistent case sessions
 
 Migration 0016 and the session/event worker are deployed. Eight session tests plus 21 existing regressions passed, as did the build and hosted E2E checks. Production has no registered persistent sessions. Events from replies, call evidence, claimant edits, uploads, and confirmed transcriptions can resume an existing identity-bound Naïve session after setup; native action tools retain authority checks. Live activation, the customer-facing session controls, and credential renewal remain unfinished. See [case sessions](case-sessions.md).
+
+
+## Outcome recording
+
+The deployed record_outcome tool stores agent-calculated amounts with exact case-evidence quotes and exposes them through case_get. Twelve tests, the build, and a live synthetic MCP write/retry/readback/isolation test passed. Outcomes remain agent-reported; verified goal completion, the customer outcome view, final communication, and checkout are unfinished. See [outcomes](outcomes.md).

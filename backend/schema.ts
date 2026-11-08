@@ -216,3 +216,12 @@ export const caseAgentEvents=pgTable("advocacy_case_agent_events",{
  payload:jsonb("payload").$type<Record<string,unknown>>().notNull(),
  accepted_seq:integer("accepted_seq"),delivered_at:timestamp("delivered_at",{withTimezone:true}),created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
 },t=>[uniqueIndex("advocacy_case_agent_event_key_idx").on(t.run_id,t.event_key)]);
+
+export const caseOutcomes=pgTable("advocacy_case_outcomes",{
+ id:uuid("id").primaryKey().defaultRandom(),
+ case_id:uuid("case_id").notNull().references(()=>cases.id,{onDelete:"restrict"}),
+ credential_id:uuid("credential_id").notNull().references(()=>caseToolCredentials.id,{onDelete:"restrict"}),
+ operation_id:uuid("operation_id").notNull(),case_revision:integer("case_revision").notNull(),
+ report:jsonb("report").$type<import("./case-outcome").OutcomeInput>().notNull(),
+ created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
+},t=>[uniqueIndex("advocacy_case_outcome_operation_idx").on(t.case_id,t.operation_id)]);

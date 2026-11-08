@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-07 — Evidence-linked outcome recording
+
+Added record_outcome to the deployed case MCP service and prepared Naïve tool permissions. Reports retain the agent’s calculations, separate balance reductions from refunds received, and require exact quotes from confirmed documents or accepted replies. Immutable operation IDs support safe retries; case_get flags stale supporting evidence and attributes results to the agent. Migration 0017 stores the reports. No completion verification or checkout is implied by recording an outcome.
+
+Verification: 12 database, protocol, and configuration tests passed; build passed. Migration 0017 and six Functions deployed. The live MCP smoke test proved discovery, evidence validation, separate refund/reduction values, idempotent retry, cross-case rejection, and persisted readback; its synthetic fixture was removed. No inference, outbound message, call, or charge occurred. Naïve configuration remains unpublished pending compatible setup credentials. See outcomes.md.
+
 ## 2026-11-07 — Clarify Neon AI Gateway recovery
 
 Rechecked the production catalog: HTTP 200, 63 models, zero enabled, all reporting paid_plan_required. Compared current official billing/troubleshooting guidance and corrected the diagnostic to explain that directly card-billed Free accounts can add prepaid gateway credits without a plan upgrade. The minimum is $5; the hackathon promotion is a separate flow. Updated neon.md with the exact recovery page and account-restriction caveats. No credentials, billing settings, or purchases changed.
