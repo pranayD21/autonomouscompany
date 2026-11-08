@@ -110,4 +110,6 @@ Vercel required a fresh email verification before issuing the Assurance-only one
 
 ## GitHub automatic deployment enabled
 
-Connected the existing assurance-claims project to pranayD21/autonomouscompany in Vercel Project Settings → Git. The UI reported Git repository connected; authenticated project readback confirmed repository identity and productionBranch main. Existing domains, environment, and build configuration are preserved. A documentation-only push is being used to verify the GitHub trigger. See docs/auto-deploy.md. Neon backend deployment is separate.
+Connected the existing assurance-claims project to pranayD21/autonomouscompany in Vercel Project Settings → Git. The UI reported Git repository connected; authenticated project readback confirmed repository identity and productionBranch main. Existing domains, environment, and build configuration are preserved. The documentation-only push below verified the GitHub trigger. See docs/auto-deploy.md. Neon backend deployment is separate.
+
+Automatic push verification passed: GitHub commit d0cdf05 triggered deployment dpl_6TZDiVgGMCXTEsA9QZjusy281zAz, Ready after a 12-second build and Current Production with assurance.claims assigned. Public HTML returned 200 with the new index-Zba2bcoQ.js bundle. No manual deployment command or access token was used.

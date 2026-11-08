@@ -482,3 +482,13 @@ The final combined local E2E passed activation/approval fixtures, real auth, per
 ### Connect Vercel to GitHub
 
 Connected assurance-claims to pranayD21/autonomouscompany, confirmed main as production branch through Vercel readback, and documented frontend automatic deployments. No token, domain, or Neon backend configuration was changed. This documentation-only commit verifies the push-triggered build; its deployment outcome will be recorded after verification.
+
+GitHub-trigger verification passed: documentation-only commit d0cdf05 automatically produced Ready deployment dpl_6TZDiVgGMCXTEsA9QZjusy281zAz in 12 seconds, Current Production at assurance.claims. HTTP 200 and the new bundle were confirmed. No manual deployment command, token, or backend change was required.
+
+### Provider recovery and activation setup access
+
+Verified the prior owner-approved read consumed revision 2 and ended the same session ($0.011012 total). Completed its remote/local cleanup with zero outbound rows. Created a dedicated setup-worker credential, retained it privately, and deployed it only to autopoll; environment-name readback confirmed absence from the cases Function. Existing runtime key/caps/grants remain unchanged. A fresh synthetic case and real crew review were requested through the owner API for queued activation verification; no communications are allowed.
+
+The dedicated worker key deployed successfully; live review completed with valid saved output. Enabled persistent setup for the existing approved operator. The first authorization POST immediately after deployment returned the old disabled response despite availability readback; no grant was created. A fresh retry then queued exactly one zero-outbound authority. The verified case-autonomy trigger is enabled with the next run at 05:05 UTC. Live scheduler setup/start verification is pending.
+
+The real 05:05 UTC trigger provisioned the queued authority and started one case-bound session. Owner API/provider readback and the live workspace showed ready/running. General default restored to version 27 with zero connectors; general review pin remains 21. Hosted E2E with persistent availability expected true passed, including rejection of unlisted-user spending. The dedicated setup credential is absent from the case API environment and frontend assets. Activation stays enabled for the existing operator. Both live fixtures are fully cleaned up with zero outbound records; temporary credential/auth copies and owned tabs were removed. The worker credential remains privately configured for ongoing activation. Sponsor-credit lookup returned a portal HTTP 500; no purchase was made. Automatic credential renewal and gateway credit access remain incomplete.

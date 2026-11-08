@@ -4,16 +4,16 @@ Updated November 8, 2026 (UTC). See [stack operations](stack.md) for account con
 
 ## Current release status
 
-The live frontend is clean commit baf3548 at assurance.claims. The updated hosted E2E passed authentication, persistence, Realtime, readiness, cross-user isolation, deletion, and password sign-in. AgentPhone is the only new-call provider; Twilio, ElevenLabs, and SIP setup are no longer activation work. Migrations through 0020, the owner-approval API, and the queued activation backend are deployed. Queued activation remains disabled pending a dedicated setup credential and live verification; its UI is locally tested but unpublished. The approval UI is published and its mocked hosted interaction passed; a real synthetic case-read confirmation through that API passed with the runtime key and one audit receipt. Post-confirmation continuation remains unverified because Naïve returned capacity errors.
+The live frontend includes the combined dashboard and activation UI, deployed automatically from main after verified GitHub push d0cdf05. The updated hosted E2E passed authentication, persistence, Realtime, readiness, cross-user isolation, deletion, and password sign-in. AgentPhone is the only new-call provider; Twilio, ElevenLabs, and SIP setup are no longer activation work. Migrations through 0020, the owner-approval API, and the queued activation backend are deployed. Queued activation is enabled for approved operators after live owner-API review, authorization, scheduled provisioning, and bound-session verification. New users still cannot spend agent credits. The approval UI is published and its mocked hosted interaction passed; a real synthetic case-read confirmation through that API passed with the runtime key and one audit receipt. After provider recovery, post-confirmation revision-2 consumption and end-turn were verified; the fixture is fully cleaned up.
 
-Case-specific Naïve identity/vault isolation and a same-session evidence wake passed live synthetic tests; those fixtures and temporary setup keys were removed. Public customer activation and credential renewal remain unfinished. The original own-inbox grant remains human-required and must not be reset. AI Gateway inference has no enabled model. Payments remain hypothetical. The sections below retain earlier milestone evidence; these current decisions supersede older provider and activation descriptions.
+Case-specific Naïve identity/vault isolation and a same-session evidence wake passed live synthetic tests; those fixtures and temporary setup keys were removed. Operator activation is verified; broader public customer access and automatic credential renewal remain unfinished. The original own-inbox grant remains human-required and must not be reset. AI Gateway inference has no enabled model. Payments remain hypothetical. The sections below retain earlier milestone evidence; these current decisions supersede older provider and activation descriptions.
 
 
 ## Verified
 
 - Neon CLI authentication and the requested production project setup completed. Postgres, Auth, Functions, Realtime, and AI Gateway credentials are provisioned.
-- All thirteen Drizzle migrations (0000–0012) applied. The case Function is deployed with server-only Naïve configuration.
-- `npm run build` passes, including TypeScript checks for backend, frontend, scripts, and provider configuration. Latest build: 266 modules, 550.58 kB JavaScript. The chunk-size warning remains.
+- All twenty-one Drizzle migrations (0000–0020) applied. The case Function is deployed with server-only Naïve configuration.
+- `npm run build` passes, including TypeScript checks for backend, frontend, scripts, and provider configuration. Latest build: 681 modules, 732.00 kB JavaScript. The chunk-size warning remains.
 - `npm start` serves the preview; use http://localhost:4173.
 - `npm run test:e2e` passes signup/session validation, authenticated Function access, database create/persistence/delete, Realtime delivery, reload, and sign-out. It also verifies 401 for missing/invalid tokens, 400 for negative amounts, and 403 for unlisted users trying to spend crew credits.
 - Live authorized app crew test passed: signup, case creation, duplicate-start deduplication, Naïve completion, saved Postgres review, and UI reload. Four focused tests reject intermediate/error/approval-pending output. Saved review records remain readable without another provider call.
@@ -36,7 +36,7 @@ Case-specific Naïve identity/vault isolation and a same-session evidence wake p
 
 ## Next work
 
-Verify post-approval continuation, implement customer activation and credential renewal, and verify a complete synthetic insurer exchange with documented outcomes. Compatible setup credentials and case-specific isolation were already proven; temporary setup keys were revoked. The existing own-inbox grant must not be reset. Case-linked calling still needs an authorized test. Resolve gateway access before claiming inference works. GitHub auto-deployment still needs a working Vercel account connection.
+Implement automatic credential renewal and verify a complete synthetic insurer exchange with documented outcomes. Operator activation and post-approval continuation are now verified. Compatible setup credentials and case-specific isolation were already proven; temporary setup keys were revoked. The existing own-inbox grant must not be reset. Case-linked calling still needs an authorized test. Resolve gateway access before claiming inference works. GitHub auto-deployment is connected and verified; Neon remains an explicit deployment.
 
 The team still needs a real interview participant. No customer savings or testimonial has been established. See [demo and research](demo-and-research.md).
 
