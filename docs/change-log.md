@@ -1,5 +1,15 @@
 # Change log
 
+## November 8, 2026 — Onboarding status as a quiet pill, with "I don’t need this"
+
+From their iPhone the user said the onboarding notice still looked heavy: an amber bordered box with a two-line message, opening to a paragraph, a big blue call button, a stop link and the transcript. They asked for something much quieter, a status dot and a word or two that opens details, and for a way to delete the case when they no longer want it. The overview also greeted the phone account as "Good morning, Assurance".
+
+- `OnboardingCallNotice` (`src/phone-onboarding.tsx`, styles in `src/style.css`) is now a small pill at the top right of the content: status dot, two or three words, chevron. It takes no height beside a short first line and keeps a 34px row above a heading. Tapping it opens a popover with the status sentence, call-back number, case link, transcript and **I don’t need this**. The status sentence stays in a hidden live region.
+- **I don’t need this** confirms inline before anything is sent, says exactly what will happen, then calls `POST /phone/onboarding/stop` and `DELETE /cases/:id` for the onboarding case (no delete when there is no case) and hides the pill.
+- Phone sign-up names accounts "Assurance caller" (`backend/phone-auth.ts`). `isPersonName` (`src/format.ts`) now rejects names containing "Assurance" and generic placeholders, so the greeting reads "Good morning".
+
+Verification: the mock-URL `npm run build` passed; the 19 focused tests (`claim-composer`, `progress`, `activation-state`) passed; `scripts/mobile-nav-ui-check.ts` passed all five groups. A WebKit check (gitignored `test-results/onboarding-pill/check.ts`, built from `scripts/mobile-audit/audit.ts` with mocked fictional data) passed on iPhone 15, iPhone SE and a 1280px desktop for `needs_information`, `active` and `submitted`. It asserted the greeting has no name, the pill takes no height and fits the viewport, the popover takes focus and closes on Escape and outside tap, all popover targets are at least 44px, no stop or delete request is sent before confirmation (including after Cancel and Escape), the confirmed requests are exactly the stop and then `DELETE /cases/<id>` (stop alone without a case), and the pill stays hidden after a reload. A first-run account with no cases was checked so the pill does not cover the heading. Screenshots were reviewed at each size.
+
 ## November 8, 2026 — iPhone fixes from the owner's own phone
 
 The user tested on their iPhone and reported: the overview summary sentence was unnecessary; the orange **Needs you** card and dark **Reported savings** card looked inconsistent with the rest of the UI; a selected case filter was black text on a black pill; the empty filter state looked bare; the onboarding notice took too much space; the **Call us to open it** button was a blank blue rectangle; swiping down didn't close Case info; the chat showed a "Message saved." banner; and swiping from the left edge to open the menu jumped back to the overview.
