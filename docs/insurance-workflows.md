@@ -22,12 +22,12 @@ The workflow explains the insurer's stated decision, requests clarification or m
 - Permanent company roles: CEO, Front Desk, Reviewer, Knowledge, Growth, and Finance handle budgets, staffing, review, playbooks, go-to-market, and test-mode finance. See [company runtime](firm-runtime.md).
 - Legacy review crew: intake, investigator, advocate, and verifier specialists produce plans for older review routes.
 - AgentPhone: insurer calls. New calls use AgentPhone only.
-- AgentMail: insurer correspondence. Signed webhooks route replies on dedicated case mailboxes back to the case. Advocates reach customers through the website conversation; `send_email` to a customer is refused.
+- AgentMail: insurer correspondence. New cases share the company inbox; matching outbound thread/message references route replies to their case. Older dedicated mailbox mappings remain supported. Website conversation is the normal owner channel; restricted mode also permits customer email to an allowlisted destination. See [outreach](outreach.md).
 - Neon: cases, evidence references, authorization, review snapshots, communications, and status history.
 
 ## Implementation boundaries
 
-The app supports progressive workplace-injury and health-insurance intake, private document upload, image/PDF-text extraction, and source-linked facts and citations. Advocates contact insurers with the `send_email` and `place_call` case tools and choose their own follow-up times with `schedule_followup`. Replies and completed calls wake the case. The team's manual end-to-end UI testing validated the customer workflow.
+The app supports progressive workplace-injury and health-insurance intake, private document upload, image/PDF-text extraction, and source-linked facts and citations. Advocates have `send_email` and `place_call` case tools, subject to owner authority and the active recipient restriction, and choose follow-up times with `schedule_followup`. The recorded real-user run was restricted to the owner's designated inbox and includes no insurer contact or claim outcome; see [verification](verification.md#real-user-run). Replies and completed calls wake the case. The team's manual end-to-end UI testing validated the customer workflow.
 
 Coverage and policy interpretation stay provisional: a matching quote does not establish authority, currency, jurisdiction, or coverage.
 

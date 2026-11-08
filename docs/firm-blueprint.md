@@ -17,7 +17,7 @@ The CEO is a coordinator with a company board and the other permanent roles as i
 
 ## Agentic go-to-market
 
-A Naïve GTM agent found Assurance's first user on Reddit (see [verification](verification.md)). Growth carries that workflow on its six-hour schedule, or when the CEO delegates to it:
+The owner reports that a Naïve GTM agent found Assurance's first user on Reddit; the original outreach and conversion receipts are not stored in this repository (see [verification](verification.md#first-user)). Growth is configured for the following workflow on its six-hour schedule, or when the CEO delegates to it. These are role instructions, distinct from observed execution:
 
 1. **Check:** `list_growth_leads` shows what is already saved, so no lead is repeated.
 2. **Find:** `data_search`, `data_describe`, and `data_run` read public Reddit posts, and `web_search` and `web_fetch` cover the wider web.
@@ -26,7 +26,7 @@ A Naïve GTM agent found Assurance's first user on Reddit (see [verification](ve
 5. **Reply:** Growth posts if it has a tool that can, and records `contacted` with a receipt only after posting. Otherwise the lead stays `drafted` and the next step goes on the board.
 6. **Learn:** sign-ups are recorded as `signed_up` with evidence, and the next cycle goes to the communities that bring them.
 
-Lead states are `found`, `drafted`, `contacted`, and `signed_up`. Naïve's `social.post` cannot post to Reddit, because its API has no subreddit field, so this declaration does not include it. Growth does not email or call leads, and a lead is not revenue.
+Lead states are `found`, `drafted`, `contacted`, and `signed_up`. In `backend/firm-tools.ts`, `receipt_url` is optional for every state; `backend/firm-service.ts` stores the supplied state without requiring a receipt. A saved `contacted` or `signed_up` record therefore remains an agent-authored claim, not proof of posting or an authenticated signup. Naïve's `social.post` cannot post to Reddit, because its API has no subreddit field, so this declaration does not include it. Growth does not email or call leads, and a lead is not revenue.
 
 ## Configuration
 
@@ -52,7 +52,7 @@ The first command prints a configuration plan and performs no provider writes. T
 
 `node --env-file=.env.local node_modules/.bin/naive up --dry-run` can inspect the full declaration; `naive up` applies the declared resources. Read the plan before an apply that includes legacy agents, since retaining a name prevents deletion but does not prevent a declared configuration update. The separate firm setup script touches only permanent firm roles.
 
-The implementation was checked against `GET https://api.vetta.sh/v1/openapi.json` (HTTP 200, API version 2026-09-30), the supplied agency blueprint, and installed `@usenaive-sdk/blueprints` 0.18 types. TypeScript passed. Local declaration evaluation reported eleven agents, six identities, six vaults, one skill, and three schedules; plan mode passed. That check is static. Live company records are in [firm runtime](firm-runtime.md) and the change log.
+The implementation was checked against `GET https://api.vetta.sh/v1/openapi.json` (HTTP 200, API version 2026-09-30), the supplied agency blueprint, and installed `@usenaive-sdk/blueprints` 0.18 types. TypeScript passed. Local declaration evaluation reported eleven agents, six identities, six vaults, one skill, and three schedules; plan mode passed. That check is static. The November 8 hosted zero-contact fixture records CEO allocation, Front Desk hiring, advocate session start, and a first saved goal; it does not establish completed work by all six roles. The later Growth workflow change records mocked-provider checks and no live Growth run or post. See [firm runtime](firm-runtime.md), [verification](verification.md), and the [Growth change record](change-log.md#2026-11-08--growth-runs-the-agentic-go-to-market-workflow).
 
 ## Hosted company Function and durable event runner
 

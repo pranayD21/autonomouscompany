@@ -1,14 +1,14 @@
 # Implementation status
 
-Updated November 8, 2026 UTC. This document supersedes older milestone descriptions. [Hosted agent](hosted-agent.md) explains the runtime; [change log](change-log.md) retains the verification history.
+Updated November 8, 2026 UTC. This document supersedes older milestone descriptions. [Company runtime](firm-runtime.md) and [case sessions](case-sessions.md) explain the current Naïve runtime; [hosted agent](hosted-agent.md) documents the historical direct-model runner and shared direct services; [change log](change-log.md) retains the verification history.
 
-Assurance is a functioning insurance claims advocacy service. The team has tested the customer journey end to end through manual UI workflows and reports a successful run with a real user on production; see [verification](verification.md). The sections below record the specific evidence held in this repository. Historical fictional runs stay labeled as test evidence.
+Assurance is a functioning insurance claims advocacy service. The team reports manual UI testing and a real-user production run through phone intake, advocate staffing, and website conversation on November 8, 2026; see the [corrected timeline and engineering interventions](verification.md#real-user-run). That case was restricted to the owner’s designated inbox, with no insurer contact or claim outcome. The sections below record the specific evidence held in this repository. Historical fictional runs stay labeled as test evidence.
 
 ## Current system
 
 The customer path is phone-first: Twilio Verify sign-in, one requested AgentPhone onboarding call, an owner-bound transcript, automatic case creation, and an isolated Naïve advocate, followed by website chat and uploads. See [phone onboarding](phone-onboarding.md). Older email accounts and cases remain supported.
 
-The backend declares seven Functions, including `firm`, and migrations 0000–0031 (32 journal entries). Six permanent Naïve roles, their separate identities and vaults, and the company board exist. Hosted company sessions use the `immediate` completion window because the selected model rejected `loose`. GitHub main publishes the frontend automatically; Neon backend deployment is separate.
+The backend declares seven Functions, including `firm`, and migrations 0000–0031 (32 journal entries). Six permanent Naïve roles, their separate identities and vaults, and the company board are configured. The recorded zero-contact fixture exercised CEO allocation, Front Desk hiring, and advocate startup through its first saved goal; configuration of six roles does not establish completed work by all six. See [company runtime](firm-runtime.md) and [verification](verification.md). Hosted company sessions use the `immediate` completion window because the selected model rejected `loose`. GitHub main publishes the frontend automatically; Neon backend deployment is separate.
 
 The scoped AgentMail runtime key and five-event signed webhook are configured and deployed. Hosted checks passed public contact discovery, authentication boundaries, invalid-signature rejection, and signed unmapped-event handling without outreach. A zero-contact advocate fixture completed a real hosted question → owner answer → sourced fact continuation in its existing run; owner revoke, credential invalidation, local stop, and remote cancellation were then verified with zero outreach.
 

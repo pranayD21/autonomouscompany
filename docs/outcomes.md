@@ -10,6 +10,8 @@ The service locks the owned case, validates the evidence, saves one report, and 
 
 An exact quote establishes traceability, not that the agent interpreted the statement correctly or that a bank transfer occurred. Recording a report does not itself mark the case complete, send a final message, or charge a fee. `record_outcome` is in the case agent's tool configuration. Finance's test-mode fee record is described in [payments](payments.md).
 
+At recording time, validation checks the field types, owned case, retry payload, and presence of each exact quote in the eligible source. It does not recompute `reduction_cents` from original and final responsibility, or check that a quote supports each reported amount or claim decision. `evidence_current: true` means the quoted text is still present in eligible evidence. Finance separately checks responsibility-reduction arithmetic before creating a test fee. The outcome remains an agent-reported interpretation at both stages.
+
 ## Verification
 
 Run `scripts/case-outcome.test.ts` against a disposable database using `OUTREACH_TEST_DATABASE_URL`. It covers concurrent retries, revision increments, separate unknown refunds, owner isolation, changed retry rejection, invented quotes, foreign document references, unconfirmed transcriptions, and stale-evidence readback. Protocol and agent-configuration regressions run alongside it. These checks use synthetic fixtures and no live inference or communications.

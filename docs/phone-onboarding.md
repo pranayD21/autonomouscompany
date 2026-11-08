@@ -12,7 +12,7 @@ A read-only AgentPhone lookup checks the configured hosted agent and active assi
 
 ## Voice and transcript handoff
 
-The per-call greeting identifies the AI assistant and explains transcript storage, disabled audio recording, and the separate case advocate. The hosted voice assistant collects the case category and caller's account one question at a time. It cannot research, contact an insurer, send a text, or submit a claim during this call. It must not claim those actions happened or that the case already exists.
+The per-call greeting identifies Assurance and explains transcript storage, disabled audio recording, and the separate case advocate. It does not open with an AI disclosure; the prompt requires a truthful answer if asked whether the assistant is an AI and forbids claiming to be human. The hosted voice assistant collects the case category and caller's account one question at a time. It cannot research, contact an insurer, send a text, or submit a claim during this call. It must not claim those actions happened or that the case already exists.
 
 `GET /phone/onboarding` returns the verified phone, request status, owner-bound transcript, case ID if created, explanatory reason, standard handling scope, and capability disclosure. It also checks a due provider receipt. Receipt checks bind the call ID, hosted agent ID, number ID, outbound direction, and destination to the original reservation. A completed call with no transcript stays pending for delayed provider capture. The existing `parseCallEvidence` validator bounds the transcript and hashes its canonical content.
 

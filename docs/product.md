@@ -27,13 +27,13 @@ Report claim acceptance, payment to a provider, benefits paid to the person, and
 
 ## Company operations
 
-Company operations include authorized intake, case delivery, updates, and cost tracking. Finance tools remain restricted to Stripe test mode; real fee collection is not authorized.
+Company operations include authorized intake, case delivery, updates, and cost tracking. The CEO’s $250 per-case mandate is an allocation ceiling, not observed spend or unit cost. The current cost tool reads advocate-session consumption rather than a complete company cost ledger. Finance tools remain restricted to Stripe test mode: unconfirmed test PaymentIntents retain `paid:false` and zero real revenue; real fee collection is not authorized. See [case budgets](firm-runtime.md#case-budgets) and [payments](payments.md).
 
 Track case outcomes, autonomous actions, human interventions, model/call/email costs, and exception-handling effort. Insurer payment to a provider is not automatically patient savings or a patient refund.
 
 ## Customer acquisition
 
-A Naïve GTM agent found Assurance's first user on Reddit. See [verification](verification.md). The Growth role runs this workflow on a schedule; see [permanent company agents](firm-blueprint.md).
+The owner reports that a Naïve GTM agent found Assurance's first user on Reddit; the original outreach and conversion receipts are not stored in this repository. See [verification](verification.md#first-user). Growth is configured with a six-hour schedule for discovery, qualification, and draft recording. Its instructions require evidence for contact and signup claims, but the record tool accepts those states without a mandatory receipt. See [permanent company agents](firm-blueprint.md#agentic-go-to-market) for the configured workflow.
 
 ## Service providers
 
@@ -41,4 +41,4 @@ Naïve runs company agents and isolated case advocates. Neon provides backend se
 
 The primary entry point is a verified phone number and an explicit “Verify and call me” request. After verification, one durably reserved AgentPhone onboarding call gathers account and case information. Sufficient owner-bound intake creates a case and queues its isolated Naïve advocate. Customers continue through website chat and uploads without an email requirement. Existing email accounts remain supported. Feature gates and verification evidence are documented in [phone onboarding](phone-onboarding.md).
 
-The team's manual end-to-end UI testing validated this customer workflow.
+The team reports manual UI testing and a real-user production run through phone intake, advocate staffing, and website conversation. The [verification record](verification.md#real-user-run) identifies engineering repairs and the corrected message-delivery timeline. This case contacted no insurer and recorded no claim outcome.

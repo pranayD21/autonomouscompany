@@ -46,7 +46,7 @@ History projects direct runs without exposing their credential bindings, pending
 
 The case page opens with agent status, and the “Review with AI” control is gone from the workspace. Case edits carry no saved-review prerequisite; active agents read new evidence on a later turn. Document reading is independent of legacy crew access and is authorized by the document API.
 
-Action evidence includes document references only after the extraction is ready and the owner has confirmed it. Merely uploading a file does not establish the text used to support an action.
+Version-2 actions may reference ready document extractions before owner confirmation; these remain labeled `machine_extracted_unverified`. Legacy action evidence requires confirmed extraction. Upload alone does not establish extracted text. Outcome reports retain their separate confirmed-document or accepted-reply evidence requirements; see [outcomes](outcomes.md).
 
 ## Hosted smoke commands
 

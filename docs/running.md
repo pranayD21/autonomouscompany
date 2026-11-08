@@ -16,6 +16,16 @@ Open http://localhost:4173, using `localhost` so the origin matches the deployed
 
 `vite.config.ts` includes the public production Auth, Realtime, and cases API locations, which are already visible in the deployed client bundle. **A local client therefore talks to the production backend.** Enter only fictional details when trying it. To use another backend, set `VITE_NEON_AUTH_URL`, `VITE_NEON_REALTIME_URL`, and `VITE_CASES_API_URL`.
 
+Building the client does not start a customer workflow. Interacting with it can: phone verification, requested onboarding calls, case submission, and uploads can invoke live providers or queue agents even when the entered story is fictional. `npm run test:e2e` also exercises hosted services and is not an offline test.
+
+For a mocked claim-workspace walkthrough, the existing [claim-page fixture](claim-chat-design.md#verification) uses fictional data and rejects unexpected fetch origins. Its separate entry point is:
+
+```sh
+VITE_NEON_AUTH_URL=https://auth.example.invalid VITE_NEON_REALTIME_URL=https://realtime.example.invalid VITE_CASES_API_URL=https://cases.example.invalid npx tsx scripts/claim-page-fixture.ts
+```
+
+Use the local fixture URL printed by the script and stop it with Ctrl+C. These placeholder endpoints keep the fixture separate from production; its displayed actions and amounts are synthetic UI evidence.
+
 ## Run the tests
 
 ```sh
@@ -25,6 +35,8 @@ OUTREACH_TEST_DATABASE_URL=postgres://localhost/assurance_test npm test
 ```
 
 `npm test` runs `scripts/run-tests.ts`, which executes each `scripts/*.test.ts` file in turn because database suites share one database. Pass part of a filename to run fewer files, as in `npm test -- firm-runner`. Suites migrate the database themselves, so never point them at production.
+
+Discovery is limited to top-level files ending in `.test.ts`. The runner does not include `.test.tsx` files or nested directories. For example, run the composer checks separately with `npx tsx --test scripts/claim-composer.test.tsx`. UI fixture and live smoke scripts are separate checks; read their topic documentation before invoking them, because some use deployed services. A green `npm test` result describes the files discovered by this runner, not every check stored in the repository.
 
 Without `OUTREACH_TEST_DATABASE_URL`, database suites are skipped and listed. CI refuses to skip them. `.github/workflows/ci.yml` runs the build and tests on pushes to `main` and on pull requests, using a Postgres service.
 
