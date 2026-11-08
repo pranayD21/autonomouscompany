@@ -26,7 +26,6 @@ export function CrewReview({id,userId,enabled,revision,quickAnalysis,steps}:{id:
  <details className="fold"><summary>Additional review and communication tools</summary>
  <CaseSection id="section-review" title="Optional Naïve review" aside={<div className="actions"><StatefulButton className="secondary" disabled={busy||!enabled||!!run?.saved_at} onAction={()=>act(true)}><Sparkle size={16} aria-hidden="true"/>Run agent team</StatefulButton>{working&&<button className="text-button" disabled={busy} onClick={()=>void act(false)}>Refresh team status</button>}</div>}>
  {!enabled&&<p className="quiet-line">This optional Naïve review is available to test operators. Use Agent work above to start ongoing work on your case.</p>}
- {enabled&&run?.saved_at&&<p className="quiet-line">Review complete. Update case details to run a new one.</p>}
  {quickAnalysis&&<div className="analysis"><h4>Questions for the insurer</h4><p>{quickAnalysis}</p></div>}
  {run&&(working||(!r&&run.status!=="not_started"&&run.status!=="idle"&&run.status!=="completed"))&&<p className="run-status" data-working={working}>Status: {run.status.replaceAll("_"," ")}{run.approval_required?" · needs your approval":""}</p>}
  {working&&<StepLoader steps={STEPS} interval={2600}/>}

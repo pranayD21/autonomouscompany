@@ -659,3 +659,12 @@ This change adds `src/progress.ts`, one derived progress model per case. The sid
 Verification: `npm run build` passes, and `scripts/progress.test.ts` (6 cases) and `scripts/activation-state.test.ts` pass. Desktop and 390 px layouts were checked in a local harness with mocked API responses. The Playwright suites against the hosted backend were not run for this change. Limitations: the overview loads six endpoints per case per refresh. Smoke tests that look for a case `article` from the overview must navigate to `#case/<id>` first.
 
 Merged the concurrent case-progress dashboard update with the simplified intake: preserve grouped next-action visibility while retaining one-step submission, optional document confirmation, and existing-grant boundaries. The combined frontend passed TypeScript/build, all 10 progress/activation-state tests, and both mocked activation and intake browser fixtures. Its build is `index-CKRvH7VE.js` with `index-xEQUA129.css`.
+## November 8, 2026 — Partial revert of the next-step redesign
+
+The founder kept only the section-level progress tags from `292648a`: a blue **Next step** tag and left bar on the section that needs action, and green **Done** tags. They also kept the shorter Agent work intro, the outlined "Run agent team" button, and the outreach lines "Write a draft, then approve it. Nothing is sent until you do." and "Messages the agent sends appear here." Everything else returned to the `c0e3200` version. That covers the overview grouping, owner chips, step tracker, next-step card logic, money-card outcome view, compact uploader, draft ordering and agent session card layout. `src/progress.ts` and its tests remain and now drive only the section tags.
+
+Verification: `npm run build` and `scripts/progress.test.ts` pass, and the case page was checked in the mocked local harness. Hosted Playwright suites were not run.
+
+The concurrent frontend author then reverted the grouped-dashboard redesign while retaining section progress tags. The final merge follows that newer layout choice and preserves the simplified intake/automatic reading changes.
+
+Final layout reconciliation passed TypeScript/build, 10 progress/activation-state tests, and both mocked browser fixtures. The final build is `index-COYhhpN-.js` with `index-Cgf9WqH7.css`.
