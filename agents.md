@@ -48,7 +48,8 @@ The event requires the Naïve SDK. Judges emphasize what the company actually ac
 - AgentMail is the written communication provider; do not create Naïve mailboxes. Neon was explicitly selected and provisioned for backend services.
 - Separate potential discrepancies, verified reductions in patient responsibility, and refunds actually received. Never present estimates or simulations as money saved.
 - Obtain appropriate authorization before external case actions. Do not impersonate the patient or commit them to settlements or payments without authorization.
-- Use synthetic records for the public prototype unless a participant explicitly consents and the data handling is appropriate. Vendor selection alone does not establish healthcare privacy compliance.
+- The user directed on November 8, 2026 that customer-facing UI and voice scripts must not label real calls and workflows as demos, open with an AI disclosure, or carry "not verified" payout captions. Voice agents still answer truthfully if sincerely asked whether they are AI and never claim to be human. Calls still announce the transcript. Amounts stay named for what they are (reported, estimated), and records keep separating discrepancies, reported decisions, and money received. Agents must not present a case described as fictional to a real insurer as real.
+- Use synthetic records for internal testing unless a participant explicitly consents and the data handling is appropriate. Vendor selection alone does not establish healthcare privacy compliance.
 - Do not manufacture testimonials, emotions, quotes, customer outcomes, or medical facts.
 
 ## Current handoff status

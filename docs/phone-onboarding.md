@@ -32,6 +32,16 @@ Inbound hosted calls cannot take a per-call prompt, so `scripts/configure-agentp
 
 Limitations: phone caller ID can be spoofed, so a spoofed callback could add a false account to an attempt awaiting information. The legacy `PHONE_FLOW_ENABLED` inbound path stays off and is unrelated.
 
+## Sign-in and account separation
+
+The phone token and sign-in mode live in `localStorage`, shared across tabs, so a new tab cannot fall back to an older saved email account. `src/phone-session.ts` moves any earlier per-tab login on load. Verifying a phone also signs out the managed email session in that browser, except when deliberately linking a phone to an existing account. Cases belong to one owner; an unlinked phone account never reads another account's cases. Storing the token in `localStorage` trades some exposure to page scripts for this behavior.
+
+Shared fictional test accounts only appear in the Vite development server. The phone Function's `/status` still returns the test numbers and fixed code, and they still sign in, because `scripts/phone-flow.test.ts` covers them.
+
+## Call wording
+
+Greetings identify Assurance without an opening AI statement, at the user's direction. The prompts require a truthful answer if someone sincerely asks whether they are speaking with an AI, and forbid claiming to be human. Onboarding and callback greetings still announce that a transcript is saved. Some jurisdictions restrict undisclosed AI calls or require consent to recording; this has not been legally reviewed.
+
 ## Customer communication
 
 Advocates reach the case owner only through the website conversation. `backend/open-case-actions.ts` refuses `send_email` with role `customer` on open (version 2) authorities, and the advocate instructions say the same. Calls and third-party email are unchanged. Earlier authorities keep their original paths.

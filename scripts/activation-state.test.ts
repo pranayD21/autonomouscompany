@@ -10,7 +10,7 @@ test('direct sessions never show Naïve confirmation controls',()=>{
  assert.equal(engineLabel('direct_openai'),'Direct model');assert.equal(engineLabel('naive'),'Naïve');
 });
 test('completion and interruption statuses do not imply verified payment',()=>{
- assert.match(sessionStatus({state:'completed'}).detail,/does not verify a payout/);
+ assert.doesNotMatch(sessionStatus({state:'completed'}).detail,/paid|saved|settled|payout received/i);
  assert.equal(sessionStatus({state:'failed'}).label,'Work interrupted');
  assert.equal(sessionStatus({state:'waiting'}).label,'Waiting');
  assert.equal(sessionStatus({state:'queued'}).label,'Queued');

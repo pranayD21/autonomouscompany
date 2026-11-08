@@ -152,7 +152,6 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
     {phoneSelected() && <dl className="case-key-numbers" aria-label="Key amounts">
       {([["Bill", item.bill_cents], ["EOB", item.eob_cents], ["Possible discrepancy", diff]] as const).map(([label, cents]) =>
         <div key={label}><dt>{label}</dt><dd>{cents === null ? "—" : money(cents)}</dd></div>)}
-      {diff !== null && <small>Discrepancy is to investigate, not verified savings</small>}
     </dl>}
 
     <Autonomy key={item.id} caseId={item.id} userId={userId} enabled={crewEnabled} between={<>
