@@ -54,3 +54,11 @@ Every repository change must update the relevant documentation in the same chang
 - [Persistent workflow migration](persistent-workflow-migration.md): current user override, provider requirements, migration plan, and recovery status.
 
 - [Direct-model demo fallback](demo-fallback.md): minimal Naïve handoff, local direct inference, exclusive-case requirements, and verification limits.
+
+- [Case activation and status](activation-flow.md): owner-written permission, start/resume/stop controls, engine attribution, and UI verification.
+
+- [Resume handoff](RESUME-HANDOFF.md): current uncommitted integration, exact remaining work, external gates, and validation plan for a new chat.
+
+- [Hosted direct-model agent](hosted-agent.md): scheduler, durable conversation, research/document tools, engine separation, and hosted verification.
+
+- [Twilio Verify setup](twilio-verify-setup.md): read-only planning and explicit service creation for phone login, separate from AgentPhone voice.

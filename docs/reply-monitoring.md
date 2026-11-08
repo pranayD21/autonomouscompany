@@ -23,3 +23,9 @@ Run `scripts/reply-monitor.test.ts` with `OUTREACH_TEST_DATABASE_URL` pointing t
 `neon triggers list --output json` shows the deployed schedule. Deploy using `neon deploy --env .env.local --update-existing` after reviewing configuration. The function's only custom secrets are `AGENTMAIL_API_KEY` and `AGENTMAIL_INBOX_ID`; Neon injects the database connection. Never publish their values. Trigger availability and actual execution must be verified separately from a successful build.
 
 Live verification on November 7: Neon delivered the 4:50 p.m. Pacific check, which read the authorized test thread with one existing reply and made no duplicate import. The saved success/invocation record, UI status, owner isolation, pause/resume, and rejection of forged public trigger calls all passed. The first scheduler heartbeat ran with no monitored thread and correctly checked zero. A new message arriving after monitoring was enabled has not yet been observed; earlier live manual ingestion and the shared importer tests cover the import path.
+
+## Persistent permission
+
+For an email reserved by a version-2 decision, `pollReplyMonitors` also considers the linked authority. An active, waiting, or human-required authority keeps its enabled monitor eligible after the legacy thirty-day expiry. Stopped and revoked authorities do not receive this extension. Reply ingestion can update evidence while a case needs human help, but cannot restore permission or resume autonomous work. This changes monitoring eligibility only; it does not send a message.
+
+The owner-scoped GET `/cases/:id/reply-monitors` includes `persistent` for this eligibility extension. `src/Outreach.tsx` uses that flag when displaying monitoring status and the pause control, so an enabled persistent monitor is not mislabeled expired after thirty days. Legacy monitors retain their displayed end date.

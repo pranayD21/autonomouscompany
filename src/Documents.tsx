@@ -6,7 +6,7 @@ import {FileDrop} from "./ui/FileDrop";
 import {AnimatePresence,motion} from "motion/react";
 const KIND:Record<string,string>={insurance_card:"Insurance card",bill:"Medical bill",eob:"EOB",incident:"Incident record",other:"Other evidence"};
 type DocumentView=Omit<CaseDocument,"object_key"> & {extraction_state:string|null;extraction_result:DocumentExtraction|null;extraction_error:string|null;confirmed_at:string|null};
-export function Documents({caseId,userId,revision,enabled}:{caseId:string;userId:string;revision:number;enabled:boolean}){
+export function Documents({caseId,userId,revision}:{caseId:string;userId:string;revision:number}){
  const [docs,setDocs]=useState<DocumentView[]>([]),[error,setError]=useState(""),[busy,setBusy]=useState(false),[uploads,setUploads]=useState(0);
  const uploadId=useRef(crypto.randomUUID());
  const path=`/cases/${caseId}/documents`;
@@ -42,9 +42,9 @@ export function Documents({caseId,userId,revision,enabled}:{caseId:string;userId
  <div className="doc-head"><span className="doc-icon" aria-hidden="true">{doc.kind.slice(0,1).toUpperCase()}</span><div><strong>{doc.filename}</strong><span>{KIND[doc.kind]??doc.kind.replaceAll("_"," ")}{doc.state==="ready"?"":" · Upload incomplete — retry the same file"}</span></div>
  {doc.state==="ready"&&<button className="text-button" onClick={()=>void download(doc)}>Download {doc.filename}</button>}</div>
  {doc.state==="ready"&&<div className="doc-body">
- <p className="doc-reading" data-state={doc.confirmed_at?"confirmed":doc.extraction_state??"none"}>{doc.confirmed_at?"Confirmed":doc.extraction_result?"Needs your check":["running","preparing"].includes(doc.extraction_state??"")?"Reading…":doc.extraction_error?`Couldn’t read: ${doc.extraction_error}`:"Not read yet"}</p>
- {!doc.extraction_state||doc.extraction_state==="source_ready"?<button disabled={busy||!enabled} onClick={()=>void extract(doc.id,"start")}>Read {doc.filename}</button>:null}
- {["running","preparing"].includes(doc.extraction_state??"")&&<button disabled={busy} onClick={()=>void extract(doc.id,"refresh")}>Refresh reading</button>}
+ <p className="doc-reading" data-state={doc.confirmed_at?"confirmed":doc.extraction_state??"none"}>{doc.confirmed_at?"Confirmed":doc.extraction_result?"Needs your check":["running","preparing","direct_running"].includes(doc.extraction_state??"")?"Reading…":doc.extraction_error?`Couldn’t read: ${doc.extraction_error}`:"Not read yet"}</p>
+ {!doc.extraction_state||["source_ready","direct_failed","direct_running"].includes(doc.extraction_state)?<button disabled={busy} onClick={()=>void extract(doc.id,"start")}>Read {doc.filename}</button>:null}
+ {["running","preparing","direct_running"].includes(doc.extraction_state??"")&&<button disabled={busy} onClick={()=>void extract(doc.id,"refresh")}>Refresh reading</button>}
  {doc.extraction_result&&<details open={!doc.confirmed_at}><summary>Document transcription{doc.confirmed_at?" · confirmed":" · needs your review"}</summary><p style={{whiteSpace:"pre-wrap"}}>{doc.extraction_result.visible_text}</p>
  <dl>{(["insurer_name","member_name","member_id","group_number","claim_number"] as const).map(key=><div key={key}><dt>{key.replaceAll("_"," ")}</dt><dd>{doc.extraction_result![key]??"Not found"}</dd></div>)}</dl>
  {doc.extraction_result.uncertainties.length>0&&<ul>{doc.extraction_result.uncertainties.map((u,i)=><li key={i}>{u}</li>)}</ul>}

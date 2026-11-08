@@ -1,3 +1,4 @@
+import {readPublicSource} from "./public-source";
 import {requestPhoneDocument} from "./phone-document-request";
 import {recordCaseOutcome,readCaseOutcomes} from "./case-outcome";
 import {takeCaseAction} from "./case-action-service";
@@ -25,7 +26,10 @@ export function caseToolServices(db:NodePgDatabase):CaseToolDependencies{
   const outcomes=await readCaseOutcomes(db,item.id);
   return {case:item,outcomes,transcriptions,authorities:authorities.map(({lease_id,lease_until,...authority})=>authority),sources:sources.map(publicCitation),call_evidence:calls.map(c=>({...c,trust:"untrusted_reported_speech"})),documents:files,replies,actions,facts,evidence_refs:[...outcomes.filter(o=>o.evidence_current).map(o=>`outcome:${o.id}`),...sources.map(s=>`source:${s.id}:${s.sha256}`),...calls.map(c=>`call:${c.id}:${c.sha256}`),`case:${item.revision}`,...files.map(d=>`document:${d.id}:${d.sha256}`),...replies.map(r=>`reply:${r.id}:${r.sha256}`),...actions.map(a=>`action:${a.id}`)]};
  }
- return {requestDocument:(identity,input)=>requestPhoneDocument(db,identity,input),recordOutcome:(identity,input)=>recordCaseOutcome(db,identity,input),takeAction:(identity,input)=>takeCaseAction(db,identity,input),citeSource:(identity,input)=>citeCaseSource(db,identity,input),authenticate:token=>resolveCaseToolCredential(db,token),getCase,recordFact:async(identity,input)=>db.transaction(async tx=>{
+ return {readSource:async(identity,input)=>{
+  const [item]=await db.select({id:cases.id}).from(cases).where(and(eq(cases.id,identity.case_id),eq(cases.owner_id,identity.owner_id)));
+  if(!item)throw Error("NOT_FOUND");return readPublicSource(input.url,input.offset);
+ },requestDocument:(identity,input)=>requestPhoneDocument(db,identity,input),recordOutcome:(identity,input)=>recordCaseOutcome(db,identity,input),takeAction:(identity,input)=>takeCaseAction(db,identity,input),citeSource:(identity,input)=>citeCaseSource(db,identity,input),authenticate:token=>resolveCaseToolCredential(db,token),getCase,recordFact:async(identity,input)=>db.transaction(async tx=>{
   const [item]=await tx.select().from(cases).where(and(eq(cases.id,identity.case_id),eq(cases.owner_id,identity.owner_id))).for("update");
   if(!item)throw Error("NOT_FOUND");
   const [prior]=await tx.select().from(caseAgentFacts).where(and(eq(caseAgentFacts.case_id,item.id),eq(caseAgentFacts.operation_id,input.operation_id)));

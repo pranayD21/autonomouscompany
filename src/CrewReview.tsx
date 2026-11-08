@@ -21,8 +21,9 @@ export function CrewReview({id,userId,enabled,revision,quickAnalysis}:{id:string
  const r=run?.result;
  const hasDetails=!!(run?.research||r?.research_findings?.length||r?.coverage_avenues?.length||r?.document_references?.length||r?.reply_references?.length);
  return <>
- <CaseSection id="section-review" title="Review" aside={<div className="actions"><StatefulButton disabled={busy||!enabled||!!run?.saved_at} onAction={()=>act(true)}><Sparkle size={16} aria-hidden="true"/>Run agent team</StatefulButton>{working&&<button className="text-button" disabled={busy} onClick={()=>void act(false)}>Refresh team status</button>}</div>}>
- {!enabled&&<p className="quiet-line">The agent team is available to configured test operators.</p>}
+ <CaseSection id="section-authorization" title="Agent work"><Autonomy caseId={id} userId={userId} enabled={enabled}/></CaseSection>
+ <CaseSection id="section-review" title="Optional Naïve review" aside={<div className="actions"><StatefulButton disabled={busy||!enabled||!!run?.saved_at} onAction={()=>act(true)}><Sparkle size={16} aria-hidden="true"/>Run agent team</StatefulButton>{working&&<button className="text-button" disabled={busy} onClick={()=>void act(false)}>Refresh team status</button>}</div>}>
+ {!enabled&&<p className="quiet-line">This optional Naïve review is available to test operators. Use Agent work above to start ongoing work on your case.</p>}
  {quickAnalysis&&<div className="analysis"><h4>Questions for the insurer</h4><p>{quickAnalysis}</p></div>}
  {run&&(working||(!r&&run.status!=="not_started"&&run.status!=="idle"&&run.status!=="completed"))&&<p className="run-status" data-working={working}>Status: {run.status.replaceAll("_"," ")}{run.approval_required?" · needs your approval":""}</p>}
  {working&&<StepLoader steps={STEPS} interval={2600}/>}
@@ -50,7 +51,6 @@ export function CrewReview({id,userId,enabled,revision,quickAnalysis}:{id:string
  </CaseSection>
  <CaseSection id="section-outreach" title="Outreach">
   <Outreach revision={revision} caseId={id} userId={userId} enabled={enabled} canDraft={!!(run?.saved_at&&run.result)} plan={run?.result?`${run.result.summary}\n\n${(run.result.next_questions??run.result.next_actions).join("\n")}`:""}/>
-  <div className="subsection" id="section-authorization"><h4>Agent permissions</h4><Autonomy caseId={id} userId={userId} enabled={enabled&&!!(run?.saved_at&&run.result)}/></div>
  </CaseSection>
  <CaseSection id="section-outcomes" title="Outcomes"><Outcomes caseId={id} userId={userId} revision={revision}/></CaseSection>
  </>;

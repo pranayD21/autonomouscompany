@@ -554,3 +554,71 @@ Live fallback verification subsequently passed: direct OpenAI tool-call generati
 ### Commit the complete repository checkpoint
 
 At the user's request, committed all pending repository source, tests, migration files, and documentation alongside the previously committed direct-model demo fallback. The persistent-only migration remains unfinished; migration 0023 and the pending backend changes are not deployed by this Git push. Build and seven focused capacity/demo tests passed. A scan of changed files found no configured secret values or credential-shaped strings; private environment files and test artifacts remain ignored. GitHub pushes trigger frontend deployment only.
+
+### Explicit persistent case activation UI
+
+Replaced the bounded demo authorization form with owner-written version-2 permission, explicit start/resume/stop controls, and separate saved, queued, working, waiting, attention, interrupted, finished, and stopped states. Direct-model sessions are identified and do not show Naïve approval controls. Edited permission clears the confirmation checkbox. Three focused tests and the isolated mocked browser activation flow passed; no live grant or outreach was created by those checks. See activation-flow.md for the API contract and verification limits.
+
+### Complete POC phone readiness behavior
+
+Read-only AgentPhone checks still report the existing registration pending and the number registration_required; hosted phone onboarding remains disabled. No paid submission, message, call, routing, or environment change occurred. Removed the historical case-notification count caps and made PHONE_ALLOWED_NUMBERS an optional rollout restriction: an empty list permits recipients already authorized by the OTP/consent paths once the feature and carrier are ready. Retained OTP abuse controls, STOP, ownership, deduplication, and uncertain-send reconciliation. Document requests now accept version-2 owner permission without legacy expiry requirements. PhoneSignIn checks readiness and directs unavailable users to the existing email path. All 12 phone database tests, the browser OTP/disabled-email fallback fixture, and the build passed; browser/provider transport tests sent no real texts. Live carrier delivery remains the external gate.
+
+### Save interrupted integration handoff
+
+At the user's request, added docs/RESUME-HANDOFF.md with current repository/deployment state, user-approved POC scope, live evidence, uncommitted hosted-runner/UI/phone work, exact missing integration steps, and cleanup/test/deployment instructions. Secrets and private registration data are excluded. This documentation does not claim the unfinished hosted workflow is deployed or complete.
+
+### Hosted activation API integration
+
+- Added transactional v2 activation, direct-engine history, owner resume, and credential/run revocation in `backend/autonomy-service.ts` and `backend/api.ts`. The explicit readiness flag is `ASSURANCE_DIRECT_ACTIVATION_ENABLED`; legacy grants retain their existing restrictions.
+- Added `scripts/direct-activation.test.ts` for readiness, isolation, atomic run creation, resume, and uncertain-dispatch/revocation behavior. TypeScript and all three serial disposable-database activation tests passed. The tests also cover non-operator v2 bearer resolution and fresh reasoning after resume. Action decisions now receive owner-confirmed document evidence references. Deployment is not implied by this entry.
+
+### Hosted public reading and direct document extraction
+
+Added `read_public_source` to the case MCP tools, backed by the existing SSRF-protected source transport. Added an explicit `direct_openai` document-reader mode with exact stored-file hash checks, schema validation, fenced retryable inference attempts, and unchanged owner confirmation. Document reading no longer depends on the legacy crew-review UI gate. The cases Function requires its own server-only OpenAI key for this mode. No migration is required for these reader states, and existing Naïve attempts are preserved.
+
+Validation: 12 source/document tests passed with `npx tsx --test scripts/direct-document-reader.test.ts scripts/public-source.test.ts scripts/document-reader.test.ts`. Three disposable-database direct-reader route tests also passed, covering concurrent starts, owner confirmation, stale-attempt fencing and retries. Live fictional-card inference passed with `gpt-5.4-mini`; live example.com retrieval returned its actual text and metadata after correcting an assertion that conflated the title and body. Hosted extraction is still unverified. Public reading supports agent-chosen URLs, not indexed web search; scanned PDFs still require page images.
+
+## Persistent communication review (November 8, 2026 UTC)
+
+Reviewed `backend/open-case-actions.ts` and retained separate v2 action routing. Exact operation retries return the saved result; conflicting content fails. Unfinished communications now block a competing contact or completion, and the dispatch guard checks case as well as owner and authority. Case/authority locks follow the same order as owner revoke. Follow-up emails preserve the prior provider thread and enable inbound monitoring. Active v2 authority keeps its enabled reply monitors eligible beyond the legacy expiry.
+
+Seven disposable-Postgres v2 action tests passed with fake providers, covering retry/conflict, concurrent contact, unknown and rejected dispatch, threading, revoked prepared dispatch, isolation, evidence, and unsupported completion. The first run's assertions passed but teardown hit a reply-monitor foreign key; cleanup was fixed and the complete rerun passed. No live email or call was sent. The hosted workflow suite is separate; these action tests do not establish deployed readiness.
+
+### Hosted direct-agent verification harness
+
+- Added `scripts/hosted-direct-smoke.ts` with persistent private fixture state, hosted signup/session capture, activation/isolation checks, scheduler observation, owner update/resume, revoke, and delayed stop verification. Zero-outreach and separately authorized single-email fixtures are isolated.
+- TypeScript passed. No hosted fixture or message was created while implementing the harness; live execution awaits backend deployment.
+
+The hosted-compatible integration suite `scripts/hosted-workflow.test.ts` then passed alongside all eleven direct-runner tests (12 total), with successful fixture cleanup. It created v2 permission without an operator allowlist, queued a direct run, resumed a persisted pending tool after a Function slice, recovered from a simulated model 429, set a stable goal, sent two fake threaded emails, imported two authenticated fictional replies through the real reply parser/service, recorded an exactly quoted simulated outcome, and reached `completed` without another inference or send. All communication transports and model responses were scripted; this is service integration evidence, not live insurer delivery or a real payout. `connectDirectCaseTools` accepts service overrides for this test while retaining its internal authentication guard. TypeScript and `git diff --check` passed after the communication and monitor-status changes.
+
+### Hosted document proof command
+
+- Extended the hosted smoke harness with `document zero`: a retained fictional card image and stable upload ID, multipart request helper, direct extraction, exact transcription checks, cross-owner denial, repeated confirmation/revision checks, and zero-outreach verification.
+- TypeScript passed. No live upload, extraction, or contact was performed during implementation.
+
+## November 8, 2026 — Hosted integration verification before deployment
+
+Wired the durable direct runner into autopoll and inbound event hooks, excluded direct authorities from legacy engines, and added server-only direct-model/document configuration. Review fixes preserve requested operation IDs across model retries, keep output-review pauses parked until owner resume, retry known read-only tools after interruption, and consume only the events actually added to the conversation. The case page now puts Agent work ahead of the optional legacy review.
+
+The first runner test attempt exposed stale disposable fixtures and foreign-key cleanup order; the test cleanup was corrected. The initial runner/full-exchange suite passed 12/12; a subsequent expanded runner regression is in progress. Legacy session/setup/tool/phone/provisioning and v2 action regressions passed 71/71 serially. Build and mocked activation UI passed. The old Naïve rotation fixture cleanup succeeded with zero outbound rows. Carrier registration still reports pending/registration_required; phone remains disabled. Production deployment and live scheduler verification are still pending at this checkpoint.
+
+## Twilio Verify setup script
+
+Added `scripts/configure-twilio-verify.ts` and example phone-login configuration. Default execution reads the account and Assurance service; `--apply` creates only an absent service, verifies six-digit settings, and preserves private configuration while saving its SID. Ambiguity and uncertain creation block blind retries. The script has no send-code, voice, or number-purchase path. TypeScript passed; no live setup execution occurred during implementation. See [setup details](twilio-verify-setup.md).
+
+### Separate phone login and Verify code delivery
+
+- Added `PHONE_LOGIN_ENABLED` independent of inbound/notification activation, selected real-code delivery through `PHONE_SMS_PROVIDER`, Twilio Verify send/check hooks, and public fictional-number OTP fixtures. Test-number configuration rejects numbers outside the fictional NANP 555-0100–0199 range. No schema migration is needed.
+- Retained real OTP request throttles, expiry, three-attempt checks, and one-time consumption. Verify's custom checker uses a locked local nonce so provider validation cannot bypass replay protection. Case notifications and voice remain AgentPhone; Verify is only for login codes.
+- Updated phone `/status`, JWT acceptance, and authenticated phone routes. Readiness checks are read-only. Public test codes make those accounts shared fictional fixtures, never private accounts.
+- All 16 phone database tests passed on the disposable branch. After separating notification and login readiness helpers, six affected tests passed again. TypeScript and whitespace checks passed. All provider traffic in these tests was mocked; no real SMS, call, deployment, or inbound routing change was performed.
+
+### Hosted phone verification helper prepared
+
+Added `scripts/hosted-phone-smoke.ts` with separate fictional-account, one-real-OTP-request, and real-verification commands. The real-send command persists its attempted marker before sending and refuses repeats; real verification uses a private OTP file and signs out after checking the hosted dashboard. The demo checks account persistence/isolation and deletes only its own fictional case. `npx tsc --noEmit` passed. No live command was executed during implementation.
+
+## November 8, 2026 — Phone login and hosted correction checkpoint
+
+Integrated the additional phone-login handoff: phone-only entry with older email fallback, five fictional shared demo numbers, separate login/notification flags, Twilio Verify codes, and existing OTP abuse controls. Phone DB tests passed 16/16 and six affected cases passed again after readiness separation; mocked UI and build passed. The Verify setup script passed four fake-transport tests. The real account was active; its list endpoint rejected PageSize=1000, so setup now uses 100. Created one Assurance service, verified six-digit settings, and saved its SID privately. No SMS sent at this checkpoint.
+
+Hosted activation and zero-contact reasoning passed, as did actual uploaded-card extraction, cross-owner denial, and confirmation idempotency. Live model behavior exposed a missing required email-tool argument (no decision/dispatch row) and stale evidence after a fact write. The runner now distinguishes explicit pre-dispatch rejection from uncertainty, refreshes its system instructions, and surfaces unresolved tool failures as owner-help states. Action errors identify stale evidence without leaking internals. The final runner/workflow/action regression passed 23/23. The existing fixtures will continue under their original permissions; no email has been sent yet.

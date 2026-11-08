@@ -1,5 +1,7 @@
 # Account setup and agent stack
 
+Current runtime (November 8, 2026): the hosted new-case path uses direct OpenAI inference and direct document reading. See [implementation-status.md](implementation-status.md) and [hosted-agent.md](hosted-agent.md) for current deployed proof. The provider setup and bounded Naïve budgets below describe legacy resources, not caps or activation requirements on new direct cases.
+
 The operator selected agentphone.ai and the existing Naïve company. Account setup uses the operator's Dia session through Playwriter. Never put passwords or API keys in this document.
 
 ## Naïve

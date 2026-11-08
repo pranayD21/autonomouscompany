@@ -10,6 +10,8 @@ export async function pollCaseAgentSetups(db:NodePgDatabase,deps?:SetupDependenc
  if(!stats.configured)return stats;
  const result=await db.execute(sql`WITH due AS (
   SELECT id FROM advocacy_case_agent_setups WHERE state='queued' AND next_check_at<=now()
+  AND NOT EXISTS (SELECT 1 FROM advocacy_direct_case_runs r WHERE r.authority_id=advocacy_case_agent_setups.authority_id)
+  AND EXISTS (SELECT 1 FROM advocacy_case_authorities a WHERE a.id=advocacy_case_agent_setups.authority_id AND a.policy->>'version' IS DISTINCT FROM '2')
   AND (lease_until IS NULL OR lease_until<now()) ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
   UPDATE advocacy_case_agent_setups s SET lease_id=gen_random_uuid(),lease_until=now()+interval '20 minutes',attempts=attempts+1
   FROM due WHERE s.id=due.id RETURNING s.id,s.lease_id`);

@@ -12,6 +12,13 @@ export default defineConfig({
   aiGateway: true,
   functions: {
     phone: {name:"Assurance phone intake and sign-in",source:"./backend/phone-worker.ts",env:{
+      PHONE_LOGIN_ENABLED:process.env.PHONE_LOGIN_ENABLED??"false",
+      PHONE_TEST_NUMBERS:process.env.PHONE_TEST_NUMBERS??"",
+      PHONE_TEST_CODE:process.env.PHONE_TEST_CODE??"123456",
+      PHONE_SMS_PROVIDER:process.env.PHONE_SMS_PROVIDER??"agentphone",
+      TWILIO_ACCOUNT_SID:process.env.PHONE_SMS_PROVIDER==="twilio_verify"?{value:process.env.TWILIO_ACCOUNT_SID,required:true}:{value:process.env.TWILIO_ACCOUNT_SID,required:false,onUndefined:"skip"},
+      TWILIO_AUTH_TOKEN:process.env.PHONE_SMS_PROVIDER==="twilio_verify"?{value:process.env.TWILIO_AUTH_TOKEN,required:true}:{value:process.env.TWILIO_AUTH_TOKEN,required:false,onUndefined:"skip"},
+      TWILIO_VERIFY_SERVICE_SID:process.env.PHONE_SMS_PROVIDER==="twilio_verify"?{value:process.env.TWILIO_VERIFY_SERVICE_SID,required:true}:{value:process.env.TWILIO_VERIFY_SERVICE_SID,required:false,onUndefined:"skip"},
       PHONE_FLOW_ENABLED:process.env.PHONE_FLOW_ENABLED??"false",
       PHONE_AUTH_BASE_URL:process.env.PHONE_AUTH_BASE_URL??"",
       PHONE_AUTH_SECRET:process.env.PHONE_AUTH_SECRET??"",
@@ -40,6 +47,8 @@ export default defineConfig({
       name: "Assurance autonomous case worker",
       source: "./backend/autonomy-worker.ts",
       env: {
+        OPENAI_API_KEY: {value:process.env.OPENAI_API_KEY,required:true},
+        ASSURANCE_DIRECT_MODEL: process.env.ASSURANCE_DIRECT_MODEL??"gpt-5.4-mini",
         NAIVE_SETUP_API_KEY: process.env.NAIVE_CASE_PROVISIONING_ENABLED==="true"
           ? {value:process.env.NAIVE_SETUP_API_KEY,required:true}
           : {value:process.env.NAIVE_SETUP_API_KEY,required:false,onUndefined:"skip"},
@@ -81,6 +90,11 @@ export default defineConfig({
       name: "Medical bill case API",
       source: "./backend/api.ts",
       env: {
+        ASSURANCE_DIRECT_ACTIVATION_ENABLED: process.env.ASSURANCE_DIRECT_ACTIVATION_ENABLED??"false",
+        PHONE_LOGIN_ENABLED:process.env.PHONE_LOGIN_ENABLED??"false",
+        OPENAI_API_KEY: {value:process.env.OPENAI_API_KEY,required:true},
+        ASSURANCE_DOCUMENT_READER: "direct_openai",
+        ASSURANCE_DIRECT_MODEL: process.env.ASSURANCE_DIRECT_MODEL??"gpt-5.4-mini",
         PHONE_FLOW_ENABLED:process.env.PHONE_FLOW_ENABLED??"false",
         PHONE_AUTH_BASE_URL:process.env.PHONE_AUTH_BASE_URL??"",
         PHONE_ALLOWED_NUMBERS:process.env.PHONE_ALLOWED_NUMBERS??"",
@@ -110,7 +124,7 @@ export default defineConfig({
   },
   triggers: {
     "phone-notifications":{type:"schedule",function:"phone",functionPath:"/poll",cron:"* * * * *"},
-    "case-autonomy": { type: "schedule", function: "autopoll", functionPath: "/poll", cron: "*/5 * * * *" },
+    "case-autonomy": { type: "schedule", function: "autopoll", functionPath: "/poll", cron: "* * * * *" },
     "crew-monitor": { type: "schedule", function: "crewpoll", functionPath: "/poll", cron: "*/5 * * * *" },
     "reply-monitor": { type: "schedule", function: "replypoll", functionPath: "/poll", cron: "*/5 * * * *" },
   },

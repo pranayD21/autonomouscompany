@@ -1,10 +1,10 @@
 import {requestIdentity} from './request-identity';
 import {decodeJwt} from 'jose';
 import {Hono} from 'hono';import {z} from 'zod';import type {Pool} from 'pg';
-import {verifiedPhone,claimPhoneIntake,linkVerifiedPhone} from './phone-intake';import {deliverPhoneNotifications,portalUrl} from './phone-messaging';
+import {verifiedPhone,claimPhoneIntake,linkVerifiedPhone} from './phone-intake';import {phoneLoginEnabled} from './phone-messaging';
 export function phoneRoutes(pool:Pool){
  const app=new Hono<{Variables:{userId:string}}>();
- app.use('*',async(c,next)=>{if(process.env.PHONE_FLOW_ENABLED!=='true')return c.json({error:'Phone accounts are not active yet.'},503);await next();});
+ app.use('*',async(c,next)=>{if(!phoneLoginEnabled())return c.json({error:'Phone accounts are not active yet.'},503);await next();});
  app.post('/link',async c=>{
   const owner=c.get('userId');const body=z.object({phone_token:z.string().min(20).max(10000)}).safeParse(await c.req.json().catch(()=>null));
   if(owner.startsWith('phone:')||!body.success)return c.json({error:'Sign in to your existing account before linking a verified phone.'},400);

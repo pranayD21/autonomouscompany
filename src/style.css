@@ -350,3 +350,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .doc-reading { display: inline-block; padding: 3px 10px; border-radius: 100px; background: var(--tint); font-size: 11px !important; }
 @media (max-width: 1100px) { .case-hero { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 820px) { .summary-meta { gap: 14px; } }
+
+.test-numbers { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line, #deded8); }
+.test-numbers h3 { margin: 0 0 .5rem; font-size: 1rem; }
+.test-numbers p { font-size: .875rem; line-height: 1.5; }
+.test-numbers > div { display: flex; flex-wrap: wrap; gap: .5rem; }
+.test-numbers button { font-variant-numeric: tabular-nums; font-size: .875rem; padding: .6rem .8rem; }

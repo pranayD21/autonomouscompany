@@ -169,6 +169,13 @@
       "when": 1794116108873,
       "tag": "0023_tan_calypso",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794117552084,
+      "tag": "0024_mushy_black_tarantula",
+      "breakpoints": true
     }
   ]
 }

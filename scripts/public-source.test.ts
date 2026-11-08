@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {sourceUrl,publicAddress,fetchPublicSource,type SourceTransport} from "../backend/public-source";
+import {sourceUrl,publicAddress,fetchPublicSource,readPublicSource,type SourceTransport} from "../backend/public-source";
 const quote="This is a public source with an exact short quote.";
 const good:SourceTransport={resolve:async()=>[{address:"93.184.215.14",family:4}],read:async()=>({status:200,mime:"text/html",bytes:Buffer.from(`<html><title>Evidence</title><main><p>${quote}</p></main></html>`)})};
 test("private, mapped, reserved, metadata, and local URL destinations reject",()=>{
@@ -31,4 +31,18 @@ test("PDF text-layer quotes are verified without inferring image content",async(
   await page.setContent('<div style="background:black;width:100px;height:100px"></div>');const imageOnly=await page.pdf();
   await assert.rejects(()=>fetchPublicSource("https://example.com/scan.pdf",quote,{...good,read:async()=>({status:200,mime:"application/pdf",bytes:imageOnly})}),/PDF_NO_TEXT/);
  }finally{await browser.close();}
+});
+
+test("public reads expose actual text before citation and retain SSRF checks",async()=>{
+ const result=await readPublicSource("https://example.com",0,good);
+ assert.equal(result.text,quote);assert.equal(result.trust,"untrusted_public_source");assert.equal(result.next_offset,null);
+ await assert.rejects(()=>readPublicSource("https://127.0.0.1",0,good),/ADDRESS_REJECTED/);
+ const long={...good,read:async()=>({status:200,mime:"text/plain",bytes:Buffer.from("public evidence ".repeat(1500))})};
+ const first=await readPublicSource("https://example.com",0,long);const second=await readPublicSource("https://example.com",16000,long);
+ assert.equal(first.text.length,16000);assert.equal(first.next_offset,16000);assert.equal(first.sha256,second.sha256);assert.equal(second.next_offset,null);
+});
+
+test("public reading exposes bounded public links without fetching them",async()=>{
+ const source=await readPublicSource("https://example.com",0,{...good,read:async()=>({status:200,mime:"text/html",bytes:Buffer.from(`<main>${quote}<a href="/claims">Claim guidance</a><a href="https://127.0.0.1/private">Reject</a><a href="mailto:person@example.com">Email</a></main>`)})});
+ assert.deepEqual(source.links,[{title:"Claim guidance",url:"https://example.com/claims"}]);
 });

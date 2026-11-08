@@ -13,7 +13,7 @@ import {ArrowLeft, ArrowUpRight, Home, LogOut, Plus, Sparkle} from "./Icons";
 import {Sidebar, SidebarLink, SidebarSection, SidebarText} from "./ui/Sidebar";
 import {SectionNav} from "./ui/SectionNav";
 import {CaseSection} from "./ui/CaseSection";
-import {NumberTicker, StatefulButton} from "./ui/motion";
+import {NumberTicker} from "./ui/motion";
 
 const message = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Please try again.";
 const money = (cents: number | null) => cents === null ? "Not provided" : new Intl.NumberFormat("en-US", {style: "currency", currency: "USD"}).format(cents / 100);
@@ -40,11 +40,8 @@ function useRoute() {
 }
 
 /** The single most useful thing to do next on a case. */
-function nextStep(item: BillCase): {title: string; href: string; cta: string} {
-  if (item.status === "analyzing") return {title: "We’re reviewing this case.", href: "#section-documents", cta: "Add documents"};
-  if (item.case_type === "health_insurance" && (item.bill_cents === null || item.eob_cents === null)) return {title: "Add your bill and EOB amounts.", href: "#section-overview", cta: "Add amounts"};
-  if (item.status === "new") return {title: "Upload your documents, then run a review.", href: "#section-documents", cta: "Add documents"};
-  return {title: "Your review is ready. Draft your outreach.", href: "#section-outreach", cta: "Go to outreach"};
+function nextStep(_item: BillCase): {title: string; href: string; cta: string} {
+  return {title: "Check agent progress or give permission to begin.", href: "#section-authorization", cta: "Agent permissions and status"};
 }
 
 function LiveStatus({status}: {status: string}) {
@@ -179,7 +176,8 @@ function Intake({hasCases, disabled, onCancel, onSave, live}: {hasCases: boolean
 const SECTIONS = [
   {id: "section-overview", label: "Overview"},
   {id: "section-documents", label: "Documents"},
-  {id: "section-review", label: "Review"},
+  {id: "section-authorization", label: "Agent work"},
+  {id: "section-review", label: "Optional review"},
   {id: "section-outreach", label: "Outreach"},
   {id: "section-outcomes", label: "Outcomes"},
 ];
@@ -205,7 +203,6 @@ function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}: {item:
         <div className="case-title-row"><h1>{item.title}</h1><span className="badge" data-status={item.status}>{item.status.replaceAll("_", " ")}</span>{live}</div>
       </div>
       <div className="actions">
-        <StatefulButton className={item.status === "reviewed" ? "secondary" : "primary"} disabled={busy !== null || item.status === "analyzing"} onAction={() => onAct("analyze")}>Review with AI</StatefulButton>
         <button className="text-button quiet-button" disabled={busy !== null} onClick={() => { if (window.confirm("Delete this case?")) void onAct("delete"); }}>Delete</button>
       </div>
     </div>
@@ -236,7 +233,7 @@ function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}: {item:
     <CaseSection id="section-overview" title="Overview" aside={<button className="text-button" onClick={() => setEditing(e => !e)} aria-expanded={editing}>{editing ? "Cancel editing" : "Update case details"}</button>}>
       <AnimatePresence initial={false}>
         {editing && <motion.div className="edit-panel" initial={{height: 0, opacity: 0}} animate={{height: "auto", opacity: 1}} exit={{height: 0, opacity: 0}} transition={{duration: 0.3, ease: [0.16, 1, 0.3, 1]}}>
-          <p className="caveat">Changes need a new review before outreach.</p>
+          <p className="caveat">Updates are saved as new case evidence. An active agent can use them on its next turn.</p>
           <CaseForm key={`${item.id}-${item.revision}`} initial={item} disabled={busy !== null} onSave={async d => { await onSave(d); setEditing(false); }}/>
         </motion.div>}
       </AnimatePresence>
@@ -246,7 +243,7 @@ function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}: {item:
     </CaseSection>
 
     <CaseSection id="section-documents" title="Documents">
-      <Documents key={`documents-${item.id}`} caseId={item.id} userId={userId} revision={item.revision} enabled={crewEnabled}/>
+      <Documents key={`documents-${item.id}`} caseId={item.id} userId={userId} revision={item.revision}/>
     </CaseSection>
 
     <CrewReview key={`${item.id}-${item.revision}`} revision={item.revision} id={item.id} userId={userId} enabled={crewEnabled} quickAnalysis={item.analysis}/>

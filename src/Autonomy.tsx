@@ -2,43 +2,68 @@ import {SessionApprovals} from "./SessionApprovals";
 import {useEffect,useState,type FormEvent} from "react";
 import {api} from "./services";
 import {Timeline,TimelineItem} from "./ui/motion";
-import type {caseAuthorities,caseDecisions} from "../backend/schema";
-type Authority=typeof caseAuthorities.$inferSelect;
-type Session={id:string;authority_id:string;state:string;next_check_at:string|null;reason:string|null;created_at:string};
+import {activationRequest,engineLabel,sessionNeedsProviderApproval,sessionStatus,type AgentSession} from "./activation-state";
+import type {caseDecisions} from "../backend/schema";
+type Authority={id:string;state:string;reason:string|null;next_wake_at:string|null;policy:{version?:number;consent?:string;expires_at?:string;max_decisions?:number;max_outbound?:number};decisions_used:number;outbound_used:number};
 type Decision=Pick<typeof caseDecisions.$inferSelect,"id"|"round"|"state"|"decision"|"result"|"created_at">;
+type Setup={id:string;authority_id?:string;state:string;reason:string|null};
+type History={authorities:Authority[];decisions:Decision[];sessions?:AgentSession[];activation_available?:boolean;persistent_available?:boolean;setups?:Setup[]};
+const empty:History={authorities:[],decisions:[],sessions:[],setups:[]};
+function dateLabel(value:string|null|undefined){if(!value)return null;const date=new Date(value);return Number.isNaN(date.getTime())?null:date.toLocaleString();}
 export function Autonomy({caseId,userId,enabled}:{caseId:string;userId:string;enabled:boolean}){
- const [data,setData]=useState<{authorities:Authority[];decisions:Decision[];sessions?:Session[];persistent_available?:boolean;setups?:{id:string;state:string;reason:string|null}[]}>({authorities:[],decisions:[],sessions:[]});
- const [scope,setScope]=useState<"research"|"email">("research");
- const [loaded,setLoaded]=useState(false);
- const [busy,setBusy]=useState(false),[error,setError]=useState("");
+ const [data,setData]=useState<History>(empty),[loaded,setLoaded]=useState(false),[loadError,setLoadError]=useState("");
+ const [consent,setConsent]=useState(""),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState("");
  const path=`/cases/${caseId}/autonomy`;
- async function refresh(){setData(await api(path,{},userId));setLoaded(true);}
- useEffect(()=>{let live=true;setLoaded(false);const read=()=>{api<typeof data>(path,{},userId).then(d=>{if(live){setData(d);setLoaded(true);}}).catch(()=>{});};read();const timer=setInterval(read,15000);return()=>{live=false;clearInterval(timer)};},[caseId,userId]);
+ async function refresh(){try{setData(await api<History>(path,{},userId));setLoaded(true);setLoadError("");}catch(e){setLoadError(e instanceof Error?e.message:"Could not refresh case status.");}}
+ useEffect(()=>{let live=true;setLoaded(false);setData(empty);setLoadError("");setError("");setConsent("");setConfirmed(false);
+  const read=()=>{api<History>(path,{},userId).then(d=>{if(live){setData(d);setLoaded(true);setLoadError("");}}).catch(()=>{if(live)setLoadError("Could not refresh case status. The last shown status may be out of date.");});};
+  read();const timer=setInterval(read,15000);return()=>{live=false;clearInterval(timer)};
+ },[caseId,userId]);
  const current=data.authorities.find(a=>["active","waiting","human_required"].includes(a.state));
- async function authorize(e:FormEvent<HTMLFormElement>){e.preventDefault();const form=new FormData(e.currentTarget);setBusy(true);setError("");
-  const customer=String(form.get("customer")??"").trim(),insurer=String(form.get("insurer")??"").trim();
-  const contacts=scope==="research"?[]:[{id:"customer",role:"customer",channel:"email",destination:customer},...(insurer?[{id:"insurer",role:"insurer",channel:"email",destination:insurer}]:[])];
-  try{await api(path,{method:"POST",body:JSON.stringify({authorize:true,persistent:data.persistent_available===true,policy:{synthetic:true,goal:String(form.get("goal")),contacts,max_decisions:3,max_outbound:scope==="research"?0:2,min_contact_interval_minutes:60,expires_at:new Date(Date.now()+86400000).toISOString()}})},userId);await refresh();}
-  catch(e){setError(e instanceof Error?e.message:"Authorization failed");}finally{setBusy(false);}}
- async function stop(id:string){setBusy(true);setError("");try{await api(`${path}/${id}/revoke`,{method:"POST"},userId);await refresh();}catch(e){setError(e instanceof Error?e.message:"Could not stop the case");}finally{setBusy(false);}}
- return <div className="autonomy"><p className="section-lede">Let the agent ask questions, follow up, or wait on its own. Choose whether it may contact anyone.</p>
- {!loaded&&<p>Loading case authorization…</p>}
- {!current&&enabled&&loaded&&<form onSubmit={authorize}>
-  {data.persistent_available&&<p className="caveat">Starts one ongoing case agent. You may need to confirm individual actions.</p>}
-  <label>Case objective<textarea name="goal" required minLength={10} maxLength={1000} defaultValue="Gather missing fictional employer, incident, and claim details; explain what is still needed to proceed."/></label>
-  <label>Communication permission<select value={scope} onChange={e=>setScope(e.target.value as "research"|"email")} disabled={busy}><option value="research">Review only — no emails or calls</option><option value="email">Allow synthetic emails</option></select></label>
-  {scope==="email"&&<><label>Customer test email<input name="customer" type="email" required maxLength={254}/></label>
-  <label>Insurer test email (optional)<input name="insurer" type="email" maxLength={254}/></label></>}
-  <p>Limits: {scope==="research"?"no emails or calls":"2 emails total, at least 1 hour between contacts"}, 3 agent decision rounds, expires after 24 hours. {data.persistent_available?"The persistent session keeps the existing $0.25 total cap.":"Each decision uses the existing agent budget cap."}{scope==="email"&&" Only server-approved test contacts are accepted."}</p>
-  <p className="caveat caveat--action">Nothing is sent unless you authorize it here. Test recipients only. Not for real claims, payments, or settlements.</p>
-  <label key={`${scope}:${data.persistent_available===true}`}><input type="checkbox" required/> {scope==="research"?"I authorize the agent to review this synthetic case within these limits, without contacting anyone.":"These recipients agreed to this synthetic test. I authorize routine emails within these limits without approving each message."}</label>
-  <button disabled={busy}>{scope==="research"?"Authorize review only":"Authorize autonomous email test"}</button>
- </form>}
- {error&&<p role="alert">{error}</p>}
- {data.authorities.map(a=><div key={a.id} className="authority-card" data-state={a.state}><p>Status: {a.state.replaceAll("_"," ")} · Decisions {a.decisions_used}/{a.policy.max_decisions} · Contacts {a.outbound_used}/{a.policy.max_outbound}</p><p>{a.reason}</p><small>Authorization expires {new Date(a.policy.expires_at).toLocaleString()}{a.next_wake_at?` · Next check due ${new Date(a.next_wake_at).toLocaleString()}`:""}</small>{["active","waiting","human_required"].includes(a.state)&&<div><button disabled={busy} onClick={()=>void stop(a.id)}>Stop autonomous work</button><p>A dispatch already in progress may finish. No new action starts after the stop is recorded.</p></div>}</div>)}
- {(data.setups??[]).map(setup=><div key={setup.id}><p>Case agent setup: {setup.state}</p>{setup.reason&&<p>{setup.reason}</p>}</div>)}
- {(data.sessions??[]).map(session=><div key={session.id}><h5>Case agent session: {session.state.replaceAll("_"," ")}</h5>{session.reason&&<p>{session.reason}</p>}{session.next_check_at&&<p>Next status check: {new Date(session.next_check_at).toLocaleString()}</p>}{session.state==="human_required"&&<SessionApprovals caseId={caseId} runId={session.id} userId={userId}/>}</div>)}
- {data.decisions.some(d=>d.decision?.tool==="request_human_help")&&<p>Recorded requests for human help: {data.decisions.filter(d=>d.decision?.tool==="request_human_help").length}</p>}
- {data.decisions.length>0&&<Timeline>{data.decisions.map(d=><TimelineItem key={d.id} label={`Round ${d.round}`}><article><h5>Decision {d.round}: {d.decision?.tool.replaceAll("_"," ")??d.state}</h5>{d.decision&&<p>{d.decision.reason}</p>}{d.decision&&"body" in d.decision&&<><strong>{d.decision.subject}</strong><p className="outreach-body">{d.decision.body}</p></>}{d.decision&&"question" in d.decision&&<p>{d.decision.question}</p>}{d.result&&<p>{String(d.result.reason??"")}</p>}</article></TimelineItem>)}</Timeline>}
- </div>;
+ const available=data.activation_available??(enabled&&data.persistent_available===true);
+ const currentSessions=(data.sessions??[]).filter(s=>s.authority_id===current?.id);
+ const pendingSetup=(data.setups??[]).some(s=>s.state==='queued'&&(!s.authority_id||s.authority_id===current?.id));
+ async function authorize(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!confirmed||busy)return;setBusy(true);setError("");
+  try{await api(path,{method:"POST",body:JSON.stringify(activationRequest(consent))},userId);setConfirmed(false);setConsent("");await refresh();}
+  catch(e){setError(e instanceof Error?e.message:"Activation failed. Check the case status before trying again.");}finally{setBusy(false);}}
+ async function resume(id:string){setBusy(true);setError("");try{await api(`${path}/${id}/resume`,{method:"POST",body:JSON.stringify({confirm:true})},userId);await refresh();}catch(e){setError(e instanceof Error?e.message:"Could not continue the case. Refresh to check its current status.");}finally{setBusy(false);}}
+ async function stop(id:string){setBusy(true);setError("");try{await api(`${path}/${id}/revoke`,{method:"POST"},userId);await refresh();}catch(e){setError(e instanceof Error?e.message:"Could not stop the case. Refresh to check its current status.");}finally{setBusy(false);}}
+ return <section className="autonomy" aria-label="Case agent activation">
+  <p className="section-lede">Give Assurance permission to work on this case. The agent will set its goal, research next steps, follow up within your permission, and ask you for missing information.</p>
+  {!loaded&&!loadError&&<p>Loading case status…</p>}
+  {loadError&&<div role="alert"><p>{loadError}</p><button type="button" disabled={busy} onClick={()=>void refresh()}>Refresh case status</button></div>}
+  {loaded&&!current&&<p className="caveat"><strong>Case saved. No active authorization.</strong> Saving details or uploading a document does not start agent work.</p>}
+  {loaded&&!current&&!available&&<p>Automatic work is not enabled for this account right now. Your saved case remains available.</p>}
+  {loaded&&!current&&available&&<form onSubmit={authorize} aria-label="Start case agent">
+   <label htmlFor={`case-permission-${caseId}`}>Your permission</label><textarea id={`case-permission-${caseId}`} name="consent" required value={consent} disabled={busy} placeholder="Describe what you want Assurance to handle and any boundaries it should follow." onChange={e=>{setConsent(e.target.value);setConfirmed(false);}}/>
+   <p>The agent can research, contact insurers or claims administrators, follow up, and request documents within the permission you give. You can stop ongoing work from this panel.</p>
+   <p className="caveat">This form does not authorize payments or accepting a settlement. Coverage, savings, and claim approval are not guaranteed.</p>
+   <label><input type="checkbox" checked={confirmed} disabled={busy} required onChange={e=>setConfirmed(e.target.checked)}/> I authorize ongoing work within the permission above. I can stop it at any time.</label>
+   <button disabled={busy||!consent.trim()||!confirmed}>{busy?"Starting case agent…":"Start case agent"}</button>
+  </form>}
+  {error&&<p role="alert">{error}</p>}
+  {current&&!currentSessions.length&&<p role="status"><strong>{pendingSetup?'Activation queued':'Activation pending'}</strong> — permission is saved, but an agent session has not started yet.</p>}
+  {data.authorities.map(a=><div key={a.id} className="authority-card" data-state={a.state}>
+   <p>Permission: {a.state.replaceAll("_"," ")}</p>
+   {a.policy.version===2&&a.policy.consent&&<><strong>Your permission</strong><p className="outreach-body">{a.policy.consent}</p></>}
+   {a.policy.version!==2&&<p>Earlier authorization: {a.decisions_used} decisions and {a.outbound_used} contacts recorded.{dateLabel(a.policy.expires_at)?` Its original expiry is ${dateLabel(a.policy.expires_at)}.`:''} Its original scope remains unchanged.</p>}
+   {a.reason&&<p>{a.reason}</p>}
+   {dateLabel(a.next_wake_at)&&<p>Next follow-up due: {dateLabel(a.next_wake_at)}</p>}
+   {["active","waiting","human_required"].includes(a.state)&&<div><button disabled={busy} onClick={()=>void stop(a.id)}>Stop agent work</button><p>A communication already being sent may finish. Stopping prevents new work after the stop is recorded.</p></div>}
+  </div>)}
+  {(data.setups??[]).map(setup=><div key={setup.id}><p>Case agent setup: {setup.state.replaceAll('_',' ')}</p>{setup.reason&&<p>{setup.reason}</p>}</div>)}
+  {(data.sessions??[]).map(session=>{const status=sessionStatus(session);return <article key={session.id} aria-label="Case agent status">
+   <h5>{status.label}</h5><p>{status.detail}</p><p>Engine: {engineLabel(session.engine)}</p>
+   {session.goal&&<><strong>Agent goal</strong><p>{session.goal}</p></>}
+   {session.finish_condition&&<><strong>Finish condition</strong><p>{session.finish_condition}</p></>}
+   {session.waiting_on&&<><strong>Waiting for</strong><p>{session.waiting_on}</p></>}
+   {session.reason&&<p>{session.reason}</p>}
+   {dateLabel(session.last_activity_at)&&<p>Last activity: {dateLabel(session.last_activity_at)}</p>}
+   {dateLabel(session.next_check_at)&&<p>Next check: {dateLabel(session.next_check_at)}</p>}
+   {session.state==="human_required"&&session.engine==="direct_openai"&&current?.id===session.authority_id&&<div><p>Continue after reviewing the request or adding the missing information. Your original permission stays unchanged.</p><button disabled={busy} onClick={()=>void resume(session.authority_id)}>Continue with updated information</button></div>}
+   {sessionNeedsProviderApproval(session)&&<SessionApprovals caseId={caseId} runId={session.id} userId={userId}/>}
+  </article>})}
+  {data.decisions.some(d=>d.decision?.tool==="request_human_help")&&<p>Recorded requests for human help: {data.decisions.filter(d=>d.decision?.tool==="request_human_help").length}</p>}
+  {data.decisions.length>0&&<Timeline>{data.decisions.map(d=><TimelineItem key={d.id} label={`Round ${d.round}`}><article><h5>Decision {d.round}: {d.decision?.tool.replaceAll("_"," ")??d.state}</h5>{d.decision&&<p>{d.decision.reason}</p>}{d.decision&&"body" in d.decision&&<><strong>{d.decision.subject}</strong><p className="outreach-body">{d.decision.body}</p></>}{d.decision&&"question" in d.decision&&<p>{d.decision.question}</p>}{d.result&&<p>{String(d.result.reason??"")}</p>}</article></TimelineItem>)}</Timeline>}
+ </section>;
 }

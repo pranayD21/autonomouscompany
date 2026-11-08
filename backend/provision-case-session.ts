@@ -31,6 +31,7 @@ export async function provisionCaseSession(db:NodePgDatabase,input:ProvisionInpu
   const [authority]=await tx.select().from(caseAuthorities).where(and(eq(caseAuthorities.id,input.authorityId),eq(caseAuthorities.case_id,input.caseId),eq(caseAuthorities.approved_by,input.owner))).for("update");
   const [item]=await tx.select().from(cases).where(and(eq(cases.id,input.caseId),eq(cases.owner_id,input.owner))).for("update");
   if(!authority||!item)throw Error("INVALID_CASE_BINDING");
+  if((await tx.execute(sql`SELECT id FROM advocacy_direct_case_runs WHERE authority_id=${authority.id}`)).rows.length)throw Error("DIRECT_ENGINE_ALREADY_REGISTERED");
   if(!(process.env.CREW_ALLOWED_USER_IDS??"").split(",").includes(input.owner))throw Error("OPERATOR_REQUIRED");
   if(!caseAuthority.safeParse(authority.policy).success||!authority.policy.synthetic||!["active","waiting"].includes(authority.state)||new Date(authority.policy.expires_at)<=new Date())throw Error("ACTIVE_SYNTHETIC_AUTHORITY_REQUIRED");
   const [existing]=await tx.select().from(caseAgentSessions).where(eq(caseAgentSessions.authority_id,authority.id));
@@ -53,8 +54,8 @@ export async function provisionCaseSession(db:NodePgDatabase,input:ProvisionInpu
    await client.vaults.credentials.delete(vault.id,old.id);
   }
   const credential=await issueCaseToolCredential(tx,input.caseId,input.owner,authority.id);
-  const sealed=await client.vaults.credentials.create(vault.id,{kind:"static_bearer",key:`${name}:${credential.id}`,value:credential.token,mcp_server_url:connector.mcp_servers[0].url,agent_id:input.agentId,expires_at:credential.expires_at.toISOString()});
-  if(sealed.key!==`${name}:${credential.id}`||sealed.kind!=="static_bearer"||sealed.agent_id!==input.agentId||sealed.mcp_server_url!==connector.mcp_servers[0].url||new Date(sealed.expires_at??0).getTime()!==credential.expires_at.getTime())throw Error("SEALED_CREDENTIAL_MISMATCH");
+  const sealed=await client.vaults.credentials.create(vault.id,{kind:"static_bearer",key:`${name}:${credential.id}`,value:credential.token,mcp_server_url:connector.mcp_servers[0].url,agent_id:input.agentId,expires_at:credential.expires_at?.toISOString()});
+  if(sealed.key!==`${name}:${credential.id}`||sealed.kind!=="static_bearer"||sealed.agent_id!==input.agentId||sealed.mcp_server_url!==connector.mcp_servers[0].url||new Date(sealed.expires_at??0).getTime()!==credential.expires_at?.getTime())throw Error("SEALED_CREDENTIAL_MISMATCH");
   const versions=await client.agents.listVersions(input.agentId);
   let version=unique(versions.data.filter(v=>v.metadata.assurance_authority===input.authorityId));
   try{

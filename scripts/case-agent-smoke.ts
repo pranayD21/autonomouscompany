@@ -36,7 +36,7 @@ try{
     else{
      if(fixture.credentialId)await db.update(caseToolCredentials).set({revoked_at:new Date()}).where(eq(caseToolCredentials.id,fixture.credentialId));
      const issued=await issueCaseToolCredential(db,fixture.caseId,owner);fixture.credentialId=issued.id;save();
-     const sealed=await client.vaults.credentials.create(fixture.vaultId,{kind:"static_bearer",key:name,value:issued.token,mcp_server_url:endpoint.href,agent_id:agentId,expires_at:issued.expires_at.toISOString()});fixture.sealedId=sealed.id;save();
+     const sealed=await client.vaults.credentials.create(fixture.vaultId,{kind:"static_bearer",key:name,value:issued.token,mcp_server_url:endpoint.href,agent_id:agentId,expires_at:issued.expires_at?.toISOString()});fixture.sealedId=sealed.id;save();
     }
    }
   }

@@ -1,6 +1,6 @@
 # Persistent workflow migration
 
-The user's current instruction replaces the bounded synthetic-demo workflow. New cases receive one ongoing Naïve case session after the owner gives permission in their own words. The agent writes its goal and finish condition, chooses research, contacts, communications and wake times, and decides when to finish or ask for information. No repository decision/message counts, contact spacing, case expiry, recipient list, review prerequisite, or fixed case objective governs this path.
+The user's current instruction replaces the bounded synthetic-demo workflow. New cases receive one ongoing direct-model case run after the owner gives permission in their own words. The user selected minimal Naïve use after repeated HTTP 429 failures; legacy Naïve sessions remain separate. The agent writes its goal and finish condition, chooses research, contacts, communications and wake times, and decides when to finish or ask for information. No repository decision/message counts, contact spacing, case expiry, recipient list, review prerequisite, or fixed case objective governs this path.
 
 Keep account isolation, credential revocation, signed webhooks, source integrity, evidence attribution, and send-once reconciliation. The Naïve transport governor controls request admission and temporary retry cooldowns only; it must not end cases or impose a case-work allowance. Authentication OTP expiry and login abuse controls are independent of case duration.
 
@@ -12,10 +12,8 @@ Vault credentials support expires_at=null. A case-bound non-expiring credential,
 
 AgentMail sends support Idempotency-Key, with a documented provider retention window. Our durable dispatch ledger must still prevent duplicate sends after that window. AgentPhone call creation has no verified idempotency equivalent; ambiguous call dispatches remain unresolved until reconciled, never automatically redialled.
 
-## Current recovery state
+## Current implementation and recovery
 
-The main task stopped during remote cleanup of an existing revoked rotation-test fixture after real HTTP 429 responses. Its local authority and credentials are revoked and it has zero outbound actions. The shared governor recorded request req_dn41s1pj51w5480djsgkwgnaky and is honoring its cooldown. A later retry returned request req_6x7x7xsyz5hqq6eak2zd6x08h3 with the same capacity error. Retry that same fixture after its shared cooldown; do not create another test session or bypass the governor. This remote cleanup does not block local migration work.
+The existing rotation-test session was cancelled and its remote vault credentials, vault, identity, and local fixture rows were cleaned on November 8, 2026 UTC. The cleanup confirmed zero outbound rows. No replacement fixture or remote session was created.
 
-Implementation is in progress. This document records the approved direction and verified API boundaries, not completed or deployed behavior.
-
-Initial migration modules are backend/open-case-policy.ts (owner-written permission without work limits) and backend/providers/account-budget.ts (mandatory provider budgets derived from current credits and provider-reported spend). They are not active entry points until the remaining workflow migration is integrated and tested. Do not deploy these preparatory files as proof the bounded path has been retired.
+The new hosted path uses authority-bound non-expiring credentials and revocation, rather than the failed mid-session rotation mechanism. Owner activation, direct execution, and provider-independent document extraction are implemented. See [hosted-agent.md](hosted-agent.md) for the runtime and [implementation-status.md](implementation-status.md) for deployment evidence. Legacy grants keep their original limits; the direct path does not silently expand them.

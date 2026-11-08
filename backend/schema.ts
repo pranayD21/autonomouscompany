@@ -164,7 +164,7 @@ export const caseToolCredentials=pgTable("advocacy_case_tool_credentials",{
  token_hash:text("token_hash").notNull(),
  issued_by:text("issued_by").notNull(),
  created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
- expires_at:timestamp("expires_at",{withTimezone:true}).notNull(),
+ expires_at:timestamp("expires_at",{withTimezone:true}),
  revoked_at:timestamp("revoked_at",{withTimezone:true}),
 },t=>[uniqueIndex("advocacy_tool_token_hash_idx").on(t.token_hash)]);
 
@@ -261,3 +261,20 @@ export const caseAgentSetups=pgTable("advocacy_case_agent_setups",{
  lease_id:uuid("lease_id"),lease_until:timestamp("lease_until",{withTimezone:true}),
  reason:text("reason"),created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
 },t=>[uniqueIndex("advocacy_case_agent_setup_authority_idx").on(t.authority_id)]);
+
+export const directCaseRuns=pgTable("advocacy_direct_case_runs",{
+ id:uuid("id").primaryKey().defaultRandom(),
+ case_id:uuid("case_id").notNull().references(()=>cases.id,{onDelete:"cascade"}),
+ authority_id:uuid("authority_id").notNull().references(()=>caseAuthorities.id,{onDelete:"cascade"}),
+ credential_id:uuid("credential_id").notNull().references(()=>caseToolCredentials.id,{onDelete:"cascade"}),
+ owner_id:text("owner_id").notNull(),state:text("state").notNull().default("queued"),
+ messages:jsonb("messages").notNull().default([]),pending:jsonb("pending").notNull().default([]),turns:integer("turns").notNull().default(0),
+ goal:text("goal"),finish_condition:text("finish_condition"),observed_revision:integer("observed_revision").notNull().default(0),
+ next_check_at:timestamp("next_check_at",{withTimezone:true}).defaultNow(),lease_id:uuid("lease_id"),lease_until:timestamp("lease_until",{withTimezone:true}),reason:text("reason"),
+ created_at:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),updated_at:timestamp("updated_at",{withTimezone:true}).notNull().defaultNow(),
+},t=>[uniqueIndex("advocacy_direct_authority_idx").on(t.authority_id)]);
+export const directCaseEvents=pgTable("advocacy_direct_case_events",{
+ id:uuid("id").primaryKey().defaultRandom(),run_id:uuid("run_id").notNull().references(()=>directCaseRuns.id,{onDelete:"cascade"}),
+ event_key:text("event_key").notNull(),kind:text("kind").notNull(),payload:jsonb("payload").notNull().default({}),
+ processed_at:timestamp("processed_at",{withTimezone:true}),created_at:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),
+},t=>[uniqueIndex("advocacy_direct_event_idx").on(t.run_id,t.event_key)]);

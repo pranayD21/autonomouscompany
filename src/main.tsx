@@ -1,5 +1,4 @@
-import {PhoneSignIn} from "./PhoneSignIn";
-import {phoneBase} from "./phone-session";
+import {PhoneSignIn,usePhoneStatus} from "./PhoneSignIn";
 import { StrictMode, useEffect, useState, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
 import { RealtimeProvider } from "@neon/realtime-react";
@@ -14,10 +13,8 @@ import {MotionConfig} from "motion/react";
 
 const message = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Please try again.";
 
-function SignIn() {
+function EmailSignIn() {
   const [signup, setSignup] = useState(false);
-  const [phoneReady,setPhoneReady]=useState(false);
-  useEffect(()=>{fetch(`${phoneBase()}/status`).then(r=>r.json()).then(s=>setPhoneReady(s.enabled&&s.smsReady)).catch(()=>{});},[]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -31,7 +28,6 @@ function SignIn() {
     } catch (err) { setError(message(err)); } finally { setBusy(false); }
   }
   return <section className="auth-card"><h1>{signup ? "Create your account." : "Sign in to your cases."}</h1>
-    {phoneReady&&<PhoneSignIn/>}
     <form onSubmit={submit}>
       {signup && <label>Name<input name="name" required autoComplete="name" maxLength={100}/></label>}
       <label>Email<input name="email" type="email" required autoComplete="email"/></label>
@@ -41,6 +37,13 @@ function SignIn() {
     {error && <p role="alert" className="error">{error}</p>}
     <button className="text-button" onClick={() => { setSignup(!signup); setError(""); }}>{signup ? "Already have an account? Sign in" : "New here? Create an account"}</button>
   </section>;
+}
+
+function SignIn() {
+ const status=usePhoneStatus();const [email,setEmail]=useState(false);
+ if(status===null)return <p role="status">Checking sign-in options…</p>;
+ if(!status.enabled||email)return <><EmailSignIn/>{status.enabled&&<button className="text-button" onClick={()=>setEmail(false)}>Use phone sign-in</button>}</>;
+ return <section className="auth-card"><h1>Sign in to your cases.</h1><PhoneSignIn status={status}/><button className="text-button" onClick={()=>setEmail(true)}>Have an older email account? Sign in with email</button></section>;
 }
 
 function Dashboard({ userId, userName, onSignOut }: { userId: string; userName: string; onSignOut: () => void }) {

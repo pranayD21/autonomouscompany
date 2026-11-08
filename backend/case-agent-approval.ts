@@ -18,7 +18,7 @@ async function owned(db:NodePgDatabase,caseId:string,runId:string,owner:string){
  if(!(process.env.CREW_ALLOWED_USER_IDS??"").split(",").includes(owner))throw Error("OPERATOR_REQUIRED");
  const [authority]=await db.select().from(caseAuthorities).where(eq(caseAuthorities.id,run.authority_id));
  const [credential]=await db.select().from(caseToolCredentials).where(eq(caseToolCredentials.id,run.credential_id));
- if(!run.session_id||!authority||authority.approved_by!==owner||!["active","waiting"].includes(authority.state)||new Date(authority.policy.expires_at)<=new Date()||!credential||credential.case_id!==caseId||credential.issued_by!==owner||credential.revoked_at||credential.expires_at<=new Date())throw Error("BINDING_NOT_ACTIVE");
+ if(!run.session_id||!authority||authority.approved_by!==owner||!["active","waiting"].includes(authority.state)||new Date(authority.policy.expires_at)<=new Date()||!credential||credential.case_id!==caseId||credential.issued_by!==owner||credential.revoked_at||(credential.expires_at!==null&&credential.expires_at<=new Date()))throw Error("BINDING_NOT_ACTIVE");
  return run;
 }
 export async function readCaseApprovals(db:NodePgDatabase,caseId:string,runId:string,owner:string,provider:ApprovalProvider=defaults){

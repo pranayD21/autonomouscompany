@@ -1,3 +1,5 @@
+import {takeOpenCaseAction} from "./open-case-actions";
+import {isOpenCasePermission} from "./open-case-policy";
 import {and,desc,eq,sql} from "drizzle-orm";
 import {randomUUID} from "node:crypto";
 import type {NodePgDatabase} from "drizzle-orm/node-postgres";
@@ -8,7 +10,9 @@ import {applyDecision,autonomyDependencies,type AutonomyDependencies} from "./au
 import {mailbox} from "./providers/replies";
 import type {CaseToolIdentity} from "./case-tools";
 
-export async function takeCaseAction(db:NodePgDatabase,identity:CaseToolIdentity,input:{operation_id:string;authority_id:string;decision:CaseDecision;channel?:"email"|"call"},deps:AutonomyDependencies=autonomyDependencies){
+export async function takeCaseAction(db:NodePgDatabase,identity:CaseToolIdentity,input:{operation_id:string;authority_id:string;decision:CaseDecision;channel?:"email"|"call";destination?:string},deps:AutonomyDependencies=autonomyDependencies){
+ const [bound]=await db.select().from(caseAuthorities).where(and(eq(caseAuthorities.id,input.authority_id),eq(caseAuthorities.case_id,identity.case_id),eq(caseAuthorities.approved_by,identity.owner_id)));
+ if(bound&&isOpenCasePermission(bound.policy))return takeOpenCaseAction(db,identity,input,deps.send);
  const decision=caseDecision.parse(input.decision),lease=randomUUID();
  const reserved=await db.transaction(async tx=>{
   const [authority]=await tx.select().from(caseAuthorities).where(and(eq(caseAuthorities.id,input.authority_id),eq(caseAuthorities.case_id,identity.case_id),eq(caseAuthorities.approved_by,identity.owner_id))).for("update");

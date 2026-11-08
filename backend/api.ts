@@ -17,7 +17,7 @@ import { neon } from "@neon/ai-sdk-provider";
 import { generateText } from "ai";
 import { z } from "zod";
 import { cases, crewRuns, outreachActions, caseReplies, replyMonitors, documents, documentExtractions, caseAuthorities, caseToolCredentials, type BillCase } from "./schema";
-import {authorizeCase,revokeCaseAuthority,readCaseAutonomy} from "./autonomy-service";
+import {authorizeCase,revokeCaseAuthority,resumeCaseAuthority,readCaseAutonomy} from "./autonomy-service";
 import {issueCaseToolCredential} from "./case-tool-auth";
 import {setReplyMonitoring} from "./reply-monitor";
 
@@ -123,13 +123,19 @@ app.get("/cases/:id/autonomy",async c=>{
 });
 app.post("/cases/:id/autonomy",async c=>{
  if(!await ownedCase(c.req.param("id"),c.get("userId")))return c.json({error:"Case not found."},404);
- if(!crewAllowed(c.get("userId")))return c.json({error:"Standing authorization is limited to configured test operators."},403);
  const body=await c.req.json().catch(()=>null);
+ if(body?.policy?.version!==2&&!crewAllowed(c.get("userId")))return c.json({error:"Legacy authorization is limited to configured test operators."},403);
  if(body?.authorize!==true)return c.json({error:"Explicit standing authorization is required."},400);
  if(body.persistent!==undefined&&typeof body.persistent!=="boolean")return c.json({error:"Persistent setup selection must be true or false."},400);
  try{return c.json(await authorizeCase(db,c.req.param("id"),c.get("userId"),body.policy,undefined,body.persistent===true),201);}
  catch(error){const code=error instanceof Error?error.message:"INVALID_AUTHORITY";
-  return c.json({error:code==="PERSISTENT_SETUP_UNAVAILABLE"?"Persistent case setup is not configured. No authorization was created.":code==="AUTHORITY_ALREADY_EXISTS"?"Stop the existing authority before creating another.":code==="REVIEW_REQUIRED"?"Save a review for the current case details first.":code==="CONTACT_NOT_ALLOWED"?"Every contact must be an approved synthetic test recipient.":"Provide a valid bounded authority expiring within 30 days."},409);}
+  return c.json({error:code==="DIRECT_ACTIVATION_UNAVAILABLE"?"Agent activation is not available yet. No permission was saved.":code==="PERSISTENT_SETUP_UNAVAILABLE"?"Persistent case setup is not configured. No authorization was created.":code==="AUTHORITY_ALREADY_EXISTS"?"Stop the existing authority before creating another.":code==="REVIEW_REQUIRED"?"Save a review for the current case details first.":code==="CONTACT_NOT_ALLOWED"?"Every contact must be an approved synthetic test recipient.":body?.policy?.version===2?"Provide your permission in your own words and select persistent activation.":"Provide a valid bounded authority expiring within 30 days."},409);}
+});
+app.post("/cases/:id/autonomy/:authorityId/resume",async c=>{
+ if(!await ownedCase(c.req.param("id"),c.get("userId"))||!z.uuid().safeParse(c.req.param("authorityId")).success)return c.json({error:"Authority not found."},404);
+ const body=await c.req.json().catch(()=>null);if(body?.confirm!==true)return c.json({error:"Confirm continuation under the existing permission."},400);
+ try{return c.json(await resumeCaseAuthority(db,c.req.param("id"),c.req.param("authorityId"),c.get("userId")));}
+ catch(error){const code=error instanceof Error?error.message:"NOT_RESUMABLE";return c.json({error:code==="UNRESOLVED_DISPATCH"?"A communication has an unresolved result. It must be reconciled before work can continue.":"This session cannot resume. Its permission and human-attention state must still be valid."},409);}
 });
 app.post("/cases/:id/autonomy/:authorityId/revoke",async c=>{
  if(!await ownedCase(c.req.param("id"),c.get("userId"))||!z.uuid().safeParse(c.req.param("authorityId")).success)return c.json({error:"Authority not found."},404);
@@ -253,8 +259,8 @@ app.get("/cases/:id/replies",async c=>{
 });
 app.get("/cases/:id/reply-monitors",async c=>{
   const item=await ownedCase(c.req.param("id"),c.get("userId"));if(!item)return c.json({error:"Case not found."},404);
-  const rows=await db.select({monitor:replyMonitors}).from(replyMonitors).innerJoin(outreachActions,eq(replyMonitors.action_id,outreachActions.id)).where(eq(outreachActions.case_id,item.id));
-  return c.json(rows.map(r=>r.monitor));
+  const rows=await db.select({monitor:replyMonitors,persistent:sql<boolean>`EXISTS (SELECT 1 FROM advocacy_case_decisions d JOIN advocacy_case_authorities a ON a.id=d.authority_id WHERE d.action_id=${replyMonitors.action_id} AND a.policy->>'version'='2' AND a.state IN ('active','waiting','human_required'))`}).from(replyMonitors).innerJoin(outreachActions,eq(replyMonitors.action_id,outreachActions.id)).where(eq(outreachActions.case_id,item.id));
+  return c.json(rows.map(r=>({...r.monitor,persistent:r.persistent})));
 });
 app.post("/cases/:id/actions/:actionId/reply-monitor",async c=>{
   if(!z.uuid().safeParse(c.req.param("id")).success||!z.uuid().safeParse(c.req.param("actionId")).success)return c.json({error:"Action not found."},404);

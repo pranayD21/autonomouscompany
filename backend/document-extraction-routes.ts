@@ -1,3 +1,5 @@
+import {randomUUID} from "node:crypto";
+import {directReaderEnabled,directReaderConfigured,readDocumentDirect} from "./providers/direct-document-reader";
 import {enqueueDocumentNotice} from "./phone-messaging";
 import {drizzle} from "drizzle-orm/node-postgres";
 import {queueCaseAgentEvent} from "./case-agent-events";
@@ -9,7 +11,7 @@ import {documentFiles} from "./document-storage";
 import {extractionOutput,operatorAllowed,readerConfigured,readPdfText,startDocumentReader,uploadReaderImage,verifyImageRead} from "./providers/document-reader";
 import {naiveClient} from "./providers/naive";
 
-export function extractionRoutes(pool:Pool){
+export function extractionRoutes(pool:Pool,direct:{download:(key:string)=>Promise<Uint8Array>;read:typeof readDocumentDirect}={download:async key=>new Uint8Array(await(await documentFiles().download(key)).arrayBuffer()),read:readDocumentDirect}){
  const app=new Hono<{Variables:{userId:string}}>();
  // This router is mounted inside the case-owner-checked document router.
  app.use("*",async(c,next)=>{
@@ -19,6 +21,28 @@ export function extractionRoutes(pool:Pool){
   await next();
  });
  app.post("/",async c=>{
+  if(directReaderEnabled()){
+   if(!directReaderConfigured())return c.json({error:"Document reading is not configured."},503);
+   const id=c.req.param("documentId")!;const attempt=`direct_openai:${randomUUID()}`;
+   // Inference has no external effects. A stale attempt can be retried, fenced by its attempt ID.
+   const reserved=await pool.query(`INSERT INTO advocacy_document_extractions(document_id,state,session_id) VALUES($1,'direct_running',$2)
+    ON CONFLICT(document_id) DO UPDATE SET state='direct_running',session_id=$2,error_code=NULL,created_at=now()
+    WHERE advocacy_document_extractions.state='direct_failed' OR (advocacy_document_extractions.state='direct_running' AND advocacy_document_extractions.created_at<now()-interval '2 minutes') RETURNING document_id`,[id,attempt]);
+   if(!reserved.rowCount){const {rows:[row]}=await pool.query("SELECT state,result,error_code,confirmed_at FROM advocacy_document_extractions WHERE document_id=$1",[id]);return c.json(row);}
+   try{
+    const {rows:[doc]}=await pool.query("SELECT * FROM advocacy_documents WHERE id=$1",[id]);
+    const bytes=await direct.download(doc.object_key);
+    if(createHash("sha256").update(bytes).digest("hex")!==doc.sha256)throw Error("DOCUMENT_HASH_MISMATCH");
+    const result=await direct.read(bytes,doc.mime);
+    const saved=await pool.query("UPDATE advocacy_document_extractions SET state='ready',result=$3,error_code=NULL WHERE document_id=$1 AND session_id=$2 AND state='direct_running' RETURNING document_id",[id,attempt,JSON.stringify(result)]);
+    return c.json(saved.rowCount?{state:"ready",result,confirmed_at:null}:{state:"direct_running"});
+   }catch(e){
+    const message=e instanceof Error?e.message:"";
+    const code=/^(PDF_NO_TEXT|PDF_PAGE_LIMIT|PDF_TEXT_LIMIT|DOCUMENT_HASH_MISMATCH|DIRECT_READER_HTTP_429)$/.test(message)?message:"DIRECT_READER_FAILED";
+    await pool.query("UPDATE advocacy_document_extractions SET state='direct_failed',error_code=$3 WHERE document_id=$1 AND session_id=$2 AND state='direct_running'",[id,attempt,code]);
+    return c.json({error:code==="PDF_NO_TEXT"?"This PDF has no readable text layer. Upload page images instead.":"Document reading failed. You can retry; no case evidence was added.",code},502);
+   }
+  }
   if(!operatorAllowed(c.get("userId")))return c.json({error:"Document reading is limited to configured test operators."},403);
   if(!readerConfigured())return c.json({error:"Document reading is not configured."},503);
   const id=c.req.param("documentId")!;

@@ -6,11 +6,12 @@ const context = await browser.newContext();
 const page = await context.newPage();
 const appUrl=process.env.E2E_BASE_URL??"http://localhost:4173";
 const workspaceUrl=new URL(appUrl);workspaceUrl.hash="workspace";
+async function emailFallback(p:typeof page){const b=p.getByRole("button",{name:"Have an older email account? Sign in with email"});await Promise.race([b.waitFor({state:"visible",timeout:15000}),p.getByRole("button",{name:"Sign in",exact:true}).waitFor({state:"visible",timeout:15000})]).catch(()=>{});if(await b.isVisible())await b.click();}
 const email=`stack-${randomUUID()}@example.com`,password=randomUUID()+"aA1!";
 let authorization="", apiBase="";
 page.on("request", request=>{if(request.url().includes("-cases.compute.")&&request.headers().authorization){authorization=request.headers().authorization;apiBase=new URL(request.url()).origin;}});
 try {
-  await page.goto(workspaceUrl.href);
+  await page.goto(workspaceUrl.href);await emailFallback(page);
   await page.getByRole("button", {name:"New here? Create an account"}).click();
   await page.getByLabel("Name", {exact:true}).fill("Synthetic stack test");
   await page.getByLabel("Email", {exact:true}).fill(email);
@@ -82,13 +83,14 @@ try {
   if(process.env.E2E_EXPECT_PERSISTENT_SETUP)expect(autonomyState.persistent_available).toBe(process.env.E2E_EXPECT_PERSISTENT_SETUP==="true");
   const authorize=await fetch(`${apiBase}/cases/${caseId}/autonomy`,{method:"POST",headers:{Authorization:authorization,"Content-Type":"application/json"},body:JSON.stringify({authorize:true})});
   expect(authorize.status).toBe(403);
-  console.log("PASS owner can read autonomy history; unlisted signup cannot authorize autonomous spending");
+  expect(autonomyState.activation_available).toBe(true);
+  console.log("PASS owner can read direct activation readiness; legacy malformed authorization remains rejected");
   console.log("PASS missing/invalid authentication, invalid amounts, and unauthorized crew spend rejected");
   const otherContext=await browser.newContext();
   try {
     const other=await otherContext.newPage();let otherAuthorization="";
     other.on("request",request=>{if(request.url().startsWith(apiBase)&&request.headers().authorization)otherAuthorization=request.headers().authorization;});
-    await other.goto(workspaceUrl.href);
+    await other.goto(workspaceUrl.href);await emailFallback(other);
     await other.getByRole("button",{name:"New here? Create an account"}).click();
     await other.getByLabel("Name",{exact:true}).fill("Isolation test");
     await other.getByLabel("Email",{exact:true}).fill(`isolation-${randomUUID()}@example.com`);
@@ -107,9 +109,8 @@ try {
 
 
   for(const summary of await card.locator("details.workflow-section > summary").all())if(await summary.locator("..").getAttribute("open")===null)await summary.click();
-  await card.getByRole("button", {name:"Review with AI"}).click();
-  await expect(page.getByRole("alert")).toContainText("AI analysis is unavailable", {timeout:25000});
-  console.log("BLOCKED AI inference — gateway has no enabled model; unavailable state displayed correctly");
+  await expect(card.getByRole("button", {name:"Review with AI"})).toHaveCount(0);
+  console.log("PASS unavailable gateway-only review is not offered");
   page.once("dialog", dialog => dialog.accept());
   await card.getByRole("button", {name:/^Delete(?: case)?$/}).click();
   await expect(card).toHaveCount(0, {timeout:20000});
@@ -126,6 +127,7 @@ try {
   if(await page.getByRole("navigation",{name:"Workspace navigation",exact:true}).count())await page.getByRole("navigation",{name:"Workspace navigation",exact:true}).hover();
   await page.getByRole("button",{name:"Sign out",exact:true}).click();
   await page.getByRole("link",{name:"Open workspace",exact:true}).click({timeout:20000});
+  await emailFallback(page);
   await expect(page.getByRole("button",{name:"Sign in",exact:true})).toBeVisible({timeout:15000});
   console.log("PASS password sign-in after sign-out, restored live access, and final sign-out");
 } catch (error) {

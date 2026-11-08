@@ -1,16 +1,18 @@
 import {useEffect,useState,type FormEvent} from "react";
 import {api} from "./services";
 import type {OutreachAction,CaseReply,ReplyMonitor} from "../backend/schema";
+type Monitor=ReplyMonitor&{persistent?:boolean};
+const monitoring=(m:Monitor)=>m.enabled&&(m.persistent||new Date(m.expires_at)>new Date());
 export function Outreach({caseId,userId,enabled,plan,revision,canDraft=true}:{caseId:string;userId:string;enabled:boolean;plan:string;revision:number;canDraft?:boolean}) {
  const [replyData,setReplyData]=useState<{replies:CaseReply[];has_more:boolean}>({replies:[],has_more:false});
  const [notice,setNotice]=useState("");
  const [actions,setActions]=useState<OutreachAction[]>([]);
- const [monitors,setMonitors]=useState<ReplyMonitor[]>([]);
+ const [monitors,setMonitors]=useState<Monitor[]>([]);
  const [kind,setKind]=useState<"call"|"email">("email");
  const [requestId,setRequestId]=useState(()=>crypto.randomUUID());
  const [busy,setBusy]=useState(false),[error,setError]=useState("");
  const path=`/cases/${caseId}/actions`;
- async function refresh(){const [actions,replies,monitors]=await Promise.all([api<OutreachAction[]>(path,{},userId),api<{replies:CaseReply[];has_more:boolean}>(`/cases/${caseId}/replies`,{},userId),api<ReplyMonitor[]>(`/cases/${caseId}/reply-monitors`,{},userId)]);setActions(actions);setReplyData(replies);setMonitors(monitors);}
+ async function refresh(){const [actions,replies,monitors]=await Promise.all([api<OutreachAction[]>(path,{},userId),api<{replies:CaseReply[];has_more:boolean}>(`/cases/${caseId}/replies`,{},userId),api<Monitor[]>(`/cases/${caseId}/reply-monitors`,{},userId)]);setActions(actions);setReplyData(replies);setMonitors(monitors);}
  useEffect(()=>{void refresh().catch(e=>setError(e.message));},[caseId,userId,revision]);
  async function create(event:FormEvent<HTMLFormElement>){
   event.preventDefault();const form=event.currentTarget;const f=new FormData(form);setBusy(true);setError("");
@@ -45,8 +47,8 @@ export function Outreach({caseId,userId,enabled,plan,revision,canDraft=true}:{ca
   {action.error_code&&<p>Provider result: {action.error_code}</p>}
   <div className="actions">{action.state==="draft"&&<button disabled={busy||!enabled||action.case_revision!==revision} onClick={()=>void act(action,true)}>{action.kind==="call"?"Review and authorize call":"Review and authorize email"}</button>}
   {action.provider_id&&<button className="text-button" disabled={busy} onClick={()=>void act(action,false)}>Check provider status</button>}
-  {action.kind==="email"&&action.provider_thread_id&&action.approved_at&&<><button className="text-button" disabled={busy} onClick={()=>void sync(action)}>Check replies</button><button className="text-button" disabled={busy} onClick={()=>void monitor(action,!monitors.some(m=>m.action_id===action.id&&m.enabled&&new Date(m.expires_at)>new Date()))}>{monitors.some(m=>m.action_id===action.id&&m.enabled&&new Date(m.expires_at)>new Date())?"Pause reply monitoring":"Monitor replies"}</button></>}</div>
-  {monitors.filter(m=>m.action_id===action.id).map(m=><div key={m.action_id}><p>Automatic checks: {m.enabled&&new Date(m.expires_at)>new Date()?"On":"Paused or expired"}{m.last_success_at?` · Last successful check ${new Date(m.last_success_at).toLocaleString()}`:" · No scheduled check completed yet"}</p>{m.enabled&&new Date(m.expires_at)>new Date()&&<small>Next check due {new Date(m.next_check_at).toLocaleString()} · Monitoring ends {new Date(m.expires_at).toLocaleDateString()}</small>}{m.error_code&&<p>{m.error_code==="PARTIAL_HISTORY"?"Only part of the thread history was available.":"The last scheduled check failed. It will retry with a longer delay."}</p>}</div>)}
+  {action.kind==="email"&&action.provider_thread_id&&action.approved_at&&<><button className="text-button" disabled={busy} onClick={()=>void sync(action)}>Check replies</button><button className="text-button" disabled={busy} onClick={()=>void monitor(action,!monitors.some(m=>m.action_id===action.id&&monitoring(m)))}>{monitors.some(m=>m.action_id===action.id&&monitoring(m))?"Pause reply monitoring":"Monitor replies"}</button></>}</div>
+  {monitors.filter(m=>m.action_id===action.id).map(m=><div key={m.action_id}><p>Automatic checks: {monitoring(m)?"On":"Paused or expired"}{m.last_success_at?` · Last successful check ${new Date(m.last_success_at).toLocaleString()}`:" · No scheduled check completed yet"}</p>{monitoring(m)&&<small>Next check due {new Date(m.next_check_at).toLocaleString()} · {m.persistent?"Monitoring continues while this case is open":`Monitoring ends ${new Date(m.expires_at).toLocaleDateString()}`}</small>}{m.error_code&&<p>{m.error_code==="PARTIAL_HISTORY"?"Only part of the thread history was available.":"The last scheduled check failed. It will retry with a longer delay."}</p>}</div>)}
  </div>)}
  <h4>Received correspondence</h4><p className="caveat">Replies are what they said, not proof of coverage or payment.</p>{replyData.has_more&&<p>Showing the latest 100 replies.</p>}{replyData.replies.length===0&&<p className="quiet-line">No replies yet.</p>}
  {replyData.replies.map(reply=><article key={reply.id} id={`reply-${reply.id}`} className="reply-card" data-disposition={reply.disposition}><h5>{reply.subject||"Reply without subject"}</h5><p>From: {reply.sender} · {new Date(reply.received_at).toLocaleString()}</p><p>{reply.disposition==="accepted"?"Included as reported information":"Held — not included in agent review"}</p><small>{reply.reason}</small><p className="outreach-body">{reply.body||"No supported plain-text body."}</p>{reply.attachment_count>0&&<p>{reply.attachment_count} attachment(s) not imported or read.</p>}</article>)}

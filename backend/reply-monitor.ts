@@ -27,7 +27,11 @@ export async function pollReplyMonitors(db:NodePgDatabase,invocationId:string,sy
   const claimed=await db.execute(sql`
    WITH due AS (
     SELECT action_id FROM advocacy_reply_monitors
-    WHERE enabled AND expires_at>now() AND next_check_at<=now()
+    WHERE enabled AND (expires_at>now() OR EXISTS (
+     SELECT 1 FROM advocacy_case_decisions d JOIN advocacy_case_authorities a ON a.id=d.authority_id
+     WHERE d.action_id=advocacy_reply_monitors.action_id AND a.policy->>'version'='2'
+      AND a.state IN ('active','waiting','human_required')
+    )) AND next_check_at<=now()
      AND (lease_until IS NULL OR lease_until<now())
     ORDER BY next_check_at,action_id LIMIT 1 FOR UPDATE SKIP LOCKED
    ) UPDATE advocacy_reply_monitors m SET lease_id=gen_random_uuid(),lease_until=now()+interval '10 minutes',

@@ -1,81 +1,35 @@
 # Case outreach
 
-The case workspace supports reviewed synthetic calls through ElevenLabs with native Twilio telephony (replacement code prepared; account setup and live verification pending) and emails through AgentMail. A saved Naïve review for the current case revision is required before drafting outreach. Drafting does not contact anyone.
+New persistent cases use the owner's version-2 permission. The agent chooses insurer or customer destinations, message content, and follow-up timing within that permission. `backend/open-case-actions.ts` implements this path; `backend/case-action-service.ts` selects it only for a version-2 authority. Earlier grants keep their original review, recipient, count, and expiry restrictions.
 
-## Workflow
+New voice calls use AgentPhone only. Historical ElevenLabs receipts remain readable. See [AgentPhone voice](voice-agentphone.md) for configuration and live-test limits. Email uses AgentMail. A provider receipt establishes acceptance, not delivery, insurer approval, or money received.
 
-1. Complete the crew review and refresh until it is saved.
-2. Choose a channel, enter one recipient, and save the exact discussion plan or email text. Saved drafts are immutable. Create a new draft to change the recipient or content.
-3. A configured test operator reviews the saved draft and confirms authorization. The destination must also appear in the corresponding server-side approved test list.
-4. The server records the approver and timestamp before making one provider request. The action then shows the provider receipt or an uncertain/rejected outcome.
-5. Check provider status to refresh call completion/duration or email labels. Accepted email is not proof of delivery; completed call is not proof of savings.
+## Persistent action processing
 
-New calls disable Twilio audio recording and require an ElevenLabs agent with voice recording disabled; ElevenLabs still processes and retains a transcript. The confirmation tells the operator this. The app stores provider status and duration. Completed-call transcripts are now imported as unverified reported speech; email status checks still do not import message bodies. The operator-supplied draft remains in Postgres. This is a synthetic test workflow, not authorization to process real patient information.
+The service locks the owned authority and case, checks permission state and evidence references, and reserves an immutable decision and outreach record. Destinations must be one email address or an E.164 phone number. The new path has no repository recipient list or case message-count cap. The model must follow the owner's permission; choosing a provider does not create consent.
 
-## Configuration
+Each operation has a caller-generated UUID and a fingerprint of its decision, channel, and destination. An exact retry reads the saved operation. Changed content under the same UUID fails. A pending communication blocks another contact or completion until its result is known. Human-help requests remain available.
 
-`neon.ts` provides server-only ElevenLabs and AgentMail credentials, with the AgentPhone key retained only for historical receipt reads to the case Function. No secret enters the browser. `CREW_ALLOWED_USER_IDS` controls which signed-in operators can spend credits or authorize outreach. `OUTREACH_ALLOWED_PHONES` contains comma-separated E.164 numbers; `OUTREACH_ALLOWED_EMAILS` contains comma-separated single email addresses. Empty lists disable dispatch. Adding a destination is not consent to call or email it: each saved action still requires explicit authorization.
+`backend/outreach-service.ts` changes a draft to `dispatching` only when the owned case revision still matches and the authority remains active or waiting. It commits that intent before calling the provider. Revocation before that claim prevents the send. A send already in progress may complete after revocation.
 
-The previous one-off phone test does not authorize another call. Leave the lists empty until a new test has an agreed recipient and reviewed content. Never use a successful build or mocked provider response as proof of real delivery.
+Provider acceptance becomes `submitted`. A definite rejection becomes `rejected`; a lost response or other ambiguous result becomes `unknown`. An interrupted request may remain `dispatching` or leave its decision unfinished. Automatic retries do not resend these operations. Reconciliation is required before another communication. The service does not promise exactly-once network delivery.
 
-## State and duplicate protection
+Accepted emails enable reply monitoring. Follow-ups to the same destination use the prior message and thread, preserve its subject, and explicitly exclude reply-all, CC, BCC, and open tracking. A mismatched provider thread is an uncertain outcome. Active version-2 authorities keep their reply monitors eligible beyond the legacy thirty-day expiry; this does not restore stopped or revoked permission. See [reply ingestion](replies.md) and [scheduled monitoring](reply-monitoring.md).
 
-`advocacy_outreach_actions` holds the immutable request, state, approval record, provider identifiers, status, and check time. A caller-generated UUID makes draft creation idempotent; reusing it for different content returns 409. Only a `draft` whose source revision still matches its owned case can atomically become `dispatching`. Concurrent authorizations have one winner. The dispatch intent commits before the network call.
+The agent can wait for a chosen time, request human help, or stop. Successful completion requires a current recorded outcome reference. The result remains evidence-reported and not independently verified; simulated results do not establish a real payout. See [outcomes](outcomes.md).
 
-Successful acceptance becomes `submitted`. An explicit validation/auth/funding/rate-limit rejection becomes `rejected`. A timeout, malformed successful response, server error, or uncertain outcome becomes `unknown`. A crashed request may remain `dispatching`. Neither state can automatically retry. Reconcile with the provider before preparing another action. No exactly-once delivery guarantee is claimed across the network boundary.
+## Configuration and interfaces
 
-AgentMail receives the action UUID as its `Idempotency-Key`. Its send keys expire after 24 hours; the local state prevents later automatic resends. The ElevenLabs/Twilio adapter performs no automatic call retries; a timed-out or incomplete response must never cause an automatic redial.
+Server-only `AGENTMAIL_API_KEY` and `AGENTMAIL_INBOX_ID` enable email. `OUTREACH_VOICE_PROVIDER=agentphone`, `AGENTPHONE_API_KEY`, `AGENTPHONE_AGENT_ID`, and `AGENTPHONE_NUMBER_ID` enable calls. No provider secret enters the browser.
 
-Cases with outreach history cannot be deleted through the app. The database foreign key also restricts deletion. A retention/redaction workflow remains to be implemented.
+The legacy manual API remains under `/cases/:id/actions`: list/create drafts, authorize a concrete action, and refresh its receipt. Its operator and approved-destination checks still apply. `OUTREACH_ALLOWED_EMAILS`, `OUTREACH_ALLOWED_PHONES`, and `CREW_ALLOWED_USER_IDS` remain legacy controls and do not extend an old grant to the persistent path.
 
-## Interfaces and files
+`advocacy_outreach_actions` stores request content, dispatch state, approver, provider receipt, and thread context. Cases with outreach history cannot be deleted through the app. Retention/redaction remains unfinished. `backend/call-evidence-service.ts` imports completed-call transcripts as unverified reported speech; it never treats a completed call as proof of coverage or savings.
 
-- `backend/providers/outreach.ts`: validates drafts, checks configured recipients, sends once, and reads minimal provider status.
-- `backend/providers/voice-config.ts`: synthetic voice instructions, including the per-case discussion-plan rules.
-- `backend/outreach-service.ts`: atomic dispatch claim and durable result handling.
-- `backend/schema.ts`, migration `0003_nifty_black_bolt.sql`: outreach table and case index.
-- `backend/api.ts`: owner-scoped GET/POST `/cases/:id/actions`, POST `/:actionId/authorize`, and POST `/:actionId/refresh` under that path. Authorization additionally requires an operator, approved destination, and explicit confirmation.
-- `src/Outreach.tsx`: draft form, saved content review, authorization confirmation, and receipt status.
-- `scripts/outreach.test.ts`: real isolated Postgres concurrency/state tests with fake provider transports. Set `OUTREACH_TEST_DATABASE_URL` to a temporary branch, apply migrations, then run `npx tsx --test scripts/outreach.test.ts`. Tests never send a real call or email.
+## Verification
 
-## Provider references
+`scripts/open-case-actions.test.ts` exercises the actual v2 service against disposable Postgres with fake senders: exact retry, conflicting retry, concurrent contacts, unknown and rejected results, thread follow-ups, revoked prepared dispatch, owner isolation, evidence validation, and completion rejection without a current outcome. `scripts/outreach.test.ts` covers shared dispatch behavior. Run database suites serially with `OUTREACH_TEST_DATABASE_URL`; they do not contact a live recipient.
 
-- [AgentPhone outbound calls](https://docs.agentphone.to/api-reference/calls/create-outbound-call-v-1-calls-post)
-- [AgentPhone call lookup](https://docs.agentphone.to/api-reference/calls/get-call-v-1-calls-call-id-get)
-- [AgentMail send API](https://docs.agentmail.to/api-reference/inboxes/messages/send)
-- [AgentMail idempotency](https://docs.agentmail.to/idempotency)
+Live-test evidence and deployment status belong in [implementation status](implementation-status.md) and [the current handoff](RESUME-HANDOFF.md). Prior authorized test emails and calls do not authorize a new recipient or prove the hosted persistent workflow.
 
-Case-linked reply ingestion and correspondence-aware reviews are now implemented; see [reply handling](replies.md). Owner-enabled scheduled polling is described in [reply monitoring](reply-monitoring.md). Automatic reply dispatch, agent-accessible outreach tools, and ElevenLabs SIP routing remain separate work. Outbound actions still require explicit authorization.
-
-## Verification record
-
-The hosted AgentPhone and ElevenLabs demo agents now start with the fictional pharmaceutical-office chemical burn. They gather missing employer/claim information one question at a time, keep workers' compensation and personal health coverage separate, and leave unknown amounts unset. The older $1,200 bill/$400 EOB example is a separate optional health-insurance scenario. The per-case AgentPhone discussion prompt follows the same insurer-facing boundaries. Both setup scripts read the agent back after updates and reject mismatched prompts or greetings. ElevenLabs readback also checks authentication, recording-off, and the 180-second limit.
-
-Both provider readbacks passed after this update. These checks establish saved configuration, not tested spoken behavior. No new call was placed. The AgentPhone SIP dashboard still offers request-only access, and the approval-email search returned no result. The existing AgentPhone number remains on its working hosted-voice route. Connecting ElevenLabs requires provider SIP enablement and a compatible trunk, followed by a separately authorized call test. See [ElevenLabs SIP setup](https://elevenlabs.io/docs/eleven-agents/phone-numbers/sip-trunking).
-
-Eight isolated database/provider-transport tests pass. The deployed workflow also passed the draft UI, replay deduplication, changed-content rejection, owner persistence, operator denial, and cross-user checks for list/create/authorize/refresh. `scripts/outreach-app-smoke.ts` reuses the private synthetic operator/session created by the crew test and never authorizes a send. The provider read adapter retrieved the previously authorized 46-second call successfully. The operator subsequently authorized one concrete synthetic email. It was dispatched through the case API, saved with its AgentMail receipt, and independently found in the intended Gmail inbox. Case-linked calling remains unverified. The authorized test email later received a real reply, which the app imported once and retained across reloads; cross-user reply read/sync checks passed.
-
-## Telephony replacement
-
-New case calls use the [ElevenLabs/Twilio path](voice-twilio.md). AgentPhone SIP approval is no longer a prerequisite for that path. Calling is disabled until the dedicated outreach agent and imported Twilio number are configured. Historical unprefixed receipts still read AgentPhone; new receipts use `elevenlabs:<conversation_id>` and retain the Twilio Call SID in `provider_thread_id`. No schema migration is needed. These local changes have passed transport tests and build, but have not been deployed or tested with a live Twilio number.
-
-
-## Threaded autonomous follow-ups
-
-Migration 0012 adds nullable `reply_to_message_id` and `reply_thread_id` to outreach records. The autonomous runner selects the latest submitted email for the same case and authorized destination before reserving the follow-up. It records that message/thread and keeps its subject. The model cannot choose arbitrary reply IDs or recipients. Manual new drafts continue using the existing send endpoint.
-
-The provider uses AgentMail's [Reply To Message endpoint](https://docs.agentmail.to/api-reference/inboxes/messages/reply) for records with a reply context. It explicitly sets the authorized `to` address, disables reply-all and tracking, and clears CC/BCC. Missing half of the reply context is rejected before HTTP dispatch. A response on a different thread is an uncertain outcome, never an automatic retry. All 27 combined autonomy, outreach, and ElevenLabs transport tests passed on the isolated branch, and the build passes. Migration 0012 is applied to production. Live same-thread delivery is not yet verified.
-
-## Completed-call evidence
-
-`backend/providers/call-evidence.ts` reads the original receipt’s provider, independently of the currently selected voice transport. It accepts only completed calls, checks the receipt, preserves user/agent speech and provider timestamps, and hashes normalized transcript content. Missing or unfinished transcripts stay unknown. Responses are capped at 1 MB and normalized transcripts at 100 KB; audio URLs and recordings are not fetched. Sources: [AgentPhone call lookup](https://agentphone.ai/docs/documentation/guides/calls) and [ElevenLabs conversation details](https://elevenlabs.io/docs/api-reference/conversations/get).
-
-Migration 0014 adds immutable `advocacy_call_evidence` snapshots. `backend/call-evidence-service.ts` checks owner, case, and action identity before reading or saving. Concurrent imports of the same action/hash produce one record and one case revision change. New content clears stale analysis and wakes only existing active/waiting authority; it never resets counts or restores revoked/stopped authority. A completed transcript proves reported speech, not speaker authority, coverage, payment, or a resolution.
-
-Manual action refresh imports completed transcripts. The existing five-minute autonomy scheduler also checks up to five submitted calls for listed operators, within 48 hours of creation and at least five minutes since the last check, until evidence is saved. Repeated reads are harmless; dispatch is never retried. Automatic polling stops after the first saved transcript; manual refresh can capture a later provider correction as another immutable snapshot. Cases older than the polling window require manual refresh.
-
-Both bounded decision inputs and MCP `case_get` include saved transcripts and `call:<id>:<sha256>` references. The case workspace’s action UI still displays status/duration; a transcript viewer is not yet implemented. The coordinator treats transcripts as untrusted reported information and cannot use them to add contacts or expand authority.
-
-Run database suites sequentially on a shared disposable branch: `npx tsx --test --test-concurrency=1 scripts/call-evidence-service.test.ts scripts/autonomy-runner.test.ts`. The autonomy scheduler intentionally scans all due authority rows, so running fixture-producing suites concurrently lets it consume another suite’s fixtures. These tests never contact a live provider. Parser and transport tests can run concurrently.
-
-Native MCP action tools now share the same authority validation, dispatch records, email-thread preservation, and uncertain-send handling as the bounded decision workflow. They do not bypass destination restrictions or increase the existing grant. See agent-tools.md for operation IDs, leases, and scheduler recovery.
+The full hosted-compatible fictional exchange in `scripts/hosted-workflow.test.ts` passed with the eleven direct-runner tests (12 total). It covers activation, persisted pending-tool restart, simulated model 429 recovery, two threaded fake sends, real reply normalization/ingestion, an evidence-backed simulated outcome, and completion without further execution. The optional service override in `connectDirectCaseTools` injects the fake sender while preserving MCP authentication. This test proves integrated service behavior; hosted deployment and live transport checks remain separate.
