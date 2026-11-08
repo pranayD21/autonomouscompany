@@ -91,10 +91,10 @@ export function Autonomy({caseId, userId, enabled, between}: {caseId: string; us
     {!loaded && !loadError ? <p className="quiet-line">Loading…</p> : <>
       <div className="status-head">
         <span className="claim-orb" data-working={working} aria-hidden="true"><span/></span>
-        <div className="claim-agent-heading"><p className="eyebrow">Assurance · Your claim advocate</p><h2>{label}</h2></div>
+        <h2>{label}</h2>
+        <p className="status-detail">{detail}</p>
         {current && <button className="text-button quiet-button" disabled={busy} onClick={() => stop(current.id)}>Stop agent work</button>}
       </div>
-      <p className="status-detail">{detail}</p>
       {session?.goal && <p className="status-goal"><span>Goal</span><span className="status-goal-text">{session.goal}</span></p>}
 
       {needsYou && <div className="ask">

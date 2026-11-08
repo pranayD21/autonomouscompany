@@ -1,5 +1,21 @@
 # Change log
 
+## November 8, 2026 — Integrate all local commits for main
+
+Merged the two local main commits and `compact-case-view` into current remote main without rewriting published history. Preserved the sidebar clipping fix, extracted overview redesign, compact case amounts, short-title helper, newer phone onboarding, Gmail connection, and persistent version-2 conversation. Resolved overlapping composer changes in favor of the newer shared composer with unique accessible IDs and uncertain-send retry controls. The status header keeps a compact animated orb and inline detail; scoped CSS prevents older conversation and definition-list rules from overriding the compact layout. See [frontend.md](frontend.md).
+
+Verification: all 18 focused composer, progress, activation-state, and mocked case-title tests passed. `npm run build` passed with non-production placeholder public service URLs, including TypeScript checking. Existing large-bundle and mixed static/dynamic import warnings remain. `git diff --check` passed. No browser, database, live model, backend deployment, or production behavior was verified in this integration; backend title changes still require their separate deployment.
+
+## 2026-11-08 — Compact case header, status and amounts; short AI case titles
+
+At the user's request the case page uses less space. The agent status card is now a single row (dot, label, inline detail, **Stop**) instead of a large padded card with a 20px heading. The phone-account key amounts are one inline 13px row (Bill, EOB, Possible discrepancy) instead of a three-column bordered card with large values; the "not verified savings" note appears only once a discrepancy can be computed.
+
+New cases submitted through `submitCase` (web form and AgentMail leads) whose title is over 40 characters, usually because it was copied from the description, get a 2–6 word title from a small OpenAI model (`backend/case-title.ts`, `ASSURANCE_TITLE_MODEL`, default `gpt-5.4-nano`, 6s timeout). Missing key, HTTP errors, timeouts, empty or overlong replies keep the original title. Phone-intake cases keep their generic type titles; existing cases are not renamed.
+
+Verification: `tsc --noEmit`, `vite build` (placeholder `VITE_*` URLs) and `scripts/case-title.test.ts` (mocked fetch, 3 tests) passed. The real OpenAI call and the `gpt-5.4-nano` model name were not checked because this machine has no private env file; DB-backed `scripts/intake-service.test.ts` was not run (needs a disposable database). The title change takes effect only after the Neon Functions are redeployed; the UI change ships with the Vercel frontend. The new layout was not checked in a browser.
+
+Outstanding verification: the previous implementation run reported that `scripts/activation-ui-fixture.ts` timed out with these changes but passed on the original code. The cause remains unresolved; this commit does not claim browser verification or deployment.
+
 ## 2026-11-08 — Workspace overview redesign
 
 At the user's request the signed-in overview (`#workspace`) was rebuilt in the landing page's style, using 21st.dev dashboard components as inspiration: a dark hatched savings card, a linked "Needs you" card, a case-mix meter, and numbered case rows with a filter pill. It moved to `src/Overview.tsx` and `src/overview.css`; the old stat strip and case-tile CSS was removed from `src/style.css`. Data, copy rules and the "not a verified payout" caveat are unchanged. See [frontend.md](frontend.md).
