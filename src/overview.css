@@ -63,7 +63,7 @@ a.ov-stat:focus-visible { outline: 2px solid var(--blue); outline-offset: -4px; 
 .ov-empty strong { font-size: 16px; font-weight: 600; letter-spacing: -.2px; }
 .ov-empty > span:last-child { font-size: 14px; color: var(--quiet); }
 
-.ov-new { display: inline-flex; align-items: center; gap: 12px; margin-top: 22px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.ov-new { display: flex; align-items: center; gap: 12px; width: fit-content; min-height: 44px; margin: 22px auto 0; font-size: 13px; font-weight: 600; color: var(--ink); }
 .ov-new-plus { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; border: 1.5px dashed var(--blue); color: var(--blue); transition: background .2s, color .2s, transform .25s var(--ease); }
 .ov-new:hover { color: var(--blue); }
 .ov-new:hover .ov-new-plus { background: var(--blue); color: #fff; border-style: solid; transform: rotate(90deg); }
