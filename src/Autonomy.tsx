@@ -52,15 +52,14 @@ export function Autonomy({caseId,userId,enabled}:{caseId:string;userId:string;en
    {["active","waiting","human_required"].includes(a.state)&&<div><button disabled={busy} onClick={()=>void stop(a.id)}>Stop agent work</button><p>A communication already being sent may finish. Stopping prevents new work after the stop is recorded.</p></div>}
   </div>)}
   {(data.setups??[]).map(setup=><div key={setup.id}><p>Case agent setup: {setup.state.replaceAll('_',' ')}</p>{setup.reason&&<p>{setup.reason}</p>}</div>)}
-  {(data.sessions??[]).map(session=>{const status=sessionStatus(session);return <article key={session.id} aria-label="Case agent status" className="agent-session" data-state={session.state}>
-   <div className="agent-session-head"><h5>{status.label}</h5><p>{status.detail}</p></div>
-   {(session.waiting_on||session.goal||session.finish_condition)&&<dl className="agent-facts">
-    {session.waiting_on&&<div><dt>Waiting for</dt><dd>{session.waiting_on}</dd></div>}
-    {session.goal&&<div><dt>Agent goal</dt><dd>{session.goal}</dd></div>}
-    {session.finish_condition&&<div><dt>Finish condition</dt><dd>{session.finish_condition}</dd></div>}
-   </dl>}
+  {(data.sessions??[]).map(session=>{const status=sessionStatus(session);return <article key={session.id} aria-label="Case agent status">
+   <h5>{status.label}</h5><p>{status.detail}</p><p>Engine: {engineLabel(session.engine)}</p>
+   {session.goal&&<><strong>Agent goal</strong><p>{session.goal}</p></>}
+   {session.finish_condition&&<><strong>Finish condition</strong><p>{session.finish_condition}</p></>}
+   {session.waiting_on&&<><strong>Waiting for</strong><p>{session.waiting_on}</p></>}
    {session.reason&&<p>{session.reason}</p>}
-   <p className="agent-meta">Engine: {engineLabel(session.engine)}{dateLabel(session.last_activity_at)?` · Last activity: ${dateLabel(session.last_activity_at)}`:""}{dateLabel(session.next_check_at)?` · Next check: ${dateLabel(session.next_check_at)}`:""}</p>
+   {dateLabel(session.last_activity_at)&&<p>Last activity: {dateLabel(session.last_activity_at)}</p>}
+   {dateLabel(session.next_check_at)&&<p>Next check: {dateLabel(session.next_check_at)}</p>}
    {session.state==="human_required"&&session.engine==="direct_openai"&&current?.id===session.authority_id&&<div><p>Continue after reviewing the request or adding the missing information. Your original permission stays unchanged.</p><button disabled={busy} onClick={()=>void resume(session.authority_id)}>Continue with updated information</button></div>}
    {sessionNeedsProviderApproval(session)&&<SessionApprovals caseId={caseId} runId={session.id} userId={userId}/>}
   </article>})}

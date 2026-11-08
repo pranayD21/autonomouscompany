@@ -138,3 +138,8 @@ export function useProgressMap(cases: readonly BillCase[], userId: string, crewE
   }, [key, userId]);
   return new Map(cases.map(c => [c.id, deriveProgress(c, snapshots[c.id], crewEnabled)]));
 }
+
+/** Progress for a single case (used by the case page's section tags). */
+export function useCaseProgress(c: BillCase, userId: string, agentEnabled: boolean): Progress {
+  return useProgressMap([c], userId, agentEnabled).get(c.id)!;
+}
