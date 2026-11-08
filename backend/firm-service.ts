@@ -2,7 +2,7 @@ import {outreachRestricted} from './providers/outreach';
 import {caseToolServices} from "./case-tool-service";
 import {recordFirmTestFee} from "./firm-finance";
 import {queueCaseAgentEvent} from "./case-agent-events";
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {and,desc,eq,sql} from 'drizzle-orm';
 import type {NodePgDatabase} from 'drizzle-orm/node-postgres';
 import {z} from 'zod';
@@ -56,6 +56,18 @@ export async function fundedConnectorVersion(agentId:string,authorityId:string,a
  const general=await firmNaive('GET',`/v1/agents/${agentId}`);
  if(general.budget.cap_micro_usd<amount||general.budget.max_task_micro_usd<amount)await firmNaive('PATCH',`/v1/agents/${agentId}`,{budget:{...general.budget,cap_micro_usd:Math.max(amount,general.budget.cap_micro_usd),max_task_micro_usd:Math.max(amount,general.budget.max_task_micro_usd)},expected_version:general.current_version});
  return published;
+}
+// Finishing a hire Front Desk already started is mechanical. The model reads `hiring` as done, so the scheduler completes it.
+export async function resumeInterruptedHires(db:NodePgDatabase){
+ const due=await db.execute(sql`SELECT f.case_id,f.authority_id FROM advocacy_firm_staffing f JOIN advocacy_case_authorities a ON a.id=f.authority_id
+  WHERE f.state='hiring' AND f.agent_id IS NOT NULL AND f.updated_at<now()-interval '2 minutes' AND a.state IN ('active','waiting')
+  AND NOT EXISTS (SELECT 1 FROM advocacy_firm_records r WHERE r.key='advocate-provision:'||f.authority_id::text) ORDER BY f.updated_at LIMIT 1`);
+ const row=due.rows[0] as {case_id:string;authority_id:string}|undefined;if(!row)return {resumed:0};
+ // Spaces out retries of a failing step and keeps the retry operation distinct.
+ await db.update(firmStaffing).set({updated_at:new Date()}).where(eq(firmStaffing.case_id,row.case_id));
+ try{await executeFirmTool(db,'frontdesk','hire_advocate',{operation_id:randomUUID(),case_id:row.case_id});return {resumed:1};}
+ catch(error){const message=error instanceof Error?error.message.slice(0,120):'UNKNOWN';console.error(JSON.stringify({event:'firm_hire_resume_failed',case_id:row.case_id,error:message}));
+  const payload={error:message,at:new Date().toISOString()};await db.insert(firmRecords).values({key:`firm-hire-resume:${row.authority_id}`,kind:'hire_resume_failure',actor:'system',case_id:row.case_id,payload}).onConflictDoUpdate({target:firmRecords.key,set:{payload,updated_at:new Date()}});return {resumed:0,error:message};}
 }
 export async function executeFirmTool(db:NodePgDatabase,role:FirmRole,name:string,raw:Record<string,unknown>){
  if(!firmTools[role].includes(name))throw Error('ROLE_TOOL_DENIED');
