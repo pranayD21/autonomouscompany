@@ -18,7 +18,6 @@
 .claim-context-heading { padding: 0 4px 16px; }
 .claim-context-heading p { font-size: 11px !important; margin: 8px 0 0; color: var(--quiet); }
 .claim-workspace .case-chat { position: relative; overflow: hidden; border-radius: 26px; border-color: #d7deea; background: #fff; box-shadow: 0 18px 60px -40px rgb(36 69 131 / .32), 0 2px 8px rgb(24 27 24 / .025); }
-.claim-workspace .case-chat::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: linear-gradient(90deg, var(--blue), #91b9fa 44%, #ccc0ee 76%, #f2d3b2); }
 .claim-workspace .case-chat-header { padding: 24px; background: linear-gradient(110deg, #fff, var(--claim-sky)); border-bottom: 1px solid #e1e6ef; }
 .claim-workspace .case-chat-header strong { font-size: 15px; font-weight: 650; letter-spacing: -.35px; }
 .claim-workspace .case-chat-header p { display: flex; align-items: center; gap: 6px; font-size: 11px; line-height: 1.5; }
@@ -166,3 +165,35 @@ li[data-kind="wait"] > .activity-marker, li[data-kind="closed"] > .activity-mark
 @media (max-width: 1150px) { .claim-progress { margin-bottom: 14px; } }
 @media (max-width: 640px) { .case-next { font-size: 13px; margin-top: 10px; } .claim-progress { padding: 16px 14px 4px; } .activity-count { margin-right: 22px; } }
 @media (prefers-reduced-motion: reduce) { .claim-workspace .agent-context .status-head h2::before, li[data-state="current"] > .cp-marker > span { animation: none; } }
+
+/* Chat contrast (2026-11-08): dark ink header like the overview savings card, cool tinted message
+   area, solid blue owner bubbles, warm panel behind the right column. */
+.claim-workspace .case-chat { border-color: #d3d8e2; }
+.claim-workspace .case-chat-header { position: relative; overflow: hidden; isolation: isolate; background: var(--ink); border-bottom: 0; color: var(--paper); }
+.claim-workspace .case-chat-header::before { content: ""; position: absolute; right: -90px; top: -150px; width: 340px; height: 340px; border-radius: 50%; background: radial-gradient(circle, rgb(36 101 239 / .5), transparent 65%); z-index: -1; pointer-events: none; }
+.claim-workspace .case-chat-header::after { content: ""; position: absolute; inset: 0 0 0 auto; width: 55%; background: repeating-linear-gradient(-45deg, rgb(245 244 239 / .08) 0 1px, transparent 1px 9px); -webkit-mask-image: radial-gradient(ellipse at 100% 0%, #000, transparent 72%); mask-image: radial-gradient(ellipse at 100% 0%, #000, transparent 72%); z-index: -1; pointer-events: none; }
+.claim-workspace .case-chat-header strong { color: var(--paper); }
+.claim-workspace .case-chat-header p { color: rgb(245 244 239 / .62); }
+.claim-workspace .case-chat-header .claim-orb { border-color: rgb(245 244 239 / .14); background: rgb(245 244 239 / .07); }
+.claim-workspace .case-chat .chat-state-dot { background: rgb(245 244 239 / .5); }
+.claim-workspace .case-chat[data-state="running"] .chat-state-dot { background: #7ea6ff; }
+.claim-workspace .case-chat[data-state="human_required"] .chat-state-dot { background: #f0b27a; }
+.claim-workspace .case-chat[data-state="completed"] .chat-state-dot { background: #7fcf9f; }
+.claim-workspace .chat-refresh.text-button { color: rgb(245 244 239 / .7); }
+.claim-workspace .chat-refresh.text-button:hover { background: rgb(245 244 239 / .1); color: #fff; }
+.claim-workspace .case-chat-log { background: radial-gradient(rgb(36 69 131 / .07) 1px, transparent 1.2px) 0 0/18px 18px, linear-gradient(180deg, #eef2f9, #f3f5f9); }
+.claim-workspace .case-chat-bubble { border-color: #dfe4ec; box-shadow: 0 6px 18px -14px rgb(24 40 80 / .35); }
+.claim-workspace .case-chat-message--user .case-chat-bubble { background: var(--blue); border-color: var(--blue); box-shadow: 0 8px 20px -14px rgb(36 101 239 / .8); }
+.claim-workspace .case-chat-message--user .case-chat-bubble p { color: #fff; }
+.claim-workspace .case-chat-message--user .case-chat-author { color: rgb(255 255 255 / .75); }
+.claim-workspace .case-chat-message--user .case-chat-bubble .text-button { color: #fff; }
+.claim-workspace .case-chat-message time { color: #7b8190; }
+.claim-workspace .case-chat-note { background: #fdf6ec; color: var(--warn); border-top: 1px solid #f1e2cc; }
+.claim-workspace .chat-welcome h2 { color: var(--ink); }
+.claim-context { padding: 14px; border-radius: 22px; background: #efeee7; }
+.claim-context .claim-progress { border-color: #e4e3da; }
+.claim-context-heading { padding: 4px 4px 12px; }
+.claim-context .case-disclosure { border-bottom-color: #dcdbd2; }
+.claim-context .case-disclosure:last-child { border-bottom: 0; }
+@media (max-width: 1150px) { .claim-context { padding: 14px; } }
+@media (max-width: 640px) { .claim-workspace .case-chat-header::after { width: 70%; } .claim-context { padding: 12px; border-radius: 18px; } }

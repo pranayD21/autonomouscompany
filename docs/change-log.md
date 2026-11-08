@@ -1,5 +1,11 @@
 # Change log
 
+## November 8, 2026 — More contrast on the case chat
+
+The user said the chat's top colour bar looked odd and the page read as one colour. Removed the gradient bar on `.case-chat`. The chat header is now a dark ink band with a blue glow and hatch, matching the overview savings card. The message area has a cool blue-grey tint with a faint dot grid, owner bubbles are solid blue, and the stopped-work note is amber. The right column sits on a warm panel behind the white progress card. CSS only, in `src/claim-workspace.css`. See [frontend.md](frontend.md).
+
+Verification: `npm run build` and the 18 focused UI tests passed. Screenshots of the synthetic claim-page fixture (now also loading `landing.css` and `overview.css`) at 1400px and 390px were inspected. Not checked on a real device.
+
 ## November 8, 2026 — Case page refinement from 21st.dev layouts
 
 The user asked to refine the `#case` page using 21st.dev. No 21st.dev MCP or install was used; three 21st.dev community components were reviewed in the browser for layout ideas and rebuilt in plain CSS on the existing tokens, with no code copied: "Order Tracking" (Javi) became a claim progress stepper (`src/ui/ClaimProgress.tsx`), "Activity Timeline" (Oliver) became the day-grouped activity rail with typed icon markers and an update count (`src/Autonomy.tsx`), and "System Status Block" (Preet Suthar) informed the status strip's tone pill. The header now names the insurer or employer and shows the `deriveProgress` next step, with a Needs you / Resolved badge. Added `Check`, `Mail`, `Phone`, `Inbox`, `Question` and `Clock` icons to `src/Icons.tsx`. No API, data, agent or provider behavior changed; the case page now also polls the same progress endpoints as the overview (every 30 seconds while visible). See [frontend.md](frontend.md).
