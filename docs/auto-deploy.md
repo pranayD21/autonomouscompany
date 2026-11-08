@@ -2,7 +2,7 @@
 
 The existing Vercel project `assurance-claims` is connected to the GitHub repository `pranayD21/autonomouscompany`. Its production branch is `main`. Pushes to `main` trigger a Vercel build; successful production deployments update https://assurance.claims. A local commit alone does not deploy until it is pushed.
 
-`vercel.json` declares Vite, `npm run build`, and the `dist` output directory. Vercel uses the existing project environment and domains. No new project, API token, webhook secret, or domain was created for this connection. Project Settings → Git shows the connected repository. The project API readback confirmed GitHub repository identity and `productionBranch: main`.
+Since November 8, 2026, `vercel.json` deploys only the static `offline/` page (see [hosting.md](hosting.md)); before that it declared Vite, `npm run build`, and the `dist` output directory. Vercel uses the existing project environment and domains. No new project, API token, webhook secret, or domain was created for this connection. Project Settings → Git shows the connected repository. The project API readback confirmed GitHub repository identity and `productionBranch: main`.
 
 This integration deploys the frontend only. Neon Functions, database migrations, and backend environment changes use the explicit Neon deployment workflow. Deploy backend changes before publishing a dependent frontend. Case activation availability comes from backend configuration (`ASSURANCE_CASE_ENGINE`, `NAIVE_CASE_PROVISIONING_ENABLED`), which deploys through Neon.
 

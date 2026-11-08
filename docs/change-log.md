@@ -1,5 +1,13 @@
 # Change log
 
+## November 8, 2026 — Take the public site offline
+
+The hackathon ended, and the owner asked for assurance.claims to stop being publicly accessible. `vercel.json` now skips the Vite build and serves only `offline/index.html`, a static "Assurance is offline." page with `noindex`, `no-store` and no app JavaScript. Every path rewrites to it, so the site no longer loads the app or calls the Neon backend. The app source is unchanged. To restore it, revert `vercel.json` to the Vite build (`npm run build`, `dist`).
+
+The Neon Functions (`cases`, `tools`, `autopoll`, `crewpoll`, `replypoll`, `phone`, `firm`) and their schedules are deployed separately through Neon. This machine has no Neon or Vercel credentials for the project, so they were not changed in this commit.
+
+Verification: after the push, https://assurance.claims was fetched to confirm it serves the offline page (recorded below if confirmed).
+
 ## November 8, 2026 — Restore the reviewed repository version
 
 At the owner's request, restored the README and documentation to the version reviewed in this conversation, commit `754fba5a2d296a716721dd90f876beeb75f41e91`, reversing later documentation commits `a8562dd` and `535f3ed` while preserving Git history. This entry is the only tracked-file difference from the reviewed version.

@@ -1,6 +1,8 @@
 # Hosted frontend
 
-Assurance is served at https://assurance.claims, with https://assurance-claims.vercel.app retained as the fallback. The React/Vite frontend uses the existing Neon production branch for Auth, cases, documents, Realtime, and agent work. Vercel is connected to `pranayD21/autonomouscompany`; pushes to `main` automatically deploy the frontend. Neon migrations, Function code, and backend secrets require a separate deployment first.
+**Offline since November 8, 2026.** The hackathon ended and the owner took the public site down. `vercel.json` now deploys only `offline/index.html` ("Assurance is offline.", `noindex`, no app JavaScript) and rewrites every path to it, so https://assurance.claims and https://assurance-claims.vercel.app no longer load the app. To restore the app, revert `vercel.json` to `framework: vite`, `buildCommand: npm run build`, `outputDirectory: dist` and push to `main`. The Neon Functions and their schedules are a separate deployment; see the change log for their state.
+
+While it was online, Assurance was served at https://assurance.claims, with https://assurance-claims.vercel.app retained as the fallback. The React/Vite frontend uses the existing Neon production branch for Auth, cases, documents, Realtime, and agent work. Vercel is connected to `pranayD21/autonomouscompany`; pushes to `main` automatically deploy the frontend. Neon migrations, Function code, and backend secrets require a separate deployment first.
 
 `vercel.json` selects `npm run build` and `dist`. Only these public locations belong in frontend configuration:
 
