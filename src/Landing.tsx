@@ -1,4 +1,5 @@
 import { ArrowUpRight, Logo } from "./Icons";
+import { HeroBackdrop } from "./components/hero-backdrop";
 import { MinimalHero } from "./components/minimal-hero";
 import { StrikethroughReplace } from "./components/strikethrough-replace";
 
@@ -13,6 +14,7 @@ const steps = [
 export function Landing() {
   return (
     <main className="landing-page">
+      <HeroBackdrop />
       <a className="skip-link" href="#main-content">Skip to content</a>
       <header className="site-header">
         <a className="brand" href="#" aria-label="Assurance home"><Logo aria-hidden="true" />assurance<span className="brand-period">.</span></a>

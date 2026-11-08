@@ -1,5 +1,4 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { HeroBackdrop } from "./hero-backdrop";
 
 type Particle = { x: number; y: number; speed: number; opacity: number; fadeStart: number; fadingOut: boolean };
 
@@ -64,5 +63,5 @@ export function MinimalHero({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  return <section className="minimal-root"><HeroBackdrop /><canvas ref={canvasRef} className="hero-particles" aria-hidden="true" />{children}</section>;
+  return <section className="minimal-root"><canvas ref={canvasRef} className="hero-particles" aria-hidden="true" />{children}</section>;
 }

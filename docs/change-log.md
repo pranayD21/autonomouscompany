@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-08 — Backdrop photos fill the whole landing page
+
+At the user's request the photo backdrop is no longer confined to the hero with faded top and bottom edges. It is now a fixed, full-viewport layer behind the entire landing page, including the header, "How it works" steps and footer. `HeroBackdrop` moved from `MinimalHero` into `Landing.tsx`. The workspace and sign-in pages are unaffected.
+
+Verification: `tsc --noEmit` and `vite build` (placeholder `VITE_*` URLs) passed. Headless Chromium screenshots at 1440px (top, and scrolled to the footer) and 390px showed the photo behind the header, hero, steps and footer, with all text readable. Live production was not checked.
+
 ## 2026-11-08 — Remove case tabs; compact upload pill
 
 At the user's request, removed the sliding section tabs from the case page again (`src/ui/SectionNav.tsx` deleted) and shrank the document drop zone to a pill in the Documents header, about the size of the earlier "Add a document" button. It keeps the spring lift/tilt animation on hover and drag and still uploads on drop or pick. See frontend.md.
