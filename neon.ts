@@ -11,7 +11,18 @@ export default defineConfig({
   auth: true,
   aiGateway: true,
   functions: {
+    phone: {name:"Assurance phone intake and sign-in",source:"./backend/phone-worker.ts",env:{
+      PHONE_FLOW_ENABLED:process.env.PHONE_FLOW_ENABLED??"false",
+      PHONE_AUTH_BASE_URL:process.env.PHONE_AUTH_BASE_URL??"",
+      PHONE_AUTH_SECRET:process.env.PHONE_AUTH_SECRET??"",
+      AGENTPHONE_WEBHOOK_SECRET:process.env.AGENTPHONE_WEBHOOK_SECRET??"",
+      PHONE_ALLOWED_NUMBERS:process.env.PHONE_ALLOWED_NUMBERS??"",
+      AGENTPHONE_API_KEY:process.env.AGENTPHONE_API_KEY??"",
+      AGENTPHONE_AGENT_ID:process.env.AGENTPHONE_AGENT_ID??"",
+      AGENTPHONE_NUMBER_ID:process.env.AGENTPHONE_NUMBER_ID??"",
+    }},
     tools: { name: "Assurance case tools", source: "./backend/case-tools-worker.ts", env: {
+      PHONE_FLOW_ENABLED:process.env.PHONE_FLOW_ENABLED??"false",
       CREW_ALLOWED_USER_IDS: process.env.CREW_ALLOWED_USER_IDS ?? "",
       AGENTMAIL_API_KEY: process.env.AGENTMAIL_API_KEY ?? "",
       AGENTMAIL_INBOX_ID: process.env.AGENTMAIL_INBOX_ID ?? "",
@@ -70,6 +81,9 @@ export default defineConfig({
       name: "Medical bill case API",
       source: "./backend/api.ts",
       env: {
+        PHONE_FLOW_ENABLED:process.env.PHONE_FLOW_ENABLED??"false",
+        PHONE_AUTH_BASE_URL:process.env.PHONE_AUTH_BASE_URL??"",
+        PHONE_ALLOWED_NUMBERS:process.env.PHONE_ALLOWED_NUMBERS??"",
         NAIVE_CASE_PROVISIONING_ENABLED: process.env.NAIVE_CASE_PROVISIONING_ENABLED??"false",
         REALTIME_SECRET: { value: process.env.NEON_REALTIME_SECRET, required: true },
         APP_ORIGINS: appOrigins.join(","),
@@ -95,6 +109,7 @@ export default defineConfig({
     },
   },
   triggers: {
+    "phone-notifications":{type:"schedule",function:"phone",functionPath:"/poll",cron:"* * * * *"},
     "case-autonomy": { type: "schedule", function: "autopoll", functionPath: "/poll", cron: "*/5 * * * *" },
     "crew-monitor": { type: "schedule", function: "crewpoll", functionPath: "/poll", cron: "*/5 * * * *" },
     "reply-monitor": { type: "schedule", function: "replypoll", functionPath: "/poll", cron: "*/5 * * * *" },

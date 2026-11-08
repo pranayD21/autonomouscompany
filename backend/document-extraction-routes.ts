@@ -1,3 +1,4 @@
+import {enqueueDocumentNotice} from "./phone-messaging";
 import {drizzle} from "drizzle-orm/node-postgres";
 import {queueCaseAgentEvent} from "./case-agent-events";
 import {Hono} from "hono";
@@ -36,6 +37,7 @@ export function extractionRoutes(pool:Pool){
     const known=["PDF_NO_TEXT","PDF_PAGE_LIMIT","PDF_TEXT_LIMIT","DOCUMENT_HASH_MISMATCH"];
     const code=e instanceof Error&&known.includes(e.message)?e.message:uploading?"UPLOAD_OUTCOME_UNKNOWN":"DOCUMENT_READ_FAILED";
     await pool.query("UPDATE advocacy_document_extractions SET state=$2,error_code=$3 WHERE document_id=$1 AND state='preparing'",[id,uploading?"unknown":"failed",code]);
+    await enqueueDocumentNotice(pool,c.req.param("id")!,id,code).catch(()=>{});
     return c.json({error:uploading?"The provider upload outcome is uncertain. It will not be repeated automatically; operator reconciliation is required.":"This document could not be read. For scanned PDFs, upload page images instead.",code},502);
    }
   }
@@ -56,12 +58,13 @@ export function extractionRoutes(pool:Pool){
    const finished=session.status==="completed"||(session.status==="idle"&&session.stop_reason==="end_turn");
    if(!finished){
     if(session.stop_reason&&["awaiting_input","awaiting_approval","budget_paused","interrupted","max_iterations","context_exhausted","awaiting_answer"].includes(session.stop_reason))await pool.query("UPDATE advocacy_document_extractions SET error_code=$2 WHERE document_id=$1 AND state='running'",[id,`READER_${session.stop_reason.toUpperCase()}`]);
-    if(["failed","cancelled"].includes(session.status)||session.stop_reason==="error")await pool.query("UPDATE advocacy_document_extractions SET state='failed',error_code='READER_FAILED' WHERE document_id=$1 AND state='running'",[id]);
+    if(["failed","cancelled"].includes(session.status)||session.stop_reason==="error"){await pool.query("UPDATE advocacy_document_extractions SET state='failed',error_code='READER_FAILED' WHERE document_id=$1 AND state='running'",[id]);await enqueueDocumentNotice(pool,c.req.param("id")!,id,"READER_FAILED").catch(()=>{});}
     return c.json({state:session.status,stop_reason:session.stop_reason});
    }
    const parsed=extractionOutput.safeParse(session.structured_output);
    if(!parsed.success||session.pending_actions.length||row.file_id&&!await verifyImageRead(session.id,row.file_id)){
     await pool.query("UPDATE advocacy_document_extractions SET state='failed',error_code='UNVERIFIED_READER_OUTPUT' WHERE document_id=$1 AND state='running'",[id]);
+    await enqueueDocumentNotice(pool,c.req.param("id")!,id,"UNVERIFIED_READER_OUTPUT").catch(()=>{});
     return c.json({error:"The reader did not return a verified transcription. No evidence was added."},422);
    }
    await pool.query("UPDATE advocacy_document_extractions SET state='ready',result=$2,error_code=NULL WHERE document_id=$1 AND state='running'",[id,JSON.stringify(parsed.data)]);

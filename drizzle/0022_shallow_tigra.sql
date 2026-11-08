@@ -1,0 +1,2 @@
+ALTER TABLE "advocacy_phone_users" ADD COLUMN "linked_owner_id" text;--> statement-breakpoint
+ALTER TABLE "advocacy_phone_users" ADD CONSTRAINT "advocacy_phone_users_linked_owner_id_unique" UNIQUE("linked_owner_id");

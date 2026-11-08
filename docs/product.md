@@ -55,3 +55,5 @@ The supplied event page uses inconsistent names for some prize categories. Confi
 - Luxor: no immediate need for custom compute in this prototype.
 
 Naïve, Neon, AgentPhone, AgentMail, and ElevenLabs accounts are configured. Core case/crew and selected communication paths are verified; see implementation-status.md for exact scope. The other sponsors remain optional.
+
+The requested primary entry point is now an inbound call to Assurance, with the caller's verified phone number as their portal sign-in. Document requests and detected problems should text a sign-in-required dashboard link. Caller ID alone must never unlock cases. This direction is implemented behind a disabled phone feature while SMS registration and live verification are completed; it is not yet an available customer channel. Existing email accounts can link a newly verified phone through proof of both identities.

@@ -1,3 +1,4 @@
+import {PhoneIntakes} from "./PhoneIntakes";
 import {useCallback, useEffect, useState, type ReactNode} from "react";
 import {AnimatePresence, motion} from "motion/react";
 import {useLiveQuery} from "@neon/realtime-react";
@@ -101,6 +102,7 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
         label={item.title} meta={item.status.replaceAll("_", " ")}/>)}
     </Sidebar>
     <main id="workspace-content" className="surface">
+      <PhoneIntakes userId={userId}/>
       {error && <p role="alert" className="error">Live updates stopped: {error.message}. Reload to reconnect.</p>}
       <AnimatePresence>{notice && <motion.p role="alert" className="error" initial={{opacity: 0, y: -6}} animate={{opacity: 1, y: 0}} exit={{opacity: 0}}>{notice}</motion.p>}</AnimatePresence>
       <AnimatePresence mode="wait">

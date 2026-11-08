@@ -25,6 +25,10 @@ The user explicitly named two use cases: workplace injury claims involving an em
 
 The user says the team has a working product. The local scaffold described in these docs is only the implementation visible in this workspace; do not assume it includes the team's entire working system.
 
+## Phone-first entry direction
+
+The user wants callers to begin by calling Assurance, with accounts tied to verified phone numbers. Document requests and detected problems should text a sign-in-required portal/dashboard link. Existing accounts may link a phone only after proving both identities; caller ID alone never unlocks a case. The additive phone service is implemented behind a disabled flag while individual/no-EIN AgentPhone SMS registration and live verification are completed. Keep registration contact details in ignored private files. No $25 registration submission, real test SMS, or inbound routing change has been approved yet. See [phone-first accounts](docs/phone-first.md).
+
 ## Hackathon context
 
 Naïve Autonomous Company Hackathon, November 7–8, 2026, YC Office, 560 20th St., San Francisco. Hacking is scheduled from Saturday 1pm to Sunday 11am. Team: Pranay Dogra, Yuvraj Taneja, Shaunik Musukula, Ishaan Agrawal, and Prashanth Prabhala.

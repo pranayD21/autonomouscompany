@@ -1,3 +1,5 @@
+import {requestIdentity} from "./request-identity";
+import {phoneRoutes} from "./phone-routes";
 import {readCaseApprovals,confirmCaseApproval} from "./case-agent-approval";
 import {readCaseOutcomes} from "./case-outcome";
 import {queueCaseAgentEvent} from "./case-agent-events";
@@ -5,7 +7,6 @@ import {importCallEvidence} from "./call-evidence-service";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { bodyLimit } from "hono/body-limit";
-import { createRemoteJWKSet, jwtVerify } from "jose";
 import { Pool } from "pg";
 import { attachDatabasePool } from "@neon/functions";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -33,8 +34,6 @@ import { ApiError } from "@usenaive-sdk/managed-agents";
 const pool = new Pool({ connectionString: process.env.DATABASE_URL?.replace("sslmode=require", "sslmode=verify-full"), max: 5 });
 attachDatabasePool(pool);
 const db = drizzle(pool);
-const jwks = createRemoteJWKSet(new URL(process.env.NEON_AUTH_JWKS_URL!));
-const issuer = new URL(process.env.NEON_AUTH_BASE_URL!).origin;
 const realtime = createRealtime({
   secret: process.env.REALTIME_SECRET!,
   db: new URL(process.env.DATABASE_URL!).pathname.slice(1),
@@ -46,15 +45,14 @@ app.use("*", async (c, next) => {
   const authorization = c.req.header("authorization");
   if (!authorization?.startsWith("Bearer ")) return c.json({ error: "Sign in to access your cases." }, 401);
   try {
-    const { payload } = await jwtVerify(authorization.slice(7), jwks, { issuer, algorithms: ["EdDSA"] });
-    if (!payload.sub) return c.json({ error: "Invalid session." }, 401);
-    c.set("userId", payload.sub);
+    c.set("userId", await requestIdentity(authorization.slice(7),pool));
   } catch { return c.json({ error: "Your session has expired. Please sign in again." }, 401); }
   c.header("Cache-Control", "no-store");
   await next();
 });
 app.use("*", async (c,next) => bodyLimit({ maxSize: /^\/cases\/[^/]+\/documents\/?$/.test(c.req.path) ? 5*1024*1024+16384 : 16_384 })(c,next));
 app.route("/cases/:id/documents", documentRoutes(pool));
+app.route("/phone",phoneRoutes(pool));
 app.onError((error, c) => {
   console.error("Case API failure", error.name);
   return c.json({ error: "The service could not complete the request. Try again." }, 500);

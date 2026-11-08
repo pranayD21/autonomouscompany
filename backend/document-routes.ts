@@ -1,3 +1,5 @@
+import {readPdfText} from "./providers/document-reader";
+import {enqueueDocumentNotice} from "./phone-messaging";
 import {drizzle} from "drizzle-orm/node-postgres";
 import {queueCaseAgentEvent} from "./case-agent-events";
 import {extractionRoutes} from "./document-extraction-routes";
@@ -26,7 +28,7 @@ export function documentRoutes(pool: Pool) {
     const id=form.get("id"),file=form.get("file"),kind=form.get("kind");
     if(!z.uuid().safeParse(id).success || !(file instanceof File) || !["insurance_card","bill","eob","incident","other"].includes(String(kind)))return c.json({error:"Provide a document ID, file, and document type."},400);
     const bytes=new Uint8Array(await file.arrayBuffer());let hash:string;
-    try{hash=validateDocument(bytes,file.type);}catch(e){return c.json({error:(e as Error).message},400);}
+    try{hash=validateDocument(bytes,file.type);}catch(e){await enqueueDocumentNotice(pool,c.req.param("id")!,String(id),"INVALID_UPLOAD").catch(()=>{});return c.json({error:(e as Error).message},400);}
     const filename=file.name.replace(/[\x00-\x1f\x7f/\\]/g,"_").slice(0,180)||"document";
     const caseId=c.req.param("id");const key=`cases/${caseId}/${id}`;
     const client=await pool.connect();
@@ -56,6 +58,13 @@ export function documentRoutes(pool: Pool) {
       if(changed.rowCount){await finish.query("UPDATE advocacy_cases SET revision=revision+1,analysis=NULL,status='new' WHERE id=$1",[caseId]);await queueCaseAgentEvent(drizzle(finish),caseId!,`document:${id}`,"document_ready",{document_id:id});}
       await finish.query("COMMIT");
     }catch(e){await finish.query("ROLLBACK");throw e;}finally{finish.release();}
+    if(process.env.PHONE_FLOW_ENABLED==="true"&&file.type==="application/pdf"){
+      try{await readPdfText(bytes);}catch(e){
+        const code=e instanceof Error&&["PDF_NO_TEXT","PDF_PAGE_LIMIT","PDF_TEXT_LIMIT"].includes(e.message)?e.message:"DOCUMENT_READ_FAILED";
+        await pool.query("INSERT INTO advocacy_document_extractions(document_id,state,error_code) VALUES($1,'failed',$2) ON CONFLICT DO NOTHING",[id,code]);
+        await enqueueDocumentNotice(pool,caseId!,String(id),code).catch(()=>{});
+      }
+    }
     return c.json({id,state:"ready"},201);
   });
   app.get("/:documentId/download",async c=>{

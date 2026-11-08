@@ -1,9 +1,16 @@
 import { createAuthClient } from "@neon/auth";
 import { BetterAuthReactAdapter } from "@neon/auth/react/adapters";
 import { createRealtimeClient, type SealedLiveQuery } from "@neon/realtime/client";
+import {phoneSelected,hasPhoneSession,phoneSession,endPhoneSession,usePhoneSession} from "./phone-session";
 import type { BillCase } from "../backend/schema";
 
-export const auth = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL, { adapter: BetterAuthReactAdapter() });
+const managedAuth = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL, { adapter: BetterAuthReactAdapter() });
+export const auth = {
+ ...managedAuth,
+ getSession:async()=>phoneSelected()?{data:await phoneSession(),error:null}:managedAuth.getSession(),
+ signOut:async()=>{if(phoneSelected()){await endPhoneSession();return {error:null};}return managedAuth.signOut();},
+ useSession:()=>{const managed=managedAuth.useSession();const phone=usePhoneSession();return phoneSelected()||phone.pending?{data:phone.data,isPending:phone.pending,error:phone.error}:managed;},
+};
 export const realtime = createRealtimeClient({ url: import.meta.env.VITE_NEON_REALTIME_URL });
 
 export async function api<T>(path: string, options: RequestInit = {}, expectedUser?: string): Promise<T> {

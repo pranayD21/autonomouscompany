@@ -1,3 +1,4 @@
+import type {PhoneDocumentRequest} from "./phone-document-request";
 import {outcomeInput,type OutcomeInput} from "./case-outcome";
 import type {CaseDecision} from "./autonomy-policy";
 import {Hono,type Context} from "hono";
@@ -7,6 +8,7 @@ import {WebStandardStreamableHTTPServerTransport} from "@modelcontextprotocol/sd
 import {z} from "zod";
 export type CaseToolIdentity={id:string;case_id:string;owner_id:string};
 export type CaseToolDependencies={
+ requestDocument?:(identity:CaseToolIdentity,input:PhoneDocumentRequest)=>Promise<unknown>;
  recordOutcome?:(identity:CaseToolIdentity,input:OutcomeInput)=>Promise<unknown>;
  authenticate:(token:string)=>Promise<CaseToolIdentity|null>;
  getCase:(identity:CaseToolIdentity)=>Promise<unknown>;
@@ -34,6 +36,10 @@ export function caseTools(deps:CaseToolDependencies){
   server.registerTool("case_record_fact",{description:"Record a sourced statement, not independent verification. Reuse operation_id when retrying.",inputSchema:{case_id:z.uuid(),operation_id:z.uuid(),statement:z.string().trim().min(1).max(4000),source_ref:z.string().trim().min(1).max(200)}},async input=>{
    if(input.case_id!==identity.case_id)return {...textResult({error:"CASE_MISMATCH"}),isError:true};
    try{return textResult(await deps.recordFact(identity,input));}catch{return {...textResult({error:"FACT_NOT_SAVED",message:"Check source_ref and operation_id against case_get; do not invent evidence."}),isError:true};}
+  });
+  if(deps.requestDocument)server.registerTool("request_document",{description:"Queue a document-request text to this case owner's verified phone only, under their separate text consent and active case authority. No arbitrary recipient or message. Queued or provider-accepted is not delivered. The server deduplicates each case/document type.",inputSchema:{case_id:z.uuid(),operation_id:z.uuid(),authority_id:z.uuid(),kind:z.enum(["insurance_card","bill","eob","incident"])}},async ({case_id,...input})=>{
+   if(case_id!==identity.case_id)return {...textResult({error:"CASE_MISMATCH"}),isError:true};
+   try{return textResult(await deps.requestDocument!(identity,input));}catch{return {...textResult({error:"DOCUMENT_REQUEST_NOT_AUTHORIZED"}),isError:true};}
   });
   if(deps.recordOutcome)server.registerTool("record_outcome",{description:"Record the agent's calculated outcome with exact quotes from confirmed documents or accepted replies. Use integer USD cents and null for unknown amounts. Separate reductions from refunds actually received. Quote matching is not independent verification; this does not close the case or charge a fee.",inputSchema:{case_id:z.uuid(),...outcomeInput.shape}},async ({case_id,...input})=>{
    if(case_id!==identity.case_id)return {...textResult({error:"CASE_MISMATCH"}),isError:true};

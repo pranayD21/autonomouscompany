@@ -48,3 +48,5 @@ Every repository change must update the relevant documentation in the same chang
 - [Naïve capacity](naive-capacity.md): shared request admission, cooldowns, idle-case load reduction, and escalation status.
 
 - [Automatic frontend deployments](auto-deploy.md): GitHub connection, production branch, and separate Neon backend deployment.
+
+- [Phone-first accounts and document texts](phone-first.md): inbound intake, verified phone sign-in, existing-account linking, portal requests, notifications, and SMS activation gate.
