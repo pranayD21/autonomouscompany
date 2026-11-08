@@ -1,3 +1,4 @@
+import {readCaseOutcomes} from "./case-outcome";
 import {queueCaseAgentEvent} from "./case-agent-events";
 import {importCallEvidence} from "./call-evidence-service";
 import { Hono } from "hono";
@@ -110,6 +111,10 @@ app.post("/cases/:id/agent-credentials/:credentialId/revoke",async c=>{
  if(!await ownedCase(c.req.param("id"),c.get("userId"))||!z.uuid().safeParse(c.req.param("credentialId")).success)return c.json({error:"Credential not found."},404);
  const [saved]=await db.update(caseToolCredentials).set({revoked_at:new Date()}).where(and(eq(caseToolCredentials.id,c.req.param("credentialId")),eq(caseToolCredentials.case_id,c.req.param("id")),eq(caseToolCredentials.issued_by,c.get("userId")))).returning({id:caseToolCredentials.id});
  return saved?c.json(saved):c.json({error:"Credential not found."},404);
+});
+app.get("/cases/:id/outcomes",async c=>{
+ if(!await ownedCase(c.req.param("id"),c.get("userId")))return c.json({error:"Case not found."},404);
+ return c.json(await readCaseOutcomes(db,c.req.param("id")));
 });
 app.get("/cases/:id/autonomy",async c=>{
  if(!await ownedCase(c.req.param("id"),c.get("userId")))return c.json({error:"Case not found."},404);

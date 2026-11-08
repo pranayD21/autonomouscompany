@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-07 — Owner-visible outcome view
+
+Added an owner-protected outcomes API and a case workspace panel for reported amounts, separate unknown refunds, calculation explanations, supporting quotes, and stale-evidence warnings. The panel refreshes on case revisions and every 15 seconds, ignores stale component responses, and displays refresh errors. Backend Functions deployed successfully.
+
+Verification: build passed (267 modules; existing bundle-size warning). Local frontend E2E against the deployed backend passed authentication, persistence, Realtime, owner outcome access, cross-user denial, and the existing workflow checks. An explicitly mocked response tested populated outcome rendering, unknown refund values, stale evidence, quote expansion, and empty-state recovery. AI Gateway inference remains unavailable. An existing preview server on port 4173 already served the new build; a duplicate start failed without disturbing it. Vercel CLI is logged out, so the frontend is not yet published; a private temporary-token request is pending. No Naïve blueprint or credential setup changes were made in this step.
+
 ## 2026-11-07 — Evidence-linked outcome recording
 
 Added record_outcome to the deployed case MCP service and prepared Naïve tool permissions. Reports retain the agent’s calculations, separate balance reductions from refunds received, and require exact quotes from confirmed documents or accepted replies. Immutable operation IDs support safe retries; case_get flags stale supporting evidence and attributes results to the agent. Migration 0017 stores the reports. No completion verification or checkout is implied by recording an outcome.

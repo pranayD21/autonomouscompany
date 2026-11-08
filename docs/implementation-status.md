@@ -88,3 +88,6 @@ Migration 0016 and the session/event worker are deployed. Eight session tests pl
 ## Outcome recording
 
 The deployed record_outcome tool stores agent-calculated amounts with exact case-evidence quotes and exposes them through case_get. Twelve tests, the build, and a live synthetic MCP write/retry/readback/isolation test passed. Outcomes remain agent-reported; verified goal completion, the customer outcome view, final communication, and checkout are unfinished. See [outcomes](outcomes.md).
+
+
+The outcome API is owner-protected and deployed. The new outcome panel is implemented and locally browser-tested, but awaits Vercel authentication for production publication. It displays agent-reported amounts and evidence, not independently verified payouts.

@@ -62,3 +62,8 @@ A second computer reported DNS_PROBE_FINISHED_NXDOMAIN. Cloudflare and Google st
 ## Provider-neutral frontend deployed
 
 Deployment dpl_HRzhB97ZCHSVepdi4maaJQQjFtyQ is Ready on production. The upload dry run excluded env files, local Neon/Vercel metadata, and test artifacts. Hosted E2E passed normal-domain signup/sign-in, case persistence, realtime, isolation, autonomy authorization denial for unlisted users, and sign-out. Gateway inference remains unavailable. Both temporary deployment access tokens were revoked in Vercel and their rows disappeared. GitHub automatic deployment remains unconnected.
+
+
+## Outcome UI awaiting frontend deployment
+
+The owner-only outcome API is deployed on Neon. The outcome panel builds and passed local browser checks against that backend, including synthetic populated-state rendering and real API isolation. Vercel CLI reports logged out; no production frontend deployment has been made for this change. A temporary deployment token was requested privately. The existing production UI remains in place.
