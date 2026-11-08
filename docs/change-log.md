@@ -1,5 +1,15 @@
 # Change log
 
+## 2026-11-08 — Compact case header, status and amounts; short AI case titles
+
+At the user's request the case page uses less space. The agent status card is now a single row (dot, label, inline detail, **Stop**) instead of a large padded card with a 20px heading. The phone-account key amounts are one inline 13px row (Bill, EOB, Possible discrepancy) instead of a three-column bordered card with large values; the "not verified savings" note appears only once a discrepancy can be computed.
+
+New cases submitted through `submitCase` (web form and AgentMail leads) whose title is over 40 characters, usually because it was copied from the description, get a 2–6 word title from a small OpenAI model (`backend/case-title.ts`, `ASSURANCE_TITLE_MODEL`, default `gpt-5.4-nano`, 6s timeout). Missing key, HTTP errors, timeouts, empty or overlong replies keep the original title. Phone-intake cases keep their generic type titles; existing cases are not renamed.
+
+Verification: `tsc --noEmit`, `vite build` (placeholder `VITE_*` URLs) and `scripts/case-title.test.ts` (mocked fetch, 3 tests) passed. The real OpenAI call and the `gpt-5.4-nano` model name were not checked because this machine has no private env file; DB-backed `scripts/intake-service.test.ts` was not run (needs a disposable database). The title change takes effect only after the Neon Functions are redeployed; the UI change ships with the Vercel frontend. The new layout was not checked in a browser.
+
+Outstanding verification: the previous implementation run reported that `scripts/activation-ui-fixture.ts` timed out with these changes but passed on the original code. The cause remains unresolved; this commit does not claim browser verification or deployment.
+
 ## 2026-11-08 — Stop divider lines flashing on landing load
 
 On page load, the "Loading your session…" shell (with its `.app-header` bottom border and `.app-footer` top border) showed for a moment while the auth check ran, before the landing page replaced it. `src/main.tsx` now renders the landing page immediately for `#home` and renders nothing during the check for other non-workspace URLs. Workspace routes keep the loading shell.

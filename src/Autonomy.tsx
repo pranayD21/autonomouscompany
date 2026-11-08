@@ -87,9 +87,9 @@ export function Autonomy({caseId, userId, enabled, between}: {caseId: string; us
       <div className="status-head">
         <span className="status-light" aria-hidden="true"/>
         <h2>{label}</h2>
-        {current && <button className="text-button quiet-button" disabled={busy} onClick={() => stop(current.id)}>Stop agent work</button>}
+        <p className="status-detail">{detail}</p>
+        {current && <button className="text-button quiet-button" disabled={busy} onClick={() => stop(current.id)}>Stop</button>}
       </div>
-      <p className="status-detail">{detail}</p>
       {session?.goal && <p className="status-goal"><span>Goal</span><span className="status-goal-text">{session.goal}</span></p>}
 
       {needsYou && <div className="ask">

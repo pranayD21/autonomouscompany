@@ -5,9 +5,11 @@ import {cases,caseAuthorities} from './schema';
 import {caseInput} from './claim-input';
 import {authorizeCase} from './autonomy-service';
 import {DEFAULT_INTAKE_CONSENT} from './intake-policy';
+import {shortCaseTitle} from './case-title';
 
 export async function submitCase(db:NodePgDatabase,owner:string,raw:unknown,start:boolean,id=randomUUID()){
- const input=caseInput.parse(raw);
+ const parsed=caseInput.parse(raw);
+ const input={...parsed,title:await shortCaseTitle(parsed.title,parsed.intake?.injury_description||parsed.notes)};
  return db.transaction(async tx=>{
   // Serialize a retried client request before checking the case/authority pair.
   await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${id},0))`);
