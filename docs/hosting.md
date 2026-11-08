@@ -19,3 +19,11 @@ The existing Vercel GitHub import returned bad-credential/repository-not-found e
 Run `E2E_BASE_URL=https://assurance-claims.vercel.app npm run test:e2e` to exercise the deployed frontend with fresh synthetic users. Without that variable, the same suite uses localhost. It covers signup, password sign-in after sign-out, session restoration, persistence, live updates, owner isolation, spending denial, and the known unavailable Gateway response.
 
 The three public URLs are persisted as Production configuration on Vercel for future builds. The app remains a synthetic prototype, and new signups cannot spend agent credits or authorize outreach until the operator configures their user ID. No paid plan was purchased. GitHub auto-deployment remains unconnected; deployment currently uses the Vercel CLI.
+
+## First operator access
+
+The setup account at the providers is separate from an Assurance login. The operator created an Assurance account through the hosted app after the initial lookup found none. Do not reuse provider passwords or fabricate an Auth user/session to bypass signup.
+
+After signup, confirm the intended account with the operator and inspect its actual `neon_auth.user` record. An email match alone is insufficient when `emailVerified` is false. For this setup, the operator confirmed creating the account and the signed-in Dia session returned the same exact user ID from the protected `/session` endpoint. Email verification itself remains false and was not modified. Establish ownership before adding the exact ID to `CREW_ALLOWED_USER_IDS`. Preserve any existing IDs, keep the approved agent budgets unchanged, and deploy the cases Function. Verify `/stack/status` from that user's authenticated session and confirm another user remains denied. Persist the allowlist in the private deployment environment so a later `neon deploy` does not remove access.
+
+Operator access also permits document reading and outreach authorization in the app. Recipient allowlists and explicit approval for a particular external message or call still apply. Enabling crew access does not authorize a test call or email.

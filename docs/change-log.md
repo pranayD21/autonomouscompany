@@ -1,5 +1,13 @@
 # Change log
 
+## Operator access and provider readiness recheck
+
+The initial Auth lookup found no account matching the operator's supplied email. The operator then created an account and confirmed it in chat. Its signed-in Dia session returned the same user ID as the database record. Added only that ID to the private `CREW_ALLOWED_USER_IDS`, preserving other environment values, and deployed cases Function revision 30. The live `/stack/status` response returned HTTP 200 with `naive.configured: true` and `naive.enabledForUser: true`. It initially served the preceding access state after the CLI reported completion, so verification continued until the live response reflected the change. Budgets and recipient restrictions are unchanged. Email verification remains false; ownership was established through the operator's confirmation and authenticated browser session, not by changing Auth records. Added the first-operator procedure to hosting.md and updated the implementation handoff.
+
+Verification: `npm run build` exited 0 with 265 modules and the existing chunk-size warning. `npm run stack:check` reached Postgres, Auth signing keys, all five Naïve agents, ElevenLabs, AgentPhone, and AgentMail. It exited 1 because Neon AI Gateway still has no enabled models. AgentPhone's SIP-trunk endpoint returned HTTP 200 with an empty list; this establishes that no trunk is configured, not whether its support team approved the request. No inference, external call, or email was initiated. A new-account case review and ElevenLabs routing remain unverified.
+
+After the new access state was live, `E2E_BASE_URL=https://assurance-claims.vercel.app npm run test:e2e` exited 0. Signup, protected Function access, live database updates, reload persistence, unlisted-user spending denial, cross-user isolation, deletion, sign-out, and password sign-in passed. Gateway inference remains explicitly blocked. The assistant's verification tab was closed without signing the operator out.
+
 ## 2026-11-07 — Shared context and documentation policy
 
 Added `agents.md` with the product direction, hackathon constraints, integration decisions, privacy/evidence boundaries, and a mandatory rule to document every repository change in a Markdown-only `docs/` directory.
