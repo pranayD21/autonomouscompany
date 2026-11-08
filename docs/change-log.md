@@ -6,7 +6,7 @@ The hackathon ended, and the owner asked for assurance.claims to stop being publ
 
 The Neon Functions (`cases`, `tools`, `autopoll`, `crewpoll`, `replypoll`, `phone`, `firm`) and their schedules are deployed separately through Neon. This machine has no Neon or Vercel credentials for the project, so they were not changed in this commit.
 
-Verification: after the push, https://assurance.claims was fetched to confirm it serves the offline page (recorded below if confirmed).
+Verification: after push b611a1b, Vercel auto-deployed it. https://assurance.claims and https://assurance-claims.vercel.app both returned the offline page, including on app hash routes. The Neon `cases` Function still answered `/cases`, so the backend remains deployed until someone with Neon access stops it.
 
 ## November 8, 2026 — Restore the reviewed repository version
 
