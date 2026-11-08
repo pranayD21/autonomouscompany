@@ -5,8 +5,8 @@ Updated November 7, 2026. See [stack operations](stack.md) for account configura
 ## Verified
 
 - Neon CLI authentication and the requested production project setup completed. Postgres, Auth, Functions, Realtime, and AI Gateway credentials are provisioned.
-- All eleven Drizzle migrations applied. The case Function is deployed with server-only Naïve configuration.
-- `npm run build` passes, including TypeScript checks for backend, frontend, scripts, and provider configuration. Latest build: 265 modules, 546.51 kB JavaScript. The chunk-size warning remains.
+- All thirteen Drizzle migrations (0000–0012) applied. The case Function is deployed with server-only Naïve configuration.
+- `npm run build` passes, including TypeScript checks for backend, frontend, scripts, and provider configuration. Latest build: 266 modules, 550.58 kB JavaScript. The chunk-size warning remains.
 - `npm start` serves the preview; use http://localhost:4173.
 - `npm run test:e2e` passes signup/session validation, authenticated Function access, database create/persistence/delete, Realtime delivery, reload, and sign-out. It also verifies 401 for missing/invalid tokens, 400 for negative amounts, and 403 for unlisted users trying to spend crew credits.
 - Live authorized app crew test passed: signup, case creation, duplicate-start deduplication, Naïve completion, saved Postgres review, and UI reload. Four focused tests reject intermediate/error/approval-pending output. Saved review records remain readable without another provider call.
@@ -17,23 +17,25 @@ Updated November 7, 2026. See [stack operations](stack.md) for account configura
 
 ## Blocked or incomplete
 
+- User-selected AgentPhone replacement: deployed new-call code uses ElevenLabs native Twilio, with six transport tests and build passing. The dedicated outreach agent is provisioned. Twilio Trust Hub identity verification, funding, number import, and a newly authorized live case-linked test are pending. The entered individual/tax details were blocked by an unapproved compliance profile, not a missing address; Persona verification is open for the operator. AgentPhone SIP is not required for this replacement. See [voice setup](voice-twilio.md).
+
 - Neon AI Gateway has no enabled models because gateway credits are missing. E2E verifies the unavailable message, not successful inference.
 - AgentPhone initially rejected the test with HTTP 402. The operator added $25, then the authorized retry completed (46 seconds; no recording URL), and the user confirmed receipt. SIP access request remains pending; ElevenLabs routing is not verified.
 - ElevenLabs free-plan UI limits use to personal/non-commercial purposes. No paid commercial license selected.
-- Crew runs are restricted by `CREW_ALLOWED_USER_IDS`, now containing the operator's exact account ID. The operator confirmed signup, and the signed-in Dia session matched the database account. The live API confirms crew access is enabled. No case review has yet been run from this new account. See [first operator access](hosting.md#first-operator-access).
-- Case-linked outreach drafts, explicit authorization, dispatch records, and provider status reads are implemented. One explicitly authorized case-linked AgentMail email was sent and independently found in the operator’s Gmail inbox. Case-linked live calling remains unverified; approved-recipient lists are restored after testing. Scanned-PDF OCR, consent, evidence-backed outcomes, appeal submission, automatic outbound follow-up, payments, remain incomplete.
+- Crew runs are restricted by `CREW_ALLOWED_USER_IDS`, now containing the operator's exact account ID. The operator confirmed signup, and the signed-in Dia session matched the database account. The live API confirms crew access is enabled. The operator’s synthetic review completed and was saved by the scheduled worker. See [first operator access](hosting.md#first-operator-access).
+- Case-linked outreach drafts, explicit authorization, dispatch records, and provider status reads are implemented. One explicitly authorized case-linked AgentMail email was sent and independently found in the operator’s Gmail inbox. Case-linked live calling remains unverified; approved-recipient lists are restored after testing. Scanned-PDF OCR, consent, evidence-backed outcomes, appeal submission and payments remain incomplete. Bounded autonomous email is deployed; the first send and reply-driven decision are verified, while live threaded follow-up remains unverified.
 - Two-user isolation is verified for case listing, Realtime, crew routes, and deletion. Case analysis crash recovery and broader spend/rate controls need work.
 - Four moderate development dependency findings remain in Drizzle Kit/esbuild; no forced breaking upgrade performed. Migration driver printed a future SSL-mode semantics warning; API uses verify-full.
 
 ## Next work
 
-Add agent-driven outreach proposals and authorized follow-ups; verify a newly authorized case-linked call when a recipient agrees. Resolve AgentPhone SIP and gateway credits with the operator before paid operations. The frontend is hosted at https://assurance-claims.vercel.app with exact Auth/CORS/Realtime origins. GitHub auto-deployment still needs a working account connection.
+Verify the remaining authorized email decision and same-thread delivery if Naïve chooses contact. Complete Twilio legal/tax details, review its funding quote, provision a number, and verify a newly authorized case-linked call. AgentPhone SIP is no longer required. Resolve gateway credits before claiming successful gateway inference. The frontend is hosted at https://assurance.claims with exact Auth/CORS/Realtime origins; the old Vercel hostname redirects there. GitHub auto-deployment still needs a working account connection.
 
 The team still needs a real interview participant. No customer savings or testimonial has been established. See [demo and research](demo-and-research.md).
 
 ## Selected product direction
 
-The user selected an insurer-facing workplace chemical-burn workflow, from initial injury/insurance-card intake to supported claim resolution and final bill reconciliation. Product context and Naïve prompts now reflect that direction (intake version 6; other specialists version 5). The app now supports progressive injury/insurance intake, nullable financial amounts, and revision-aware case editing/reviews. Insurance-card/document upload and transcription are implemented. Initial official-source research is implemented; claim forms, broader jurisdiction/policy research, and autonomous follow-up remain incomplete. Prior infrastructure tests do not establish completion of this new end-to-end workflow. See insurance-workflows.md.
+The user selected an insurer-facing workplace chemical-burn workflow, from initial injury/insurance-card intake to supported claim resolution and final bill reconciliation. Product context and Naïve prompts now reflect that direction (coordinator version 17, intake version 7, other specialists version 6). The app now supports progressive injury/insurance intake, nullable financial amounts, and revision-aware case editing/reviews. Insurance-card/document upload and transcription are implemented. Initial official-source research is implemented; claim forms and broader jurisdiction/policy research remain incomplete. Bounded autonomous follow-up is implemented with live verification in progress. Prior infrastructure tests do not establish completion of this new end-to-end workflow. See insurance-workflows.md.
 
 ## Document intake update
 
@@ -61,8 +63,12 @@ Owner controls, a separate scheduler Function, retry delays, and durable process
 
 ## Hosted app
 
-https://assurance-claims.vercel.app is deployed on the existing Vercel Hobby account. Hosted signup, password sign-in, session reload, persistence, live updates, cross-user isolation, and sign-out passed. New users can create synthetic cases but cannot spend agent credits until explicitly configured. Only public service URLs are on Vercel; backend credentials remain on Neon. See [hosting](hosting.md).
+https://assurance.claims is deployed on the existing Vercel Hobby account; the previous Vercel hostname redirects to it. Hosted signup, password sign-in, session reload, persistence, live updates, cross-user isolation, and sign-out passed. New users can create synthetic cases but cannot spend agent credits until explicitly configured. Only public service URLs are on Vercel; backend credentials remain on Neon. See [hosting](hosting.md).
 
 ## Scheduled review saving
 
 The deployed `crewpoll` Function checks existing Naïve sessions every five minutes and saves valid completed reviews independently of browser refresh. A real scheduler delivery on an isolated branch retrieved an existing completed synthetic session and saved its validated result. Six isolated concurrency/recovery tests, fourteen validation regressions, the build, and hosted E2E passed. Production's trigger is enabled, forged scheduler requests return 401, and the operator still has crew access. The test branch was deleted. No additional inference, call, or email was initiated. The UI still requires refresh or reload to show a newly saved review. See [review monitoring](crew-monitoring.md).
+
+## Autonomous workflow deployment
+
+The standing-authority schema, case API, and scheduled worker are deployed. Eleven database runner tests, five policy tests, and the frontend build pass. Naïve prompts and current specialist references are published with unchanged caps. The deployed frontend created the approved own-inbox standing authorization. Naïve chose a customer information request, the scheduled worker sent it once, and Gmail confirmed delivery. The fictional reply was imported automatically by the scheduled worker at 02:00 UTC and accepted as case evidence. The reply triggered round two. It proposed redundant contact before the one-hour limit; the deployed server deferred it without sending. The grant waits until 02:55:02.772 UTC for a fresh decision, with two rounds and one email consumed. The native ElevenLabs/Twilio adapter is deployed but disabled pending account/number provisioning. See [autonomy.md](autonomy.md).

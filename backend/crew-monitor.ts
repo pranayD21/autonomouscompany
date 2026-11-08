@@ -26,13 +26,13 @@ export async function pollCrewReviews(db:NodePgDatabase,invocationId:string,read
    const stopped=result.approval_required||["completed","failed","cancelled"].includes(session.status)||session.status==="idle"&&session.stop_reason!=="awaiting_delegation";
    // A concurrently submitted correction owns the next check. Do not stop its polling.
    await db.update(crewRuns).set({poll_checked_at:new Date(),poll_status:result.saved_at?"saved":stopped?"needs_attention":"pending",
-    poll_after:result.saved_at||stopped?null:sql`now()+interval '5 minutes'`,poll_lease_id:null,poll_lease_until:null})
+    poll_after:result.saved_at||stopped?null:sql`date_trunc('minute',now())+interval '5 minutes'`,poll_lease_id:null,poll_lease_until:null})
     .where(and(lease,unchangedRepair));
    // If repair changed during this read, release only this lease, preserving its schedule.
    await db.update(crewRuns).set({poll_lease_id:null,poll_lease_until:null}).where(lease);
    stats.checked++;if(result.saved_at)stats.saved++;else if(stopped)stats.needs_attention++;
   }catch{
-   await db.update(crewRuns).set({poll_checked_at:new Date(),poll_status:"check_failed",poll_after:sql`now()+interval '15 minutes'`,poll_lease_id:null,poll_lease_until:null})
+   await db.update(crewRuns).set({poll_checked_at:new Date(),poll_status:"check_failed",poll_after:sql`date_trunc('minute',now())+interval '15 minutes'`,poll_lease_id:null,poll_lease_until:null})
     .where(and(lease,unchangedRepair,sql`${crewRuns.completed_at} IS NULL`));
    await db.update(crewRuns).set({poll_lease_id:null,poll_lease_until:null}).where(lease);
    stats.failed++;

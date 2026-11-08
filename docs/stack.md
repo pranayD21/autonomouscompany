@@ -16,6 +16,8 @@ Run `node --env-file=.env.local node_modules/.bin/naive up --dry-run` before app
 
 ## Voice and email
 
+Current direction: the user requested a workaround without AgentPhone. Local new-call code now targets ElevenLabs native Twilio telephony; Twilio signup, number setup, deployment, and live verification remain pending. Existing AgentPhone setup records below are historical. See [replacement setup](voice-twilio.md).
+
 AgentPhone means **agentphone.ai**, not agentphone.app. Its native hosted voice and ElevenLabs over SIP are alternative call paths. SIP needs AgentPhone account enablement and a supported trunk configuration. Never attach one number to both call paths. Account setup and one authorized hosted-voice call are complete; see the verification records below.
 
 ElevenLabs and AgentMail accounts and credentials are configured. One authorized synthetic email and its inbound reply are verified. Use synthetic test cases until consent and production data handling are implemented.
@@ -92,3 +94,7 @@ Following a rejected live quotation result, the coordinator was changed to `open
 ### Scheduled reply checks
 
 The dedicated `replypoll` Function uses the existing scoped AgentMail key and inbox. It receives no Naïve or telephony credentials. Owners opt into 30-day monitoring of an authorized thread; reads do not grant permission for follow-up sends or inference. See [scheduled reply monitoring](reply-monitoring.md) for deployment and verification. The latest read-only provider check reached Postgres, Auth, Naïve, ElevenLabs, AgentPhone, and AgentMail; Gateway still had no enabled models, and AgentPhone returned zero configured SIP trunks.
+
+## Autonomous case execution
+
+The production backend now includes a scheduled Naïve decision worker and owner-scoped standing authorization endpoints. Coordinator version 17 uses intake version 7 and the other specialists at version 6, with all approved budget caps unchanged. Only the operator setup inbox is allowlisted for email. The approved own-inbox grant is active, and the first model-selected email was delivered. Reply-driven continuation remains under verification; see [autonomy.md](autonomy.md).

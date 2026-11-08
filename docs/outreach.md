@@ -1,6 +1,6 @@
 # Case outreach
 
-The case workspace supports reviewed synthetic calls through AgentPhone and emails through AgentMail. A saved Naïve review for the current case revision is required before drafting outreach. Drafting does not contact anyone.
+The case workspace supports reviewed synthetic calls through ElevenLabs with native Twilio telephony (replacement code prepared; account setup and live verification pending) and emails through AgentMail. A saved Naïve review for the current case revision is required before drafting outreach. Drafting does not contact anyone.
 
 ## Workflow
 
@@ -10,11 +10,11 @@ The case workspace supports reviewed synthetic calls through AgentPhone and emai
 4. The server records the approver and timestamp before making one provider request. The action then shows the provider receipt or an uncertain/rejected outcome.
 5. Check provider status to refresh call completion/duration or email labels. Accepted email is not proof of delivery; completed call is not proof of savings.
 
-AgentPhone audio recording is disabled, but its API still captures a transcript. The confirmation tells the operator this. The app stores provider status and duration, not transcripts or email bodies returned by status checks. The operator-supplied draft remains in Postgres. This is a synthetic test workflow, not authorization to process real patient information.
+New calls disable Twilio audio recording and require an ElevenLabs agent with voice recording disabled; ElevenLabs still processes and retains a transcript. The confirmation tells the operator this. The app stores provider status and duration, not transcripts or email bodies returned by status checks. The operator-supplied draft remains in Postgres. This is a synthetic test workflow, not authorization to process real patient information.
 
 ## Configuration
 
-`neon.ts` provides server-only AgentPhone and AgentMail credentials to the case Function. No secret enters the browser. `CREW_ALLOWED_USER_IDS` controls which signed-in operators can spend credits or authorize outreach. `OUTREACH_ALLOWED_PHONES` contains comma-separated E.164 numbers; `OUTREACH_ALLOWED_EMAILS` contains comma-separated single email addresses. Empty lists disable dispatch. Adding a destination is not consent to call or email it: each saved action still requires explicit authorization.
+`neon.ts` provides server-only ElevenLabs and AgentMail credentials, with the AgentPhone key retained only for historical receipt reads to the case Function. No secret enters the browser. `CREW_ALLOWED_USER_IDS` controls which signed-in operators can spend credits or authorize outreach. `OUTREACH_ALLOWED_PHONES` contains comma-separated E.164 numbers; `OUTREACH_ALLOWED_EMAILS` contains comma-separated single email addresses. Empty lists disable dispatch. Adding a destination is not consent to call or email it: each saved action still requires explicit authorization.
 
 The previous one-off phone test does not authorize another call. Leave the lists empty until a new test has an agreed recipient and reviewed content. Never use a successful build or mocked provider response as proof of real delivery.
 
@@ -24,7 +24,7 @@ The previous one-off phone test does not authorize another call. Leave the lists
 
 Successful acceptance becomes `submitted`. An explicit validation/auth/funding/rate-limit rejection becomes `rejected`. A timeout, malformed successful response, server error, or uncertain outcome becomes `unknown`. A crashed request may remain `dispatching`. Neither state can automatically retry. Reconcile with the provider before preparing another action. No exactly-once delivery guarantee is claimed across the network boundary.
 
-AgentMail receives the action UUID as its `Idempotency-Key`. Its send keys expire after 24 hours; the local state prevents later automatic resends. AgentPhone documents no outbound-call idempotency key, so a timed-out call must never be redialed automatically.
+AgentMail receives the action UUID as its `Idempotency-Key`. Its send keys expire after 24 hours; the local state prevents later automatic resends. The ElevenLabs/Twilio adapter performs no automatic call retries; a timed-out or incomplete response must never cause an automatic redial.
 
 Cases with outreach history cannot be deleted through the app. The database foreign key also restricts deletion. A retention/redaction workflow remains to be implemented.
 
@@ -54,3 +54,14 @@ The hosted AgentPhone and ElevenLabs demo agents now start with the fictional ph
 Both provider readbacks passed after this update. These checks establish saved configuration, not tested spoken behavior. No new call was placed. The AgentPhone SIP dashboard still offers request-only access, and the approval-email search returned no result. The existing AgentPhone number remains on its working hosted-voice route. Connecting ElevenLabs requires provider SIP enablement and a compatible trunk, followed by a separately authorized call test. See [ElevenLabs SIP setup](https://elevenlabs.io/docs/eleven-agents/phone-numbers/sip-trunking).
 
 Eight isolated database/provider-transport tests pass. The deployed workflow also passed the draft UI, replay deduplication, changed-content rejection, owner persistence, operator denial, and cross-user checks for list/create/authorize/refresh. `scripts/outreach-app-smoke.ts` reuses the private synthetic operator/session created by the crew test and never authorizes a send. The provider read adapter retrieved the previously authorized 46-second call successfully. The operator subsequently authorized one concrete synthetic email. It was dispatched through the case API, saved with its AgentMail receipt, and independently found in the intended Gmail inbox. Case-linked calling remains unverified. The authorized test email later received a real reply, which the app imported once and retained across reloads; cross-user reply read/sync checks passed.
+
+## Telephony replacement
+
+New case calls use the [ElevenLabs/Twilio path](voice-twilio.md). AgentPhone SIP approval is no longer a prerequisite for that path. Calling is disabled until the dedicated outreach agent and imported Twilio number are configured. Historical unprefixed receipts still read AgentPhone; new receipts use `elevenlabs:<conversation_id>` and retain the Twilio Call SID in `provider_thread_id`. No schema migration is needed. These local changes have passed transport tests and build, but have not been deployed or tested with a live Twilio number.
+
+
+## Threaded autonomous follow-ups
+
+Migration 0012 adds nullable `reply_to_message_id` and `reply_thread_id` to outreach records. The autonomous runner selects the latest submitted email for the same case and authorized destination before reserving the follow-up. It records that message/thread and keeps its subject. The model cannot choose arbitrary reply IDs or recipients. Manual new drafts continue using the existing send endpoint.
+
+The provider uses AgentMail's [Reply To Message endpoint](https://docs.agentmail.to/api-reference/inboxes/messages/reply) for records with a reply context. It explicitly sets the authorized `to` address, disables reply-all and tracking, and clears CC/BCC. Missing half of the reply context is rejected before HTTP dispatch. A response on a different thread is an uncertain outcome, never an automatic retry. All 27 combined autonomy, outreach, and ElevenLabs transport tests passed on the isolated branch, and the build passes. Migration 0012 is applied to production. Live same-thread delivery is not yet verified.

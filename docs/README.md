@@ -26,3 +26,9 @@ Every repository change must update the relevant documentation in the same chang
 - [Scheduled review saving](crew-monitoring.md): Naïve session checks, immutable validation, leases, and recovery.
 
 - [Hosted frontend](hosting.md): Vercel build, public configuration, exact origins, and verification.
+
+- [SIP account access](sip-access.md): live provider rejection, required enablement, and post-approval routing steps.
+
+- [ElevenLabs/Twilio voice](voice-twilio.md): AgentPhone replacement, account setup, call controls, and verification limits.
+
+- [Naïve case autonomy](autonomy.md): standing authorization, durable decisions, stop controls, and synthetic test limits.

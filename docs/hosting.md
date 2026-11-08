@@ -16,7 +16,7 @@ Vercel deployment `dpl_9usoC122DDM48psWMX5LtKSmi6Bk` built successfully and is a
 
 The existing Vercel GitHub import returned bad-credential/repository-not-found errors. Direct CLI deployment uses a one-hour team-scoped token created after operator email verification; the token was kept privately and revoked after verification. The local Vercel link adds an ignored OIDC token while preserving the existing Neon/provider env values. This deployment is not yet connected to automatic GitHub builds.
 
-Run `E2E_BASE_URL=https://assurance-claims.vercel.app npm run test:e2e` to exercise the deployed frontend with fresh synthetic users. Without that variable, the same suite uses localhost. It covers signup, password sign-in after sign-out, session restoration, persistence, live updates, owner isolation, spending denial, and the known unavailable Gateway response.
+Run `E2E_BASE_URL=https://assurance.claims npm run test:e2e` to exercise the deployed frontend with fresh synthetic users. Without that variable, the same suite uses localhost. It covers signup, password sign-in after sign-out, session restoration, persistence, live updates, owner isolation, spending denial, and the known unavailable Gateway response.
 
 The three public URLs are persisted as Production configuration on Vercel for future builds. The app remains a synthetic prototype, and new signups cannot spend agent credits or authorize outreach until the operator configures their user ID. No paid plan was purchased. GitHub auto-deployment remains unconnected; deployment currently uses the Vercel CLI.
 
@@ -27,3 +27,24 @@ The setup account at the providers is separate from an Assurance login. The oper
 After signup, confirm the intended account with the operator and inspect its actual `neon_auth.user` record. An email match alone is insufficient when `emailVerified` is false. For this setup, the operator confirmed creating the account and the signed-in Dia session returned the same exact user ID from the protected `/session` endpoint. Email verification itself remains false and was not modified. Establish ownership before adding the exact ID to `CREW_ALLOWED_USER_IDS`. Preserve any existing IDs, keep the approved agent budgets unchanged, and deploy the cases Function. Verify `/stack/status` from that user's authenticated session and confirm another user remains denied. Persist the allowlist in the private deployment environment so a later `neon deploy` does not remove access.
 
 Operator access also permits document reading and outreach authorization in the app. Recipient allowlists and explicit approval for a particular external message or call still apply. Enabling crew access does not authorize a test call or email.
+
+The autonomy frontend was deployed after a new one-hour, project-scoped token was created with user verification. That token has since been revoked. Use the verified custom-domain deployment described below for current status.
+
+
+## Autonomy frontend and requested domain
+
+Deployment `dpl_RCHemF8YzFYwPy2SgmxLP3CqySZ1` is ready at the existing production URL. Hosted E2E passed, including owner access to autonomy history, denial of autonomous authorization for unlisted signups, and cross-user denial of history/authorization/revocation. The operator's signed-in workspace displays the new authorization form and stop control. A one-hour, project-scoped Vercel token was created after user verification and was revoked after deployment and domain configuration; its private local file was removed.
+
+The user requested `assurance.claims` from Porkbun and approved the one-year option. The cart shows $10.81 for registration and an estimated $58.19 yearly renewal, with no paid add-ons. Porkbun confirmed registration after the operator completed checkout in Dia. The domain expires 2027-11-08. Domain auto-renew was disabled to keep this to the requested one-year purchase. Keep the existing Vercel URL working until ownership, DNS, HTTPS, exact Auth trusted origin, API CORS, and Realtime origins are verified for the new domain.
+
+
+Porkbun DNS now has an apex A record `216.198.79.1` and a `www` CNAME `4240de8c1c5841a9.vercel-dns-017.com`, both TTL 600. These replace the new domain's default parking records. Vercel connects the apex to Production and redirects `www` to the apex with HTTP 308. The CLI domain-add command failed with `User not found`; the signed-in Vercel UI completed the assignment instead. Neon Auth trusts `https://assurance.claims`, and `neon.ts` includes that exact origin for API CORS and Realtime while preserving existing origins. The updated backend policy was deployed. Public DNS still returned NXDOMAIN at the last check; HTTPS and full E2E on the new domain remain unverified.
+
+Authoritative DNS diagnosis: `curitiba.ns.porkbun.com` returns the configured apex A and www CNAME records. The `.claims` registry server `v0n1.nic.claims` still returned NXDOMAIN for the new delegation. This locates the current delay at registry publication rather than the saved Porkbun record values. Do not claim the public hostname is live until recursive DNS and HTTPS succeed.
+
+
+## Verified custom domain
+
+The registry delegation is now published. Google and Cloudflare recursive DNS return `216.198.79.1`; Vercel reports Valid Configuration and issued HTTPS certificates. The apex returns HTTP 200 with certificate verification enabled. Full hosted E2E passed on `https://assurance.claims`, including signup, password sign-in, session restoration, case persistence, Realtime, autonomy access restrictions, cross-user isolation, deletion, and sign-out. The test used Chromium's host resolver mapping to the publicly resolved IP because the local OS retained a negative DNS cache; it did not disable TLS verification or change the application origin. The separate Gateway inference check still reports no enabled model.
+
+`www.assurance.claims` returns HTTP 308 to the apex. The old Vercel hostname also returns HTTP 308 to the apex, verified at its public edge. The temporary deployment token was revoked. The new canonical app address is `https://assurance.claims`.

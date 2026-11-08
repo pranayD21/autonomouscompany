@@ -1,6 +1,7 @@
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import type { ClaimIntake } from "./claim-input";
 import type { CrewSnapshot } from "./providers/crew-result";
+import type {CaseAuthority,CaseDecision} from "./autonomy-policy";
 
 export const cases = pgTable("advocacy_cases", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -18,6 +19,38 @@ export const cases = pgTable("advocacy_cases", {
 }, (table) => [index("advocacy_cases_owner_idx").on(table.owner_id)]);
 
 export type BillCase = typeof cases.$inferSelect;
+
+export const caseAuthorities=pgTable("advocacy_case_authorities",{
+ id:uuid("id").primaryKey().defaultRandom(),
+ case_id:uuid("case_id").notNull().references(()=>cases.id,{onDelete:"restrict"}),
+ policy:jsonb("policy").$type<CaseAuthority>().notNull(),
+ approved_by:text("approved_by").notNull(),
+ approved_at:timestamp("approved_at",{withTimezone:true}).defaultNow().notNull(),
+ state:text("state").$type<"active"|"waiting"|"human_required"|"stopped"|"revoked">().notNull().default("active"),
+ decisions_used:integer("decisions_used").notNull().default(0),
+ outbound_used:integer("outbound_used").notNull().default(0),
+ observed_revision:integer("observed_revision").notNull().default(0),
+ next_wake_at:timestamp("next_wake_at",{withTimezone:true}).defaultNow(),
+ last_contact_at:timestamp("last_contact_at",{withTimezone:true}),
+ lease_id:uuid("lease_id"),
+ lease_until:timestamp("lease_until",{withTimezone:true}),
+ reason:text("reason"),
+},t=>[index("advocacy_authority_due_idx").on(t.next_wake_at),index("advocacy_authority_case_idx").on(t.case_id)]);
+
+export const caseDecisions=pgTable("advocacy_case_decisions",{
+ id:uuid("id").primaryKey().defaultRandom(),
+ authority_id:uuid("authority_id").notNull().references(()=>caseAuthorities.id,{onDelete:"restrict"}),
+ round:integer("round").notNull(),
+ case_revision:integer("case_revision").notNull(),
+ input:jsonb("input").$type<Record<string,unknown>>().notNull(),
+ session_id:text("session_id"),
+ decision:jsonb("decision").$type<CaseDecision>(),
+ state:text("state").$type<"starting"|"running"|"executing"|"finished"|"unknown">().notNull().default("starting"),
+ action_id:uuid("action_id"),
+ result:jsonb("result").$type<Record<string,unknown>>(),
+ created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
+ finished_at:timestamp("finished_at",{withTimezone:true}),
+},t=>[uniqueIndex("advocacy_decision_round_idx").on(t.authority_id,t.round)]);
 
 // One immutable review request per case revision. Retrying uses the same provider idempotency key.
 export const crewRuns = pgTable("advocacy_crew_runs", {
@@ -54,6 +87,8 @@ export const outreachActions = pgTable("advocacy_outreach_actions", {
   provider_id: text("provider_id"),
   provider_thread_id: text("provider_thread_id"),
   provider_status: text("provider_status"),
+  reply_to_message_id: text("reply_to_message_id"),
+  reply_thread_id: text("reply_thread_id"),
   duration_seconds: integer("duration_seconds"),
   error_code: text("error_code"),
   checked_at: timestamp("checked_at", { withTimezone: true }),

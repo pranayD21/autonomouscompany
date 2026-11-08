@@ -155,3 +155,89 @@ The dashboard import failed because Vercel could not access the GitHub repositor
 Vercel deployment completed successfully and assigned `assurance-claims.vercel.app`. The exact domain was added to Neon Auth; the API/Realtime configuration preserves both existing localhost origins and adds that production origin. The E2E suite now accepts a hosted base URL and explicitly verifies password sign-in after sign-out. Backend deployment and hosted tests are running.
 
 Hosted E2E passed against https://assurance-claims.vercel.app: signup, session reload, Postgres writes, Realtime updates, ownership isolation, denial of unapproved model spending, deletion, password sign-in, and sign-out. Gateway inference still correctly reports unavailable. The three public URLs are saved in Vercel Production configuration. The one-hour deployment token was revoked after verification. No provider secret or private test artifact was uploaded.
+
+## SIP access diagnosis — November 7, 2026
+
+Rechecked the configured AgentPhone account at the user’s request. Listing trunks returned HTTP 200 with none configured; creating the Assurance ElevenLabs trunk returned HTTP 403 explicitly requiring account SIP enablement (request ID recorded in sip-access.md). No trunk, route change, or call resulted. Added the provider unblock and post-approval integration steps to docs/sip-access.md and the documentation index. The dashboard browser was signed out; existing request status was not reverified there. SIP remains blocked by provider approval.
+
+## AgentPhone replacement — November 7, 2026
+
+At the user’s request, prepared ElevenLabs native Twilio calling. New dispatch checks the dedicated agent’s prompt/auth/privacy/duration settings, passes the reviewed plan, disables Twilio recording, and requires conversation/Call SID receipts. Historical AgentPhone reads remain available. Added an idempotent setup script, server-only configuration, provider-accurate UI confirmation, readiness check, updated provider fixture, and voice-twilio.md. Six transport tests and build passed; existing bundle warning remains. Twilio signup/number setup, deployment, live calls, and the isolated database suite remain unverified. No external call, purchase, or account signup performed.
+
+
+## 2026-11-07: Durable autonomy implementation and mode separation
+
+Added standing case authorizations, immutable Naïve decision rounds, a scheduled execution worker, owner-scoped API routes, and frontend authorization/history/stop controls. The first authorized live scope remains two synthetic emails to the operator inbox, three decision rounds, one hour between contacts, and a 24-hour expiry. No grant was activated and no autonomous email was sent. Existing five-agent spending caps remain unchanged.
+
+Updated the local Naïve prompt to distinguish review-only work from actions under standing authority. Corrected `agents.md` to record the user's explicit authorization to replace AgentPhone with ElevenLabs/Twilio. Preserved the parallel voice adapter work. All nine database runner tests and five policy tests passed (14 total, zero failures), including durable waiting and evidence-triggered wakeup with contact spacing enforced. The build passes with the existing bundle-size warning. The Naïve dry run succeeded and proposed updates to the same five agents; the prompt changes have not been published. See `autonomy.md` for current deployment limits.
+
+
+## 2026-11-07: Publish autonomy backend and crew instructions
+
+Applied the tested 0011 migration to production and deployed the case API and new `autopoll` Function. The `case-autonomy` trigger is enabled on a five-minute schedule. An unsigned worker request returned 401. No standing grants were created, so deployment does not initiate outreach. Configured the email allowlist with only the operator's approved setup inbox.
+
+Published the five revised Naïve prompts, then corrected the coordinator's specialist references. Provider inspection confirmed coordinator version 17, intake version 7, and the other three specialists at version 6. Every agent retains its $2 monthly and $0.25 task caps. Updated only the corresponding private version variables and email allowlist in `.env.local`, preserving other values and file permissions. The frontend stop control and authorized live email test remain pending. The deployed native ElevenLabs/Twilio transport remains disabled until its agent and number are provisioned.
+
+
+## 2026-11-07: Deploy frontend controls and begin the authorized test
+
+Deployed the autonomy frontend to Vercel production after the user completed email verification. Inspected the upload manifest to exclude secrets and private artifacts. Extended `scripts/e2e.ts` to verify autonomy-history ownership and deny unauthorized grants and cross-user revocation; hosted E2E passed. Gateway inference remains unavailable because there is no enabled model.
+
+Verified the operator's signed-in form and activated the previously approved own-inbox synthetic authorization, bounded to two emails, three decisions, one hour between contacts, and 24 hours. The stop control is visible; provider execution remains to be verified. Prepared the requested `assurance.claims` one-year Porkbun cart at $10.81 with no paid add-ons. Registration and DNS are pending Porkbun sign-in and human verification.
+
+
+## 2026-11-07: Register and connect assurance.claims
+
+Porkbun confirmed the user's one-year domain purchase at the displayed $10.81 price. Auto-renew is disabled; expiry is 2027-11-08. No hosting or email add-on was selected. Replaced the new domain's parking records with Vercel's displayed apex A and www CNAME records. Connected the apex to Production and configured a permanent www-to-apex redirect. Added the exact apex HTTPS origin to Neon Auth, Function CORS, and Realtime; preserved existing origins and deployed the configuration. The build passes. Public DNS propagation and HTTPS/E2E verification are still pending. See `hosting.md` for exact records and limitations.
+
+
+## 2026-11-07: Verify live Naïve action selection and domain DNS
+
+Observed the scheduled worker start the first authorized decision session without errors. Naïve completed with a customer-contact decision requesting three missing fictional facts, at reported consumption of 9,957 micro-USD. Kept the same session after a transient HTTP 429. Dispatch remains pending the next worker check. Verified both configured records directly at Porkbun's authoritative server; the registry delegation still returns NXDOMAIN. No DNS records were changed during this diagnosis.
+
+
+## 2026-11-07: Verify customer-requested stop
+
+Added an isolated database test that sends one mocked email, imports an accepted customer stop reply, and verifies the scheduler stops without another model round or contact. All ten runner tests passed. Updated test cleanup to remove the fixture correspondence and reconciled stale activation wording in `autonomy.md`. No production case or communication was changed by this test.
+
+
+## 2026-11-07: Verify custom-domain app and autonomous delivery
+
+The registry delegation appeared, Google and Cloudflare DNS resolved the apex, and Vercel issued TLS. HTTPS returned 200. Full browser E2E passed on the custom hostname using the public IP to bypass stale local negative DNS caching, with TLS verification intact. Verified www-to-apex HTTP 308 and configured the old Vercel hostname redirect.
+
+The autonomous worker sent Naïve's selected customer email once at 01:55 UTC. Confirmed the provider receipt and independently found “Synthetic Assurance Demo: Missing Claim Intake Details” in the operator's Gmail inbox. The authority now waits with one of two outbound messages used. Requested a fictional reply to verify the next decision. No insurer was contacted and no payout or savings were claimed.
+
+
+## 2026-11-07: Normalize customer addresses for stop requests
+
+The live reply path stores RFC-style display-name senders. Corrected `backend/autonomy-runner.ts` to compare parsed mailbox addresses when detecting a customer stop request. Updated the regression fixture to include a display name. Confirmed the live fictional reply is available from AgentMail and passes existing sender-domain and reply-reference checks; no manual reply import or second message was performed.
+
+The display-name stop fix passed all ten runner tests and the build, then deployed successfully. Reconciled current status in `agents.md`, `implementation-status.md`, `stack.md`, and `hosting.md` so they reflect the custom-domain deployment and delivered autonomous test rather than the earlier pending setup.
+
+The production reply monitor automatically imported the fictional response at 2026-11-08 02:00:00.915 UTC, invocation `a5YGSHdoHB0Lj9eyPVfPBWzDQFHd5AqQH6md6yIllrQ`. Database inspection confirms accepted correspondence and one outbound message used. Naïve continuation awaits its next scheduled check; the existing minimum contact interval remains enforced.
+
+
+## 2026-11-07: Provision the dedicated ElevenLabs outreach agent
+
+Added `--agent-only` to the native Twilio setup script so the voice agent can be prepared before Twilio funding/number setup. The flag validates only the ElevenLabs credential, creates or reuses the dedicated agent, verifies saved settings, and exits before phone-number operations. Ran it successfully and saved the agent ID privately in the existing env file. No subscription, number purchase, number routing, or call occurred. The build passes. Twilio's number remains required before new calls can be enabled.
+
+
+## 2026-11-07: Preserve email threads for autonomous follow-ups
+
+Added immutable reply context to outreach records and migration 0012. The runner chooses an existing successful message only within the same case and approved recipient. The AgentMail adapter now supports its reply endpoint with explicit recipient controls and expected-thread validation. New tests exercise recipient preservation, malformed context, wrong-thread receipts, and a second authorized contact reusing the first thread. Verification is underway on the disposable database branch; production is unchanged by this work so far.
+
+The isolated migration and all 27 combined autonomy/outreach/ElevenLabs tests passed with zero failures. The build passes with the existing bundle-size warning. Applied migration 0012 to production after these checks; backend deployment succeeded. Live threaded delivery remains unverified, and no extra email was sent as part of testing.
+
+The 02:05 UTC scheduler check started decision round 2 automatically from the imported reply. The case still has one outbound message used. The second decision result remains pending.
+
+## Reply-driven contact timing correction
+
+The live fictional reply reached the case through the scheduled importer and triggered Naïve round two. Its proposed redundant, premature follow-up exposed a timing-context gap. Decision inputs now include current and earliest-contact timestamps, and instructions preserve an explicit pre-claim answer. The runner defers a premature contact for a fresh decision without sending, replaying the old message, or resetting limits. The spacing regression checks waiting state and next wake time. All 11 runner regression tests passed (zero failures), `npm run build` passed with the existing bundle-size warning, and `neon deploy --env .env.local --branch production --no-env-pull` successfully updated the five functions. The 02:10 UTC scheduled production check verified the fix: round two finished with `CONTACT_TOO_SOON`, the grant is waiting until 02:55:02.772 UTC, two decisions remain consumed, and outbound usage stays at one. No second email was sent.
+
+## Current readiness handoff reconciliation
+
+Rechecked providers after the live reply test. Postgres, Auth signing keys, five Naïve agents, ElevenLabs agent access, and AgentMail message access passed. The diagnostic exited 1 because the gateway has no enabled models and the ElevenLabs phone-number ID is absent. The live Twilio upgrade page remains on account/tax details; the operator has been asked to complete those fields directly. Corrected stale implementation-status and agent handoff text for migrations 0000–0012, deployed voice code, current agent versions, the custom domain, and reply-driven autonomy. No funding, call, email, or account-detail changes were made in this check.
+
+## Twilio upgrade blocker diagnosed
+
+The operator reported filled details failing to submit. Inspected one UI retry: Trust Hub returned an unapproved primary compliance profile error. Opened the Individual Profile identity-verification flow and handed the Persona biometric-consent step to the operator. No address or identity-document contents are retained in the repository, and no payment or call was made.

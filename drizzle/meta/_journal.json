@@ -78,6 +78,20 @@
       "when": 1794100437293,
       "tag": "0010_next_nehzno",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794101307318,
+      "tag": "0011_bored_sabretooth",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794103380236,
+      "tag": "0012_productive_sabretooth",
+      "breakpoints": true
     }
   ]
 }

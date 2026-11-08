@@ -34,7 +34,7 @@ The event requires the Naïve SDK. Judges emphasize what the company actually ac
 ## Decisions and boundaries
 
 - Naïve owns coordination, specialist delegation, budgets, and tool permissions. Public docs call the relevant primitive a coordinator/team; verify current SDK APIs before implementation.
-- The user selected Agent Phone for telephony or ElevenLabs for voice handling. AgentPhone is agentphone.ai. Its hosted demo is configured; SIP access for ElevenLabs was requested and remains pending. Do not silently replace them with Twilio/OpenAI voice.
+- The user selected Agent Phone for telephony or ElevenLabs for voice handling. AgentPhone is agentphone.ai. Its hosted demo is configured, but SIP creation returned an account-not-enabled error. The user explicitly requested a replacement without AgentPhone. The ElevenLabs native Twilio adapter is deployed and its dedicated outreach agent is provisioned; legal/tax setup, account funding, number provisioning, and a newly authorized call remain required. Preserve historical AgentPhone receipts.
 - AgentMail is the proposed written follow-up channel. Neon was explicitly selected and provisioned for backend services.
 - Separate potential discrepancies, verified reductions in patient responsibility, and refunds actually received. Never present estimates or simulations as money saved.
 - Obtain appropriate authorization before external case actions. Do not impersonate the patient or commit them to settlements or payments without authorization.
@@ -43,7 +43,7 @@ The event requires the Naïve SDK. Judges emphasize what the company actually ac
 
 ## Current handoff status
 
-The repository now contains the React/Neon case workspace, migrations, provider setup scripts, and Naïve crew configuration. Auth, database, Function, Realtime, and two-user isolation checks pass. Provider accounts and synthetic voice agents are provisioned. Gateway inference remains blocked by gateway credits; SIP approval is pending. A user-authorized AgentPhone hosted-voice test completed successfully. Complete case advocacy is not yet verified. See [implementation status](docs/implementation-status.md) and [stack operations](docs/stack.md) before making readiness claims.
+The repository now contains the React/Neon case workspace, migrations, provider setup scripts, and Naïve crew configuration. Auth, database, Function, Realtime, and two-user isolation checks pass. Provider accounts and synthetic voice agents are provisioned. Gateway inference remains unavailable with no enabled model. A user-authorized AgentPhone hosted-voice test completed successfully, but its SIP gate led the user to request an ElevenLabs/Twilio replacement; that adapter remains disabled pending provisioning. The app is hosted at https://assurance.claims. A bounded own-inbox autonomous test delivered its first Naïve-selected email; its fictional reply was imported automatically and triggered a second Naïve decision. A premature follow-up exposed a timing issue now covered by server deferral and clearer prompt inputs. Complete case advocacy is not yet verified. See [implementation status](docs/implementation-status.md) and [stack operations](docs/stack.md) before making readiness claims.
 
 ## Documentation map
 

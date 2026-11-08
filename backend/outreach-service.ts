@@ -1,14 +1,14 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, sql, type SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { outreachActions, type OutreachAction } from "./schema";
 import { DispatchFailure, sendOutreach, type DispatchResult } from "./providers/outreach";
 
 export async function dispatchOnce(db: NodePgDatabase, action: OutreachAction, userId: string,
-  sender: (a:OutreachAction)=>Promise<DispatchResult> = sendOutreach) {
+  sender: (a:OutreachAction)=>Promise<DispatchResult> = sendOutreach, authorityGuard?:SQL) {
   // Commit the dispatch intent before crossing the network boundary. A crash is ambiguous,
   // so dispatching/unknown rows are never automatically returned to draft.
   const [claimed]=await db.update(outreachActions).set({state:"dispatching",approved_by:userId,approved_at:new Date()})
-    .where(and(eq(outreachActions.id,action.id),eq(outreachActions.state,"draft"),sql`EXISTS (SELECT 1 FROM advocacy_cases WHERE id = ${action.case_id} AND revision = ${action.case_revision} AND owner_id = ${userId})`)).returning();
+    .where(and(eq(outreachActions.id,action.id),eq(outreachActions.state,"draft"),authorityGuard,sql`EXISTS (SELECT 1 FROM advocacy_cases WHERE id = ${action.case_id} AND revision = ${action.case_revision} AND owner_id = ${userId})`)).returning();
   if(!claimed) {
     const [current]=await db.select().from(outreachActions).where(eq(outreachActions.id,action.id));
     return current;

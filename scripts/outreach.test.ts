@@ -6,6 +6,7 @@ import {drizzle} from "drizzle-orm/node-postgres";
 import {eq} from "drizzle-orm";
 import {cases,outreachActions} from "../backend/schema";
 import {dispatchOnce} from "../backend/outreach-service";
+import {elevenLabsOutreachPrompt} from "../backend/providers/voice-config";
 import {actionInput,destinationAllowed,DispatchFailure,sendOutreach,readOutreach} from "../backend/providers/outreach";
 if(!process.env.OUTREACH_TEST_DATABASE_URL)throw new Error("Use an isolated Neon test branch via OUTREACH_TEST_DATABASE_URL");
 const pool=new Pool({connectionString:process.env.OUTREACH_TEST_DATABASE_URL.replace("sslmode=require","sslmode=verify-full"),max:4});
@@ -38,10 +39,18 @@ test("email uses immutable content and action ID as provider idempotency key",as
  const a=await draft("email");const request=(async(url,init)=>{assert.ok(String(url).endsWith("/messages/send"));const headers=new Headers(init?.headers);assert.equal(headers.get("Idempotency-Key"),a.id);const body=JSON.parse(String(init?.body));assert.deepEqual(body.to,[a.destination]);assert.equal(body.text,a.body);assert.equal(body.track_opens,false);return Response.json({message_id:"m1",thread_id:"t1"});}) as typeof fetch;
  assert.equal((await sendOutreach(a,request)).provider_id,"m1");
 });
+test("a threaded follow-up keeps the authorized recipient and rejects a mismatched thread receipt",async()=>{
+ const a={...await draft("email"),reply_to_message_id:"<original@example.com>",reply_thread_id:"original-thread"};
+ let calls=0;const request=(async(url,init)=>{calls++;assert.ok(String(url).endsWith("/%3Coriginal%40example.com%3E/reply"));const body=JSON.parse(String(init?.body));assert.deepEqual(body.to,[a.destination]);assert.equal(body.reply_all,false);assert.deepEqual(body.cc,[]);assert.deepEqual(body.bcc,[]);assert.equal(body.subject,undefined);assert.equal(body.text,a.body);return Response.json({message_id:"follow-up",thread_id:"original-thread"});}) as typeof fetch;
+ assert.equal((await sendOutreach(a,request)).provider_thread_id,"original-thread");assert.equal(calls,1);
+ await assert.rejects(()=>sendOutreach(a,(async()=>Response.json({message_id:"other",thread_id:"wrong-thread"})) as typeof fetch),e=>e instanceof DispatchFailure&&e.code==="REPLY_THREAD_MISMATCH"&&!e.definiteRejection);
+ await assert.rejects(()=>sendOutreach({...a,reply_thread_id:null},request),/INVALID_REPLY_CONTEXT/);assert.equal(calls,1);
+});
 test("call disables audio recording, carries reviewed plan, and validates receipt",async()=>{
- const a=await draft();const request=(async(_url,init)=>{const body=JSON.parse(String(init?.body));assert.equal(body.disableRecording,true);assert.equal(body.toNumber,a.destination);assert.ok(body.systemPrompt.includes(a.body));return Response.json({id:"c1",status:"ringing"});}) as typeof fetch;
- assert.equal((await sendOutreach(a,request)).provider_id,"c1");
- await assert.rejects(()=>sendOutreach(a,(async()=>Response.json({accepted:true})) as typeof fetch),/INVALID_PROVIDER_RESPONSE/);
+ process.env.ELEVENLABS_API_KEY="test";process.env.ELEVENLABS_OUTREACH_AGENT_ID="test";process.env.ELEVENLABS_PHONE_NUMBER_ID="test";
+ const a=await draft();const request=(async(_url,init)=>{if(!init?.method)return Response.json({conversation_config:{agent:{prompt:{prompt:elevenLabsOutreachPrompt}},conversation:{max_duration_seconds:180}},platform_settings:{privacy:{record_voice:false},auth:{enable_auth:true}}});const body=JSON.parse(String(init?.body));assert.equal(body.call_recording_enabled,false);assert.equal(body.to_number,a.destination);assert.ok(body.conversation_initiation_client_data.dynamic_variables.discussion_plan.includes(a.body));return Response.json({success:true,conversation_id:"c1",callSid:"CA-test"});}) as typeof fetch;
+ assert.equal((await sendOutreach(a,request)).provider_id,"elevenlabs:c1");
+ await assert.rejects(()=>sendOutreach(a,(async(url,init)=>init?.method?Response.json({accepted:true}):request(url,init)) as typeof fetch),/INVALID_PROVIDER_RESPONSE/);
 });
 test("status reads cannot send and discard transcripts and message bodies",async()=>{
  const a={...await draft(),provider_id:"c1"};const result=await readOutreach(a,(async(_url,init)=>{assert.equal(init?.method,undefined);return Response.json({id:"c1",status:"completed",durationSeconds:46,transcript:"not retained"});}) as typeof fetch);

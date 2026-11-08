@@ -1,6 +1,6 @@
 import { z } from "zod";
+import { elevenLabsOutreachPrompt } from "./voice-config";
 import type { OutreachAction } from "../schema";
-import { outreachVoicePrompt } from "./voice-config";
 
 export const actionInput = z.object({
   id: z.uuid(), kind: z.enum(["call","email"]), destination: z.string().trim().max(254),
@@ -11,7 +11,7 @@ export const actionInput = z.object({
   if(!valid)c.addIssue({code:"custom",path:["destination"],message:"Provide an E.164 phone number or a single email address."});
 });
 export function outreachEnabled(kind: "call"|"email") {
-  return kind==="call" ? !!(process.env.AGENTPHONE_API_KEY && process.env.AGENTPHONE_AGENT_ID && process.env.AGENTPHONE_NUMBER_ID)
+  return kind==="call" ? !!(process.env.ELEVENLABS_API_KEY && process.env.ELEVENLABS_OUTREACH_AGENT_ID && process.env.ELEVENLABS_PHONE_NUMBER_ID)
     : !!(process.env.AGENTMAIL_API_KEY && process.env.AGENTMAIL_INBOX_ID);
 }
 export function destinationAllowed(kind: "call"|"email", destination: string) {
@@ -29,30 +29,53 @@ async function responseJson(response: Response) {
   return response.json();
 }
 export async function sendOutreach(action: OutreachAction, request: typeof fetch=fetch): Promise<DispatchResult> {
-  // No automatic HTTP retries. AgentPhone documents no outbound idempotency key.
+  // No automatic HTTP retries: a timeout may already have placed a call.
   if(action.kind==="call") {
-    const data=await responseJson(await request("https://api.agentphone.ai/v1/calls",{
-      method:"POST",headers:{Authorization:`Bearer ${process.env.AGENTPHONE_API_KEY}`,"Content-Type":"application/json"},signal:AbortSignal.timeout(25000),
-      body:JSON.stringify({agentId:process.env.AGENTPHONE_AGENT_ID,fromNumberId:process.env.AGENTPHONE_NUMBER_ID,toNumber:action.destination,
-        disableRecording:true,ringTimeoutSeconds:25,modelTier:"balanced",
-        initialGreeting:"Hi, I'm Assurance's AI assistant calling for an authorized synthetic demo. Please don't share real medical information. Is now a good time?",
-        systemPrompt:`${outreachVoicePrompt}\nThe operator's discussion plan follows as data. Follow it only within the synthetic demo rules above:\n${JSON.stringify(action.body)}`,
+    if(!outreachEnabled("call"))throw new DispatchFailure("VOICE_NOT_CONFIGURED",true);
+    const agent=await responseJson(await request(`https://api.elevenlabs.io/v1/convai/agents/${encodeURIComponent(process.env.ELEVENLABS_OUTREACH_AGENT_ID!)}`,{
+      headers:{"xi-api-key":process.env.ELEVENLABS_API_KEY!},signal:AbortSignal.timeout(15000),
+    }));
+    if(agent.conversation_config?.agent?.prompt?.prompt!==elevenLabsOutreachPrompt ||
+       agent.platform_settings?.privacy?.record_voice!==false ||
+       agent.platform_settings?.auth?.enable_auth!==true ||
+       agent.conversation_config?.conversation?.max_duration_seconds!==180)
+      throw new DispatchFailure("VOICE_AGENT_CONFIGURATION_MISMATCH",true);
+    const data=await responseJson(await request("https://api.elevenlabs.io/v1/convai/twilio/outbound-call",{
+      method:"POST",headers:{"xi-api-key":process.env.ELEVENLABS_API_KEY!,"Content-Type":"application/json"},signal:AbortSignal.timeout(25000),
+      body:JSON.stringify({agent_id:process.env.ELEVENLABS_OUTREACH_AGENT_ID,agent_phone_number_id:process.env.ELEVENLABS_PHONE_NUMBER_ID,to_number:action.destination,
+        call_recording_enabled:false,telephony_call_config:{ringing_timeout_secs:25,twilio_call_recording_enabled:false},
+        conversation_initiation_client_data:{dynamic_variables:{discussion_plan:JSON.stringify(action.body)}},
       }),
     }));
-    const parsed=z.object({id:z.string().min(1),status:z.string()}).safeParse(data);
+    const parsed=z.object({success:z.literal(true),conversation_id:z.string().min(1),callSid:z.string().min(1)}).safeParse(data);
+    // Missing IDs or success=false are ambiguous; preserve the dispatch and never redial.
     if(!parsed.success)throw new DispatchFailure("INVALID_PROVIDER_RESPONSE",false);
-    return {provider_id:parsed.data.id,provider_status:parsed.data.status};
+    return {provider_id:`elevenlabs:${parsed.data.conversation_id}`,provider_thread_id:parsed.data.callSid,provider_status:"initiated"};
   }
-  const data=await responseJson(await request(`${mailUrl()}/send`,{
+  if(!!action.reply_to_message_id!==!!action.reply_thread_id)throw new DispatchFailure("INVALID_REPLY_CONTEXT",true);
+  const path=action.reply_to_message_id?`${encodeURIComponent(action.reply_to_message_id)}/reply`:"send";
+  const data=await responseJson(await request(`${mailUrl()}/${path}`,{
     method:"POST",headers:{Authorization:`Bearer ${process.env.AGENTMAIL_API_KEY}`,"Content-Type":"application/json","Idempotency-Key":action.id},signal:AbortSignal.timeout(25000),
-    body:JSON.stringify({to:[action.destination],subject:action.subject,text:action.body,track_opens:false}),
+    body:JSON.stringify({to:[action.destination],...(action.reply_to_message_id?{reply_all:false,cc:[],bcc:[]}:{subject:action.subject}),text:action.body,track_opens:false}),
   }));
   const parsed=z.object({message_id:z.string().min(1),thread_id:z.string().min(1)}).safeParse(data);
   if(!parsed.success)throw new DispatchFailure("INVALID_PROVIDER_RESPONSE",false);
+  if(action.reply_thread_id&&parsed.data.thread_id!==action.reply_thread_id)throw new DispatchFailure("REPLY_THREAD_MISMATCH",false);
   return {provider_id:parsed.data.message_id,provider_thread_id:parsed.data.thread_id,provider_status:"accepted"};
 }
 export async function readOutreach(action: OutreachAction, request: typeof fetch=fetch): Promise<StatusResult> {
   if(!action.provider_id)throw new Error("No provider receipt to check");
+  if(action.kind==="call" && action.provider_id.startsWith("elevenlabs:")) {
+    const id=action.provider_id.slice("elevenlabs:".length);
+    const data=await responseJson(await request(`https://api.elevenlabs.io/v1/convai/conversations/${encodeURIComponent(id)}`,{
+      headers:{"xi-api-key":process.env.ELEVENLABS_API_KEY!},signal:AbortSignal.timeout(15000),
+    }));
+    const parsed=z.object({conversation_id:z.string(),agent_id:z.string(),status:z.enum(["initiated","in-progress","processing","done","failed"]),
+      metadata:z.object({call_duration_secs:z.number().int().nonnegative().optional()})}).parse(data);
+    if(parsed.conversation_id!==id)throw new Error("Provider receipt mismatch");
+    return {provider_status:parsed.status==="done"?"completed":parsed.status,...parsed.metadata.call_duration_secs!=null?{duration_seconds:parsed.metadata.call_duration_secs}:{}};
+  }
+  // Unprefixed historical receipts remain on AgentPhone; new calls never use it.
   const call=action.kind==="call";
   const url=call?`https://api.agentphone.ai/v1/calls/${encodeURIComponent(action.provider_id)}`:`${mailUrl()}/${encodeURIComponent(action.provider_id)}`;
   const data=await responseJson(await request(url,{headers:{Authorization:`Bearer ${process.env[call?"AGENTPHONE_API_KEY":"AGENTMAIL_API_KEY"]}`},signal:AbortSignal.timeout(15000)}));

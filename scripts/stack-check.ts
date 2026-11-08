@@ -29,6 +29,11 @@ await check("Neon AI Gateway", ["NEON_AI_GATEWAY_BASE_URL", "NEON_AI_GATEWAY_TOK
 });
 await check("Naïve", ["NAIVE_API_KEY"], async () => { const client = createClient({ baseUrl: "https://api.vetta.sh", apiKey: process.env.NAIVE_API_KEY! }); const agents = await client.agents.list({limit:100}); return `CONNECTED — ${agents.data.length} agents visible; coordinator ${agents.data.some(a => a.name === "bill-advocate-coordinator") ? "present" : "not provisioned"}`; });
 await check("ElevenLabs", ["ELEVENLABS_API_KEY"], async () => { await get("https://api.elevenlabs.io/v1/convai/agents", { "xi-api-key": process.env.ELEVENLABS_API_KEY! }); return "CONNECTED — agent list accessible (no call placed)"; });
-await check("AgentPhone", ["AGENTPHONE_API_KEY"], async () => { await get("https://api.agentphone.ai/v1/agents", { Authorization: `Bearer ${process.env.AGENTPHONE_API_KEY}` }); return "CONNECTED — agent list accessible (no call placed)"; });
+await check("ElevenLabs/Twilio calling", ["ELEVENLABS_API_KEY", "ELEVENLABS_OUTREACH_AGENT_ID", "ELEVENLABS_PHONE_NUMBER_ID"], async () => {
+  const headers={"xi-api-key":process.env.ELEVENLABS_API_KEY!};
+  const number=await get(`https://api.elevenlabs.io/v1/convai/phone-numbers/${encodeURIComponent(process.env.ELEVENLABS_PHONE_NUMBER_ID!)}`,headers);
+  if(number.provider!=="twilio"||number.supports_outbound===false)throw new Error("Twilio number is not outbound-capable");
+  return "CONFIGURED — imported Twilio number accessible; live calling not verified";
+});
 await check("AgentMail", ["AGENTMAIL_API_KEY", "AGENTMAIL_INBOX_ID"], async () => { await get(`https://api.agentmail.to/v0/inboxes/${encodeURIComponent(process.env.AGENTMAIL_INBOX_ID!)}/messages`, { Authorization: `Bearer ${process.env.AGENTMAIL_API_KEY}` }); return "CONNECTED — scoped inbox messages accessible (no email sent)"; });
 process.exitCode = failures ? 1 : 0;

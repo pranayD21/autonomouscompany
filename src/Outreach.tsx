@@ -19,7 +19,7 @@ export function Outreach({caseId,userId,enabled,plan,revision,canDraft=true}:{ca
  }
  async function act(action:OutreachAction,authorize:boolean){
   if(authorize&&!window.confirm(action.kind==="call"
-   ?`Authorize one AI demo call to ${action.destination} using the saved discussion plan? Confirm the recipient agreed to this call. Audio recording is disabled; AgentPhone still captures a transcript. Use fictional details only.`
+   ?`Authorize one AI demo call to ${action.destination} using the saved discussion plan? Confirm the recipient agreed to this call. Audio recording is disabled; ElevenLabs processes and retains a conversation transcript. Use fictional details only.`
    :`Authorize one email to ${action.destination} with the saved subject and text? Confirm this recipient agreed to the synthetic test.`))return;
   setBusy(true);setError("");try{await api(`${path}/${action.id}/${authorize?"authorize":"refresh"}`,{method:"POST",body:JSON.stringify({authorize:true,synthetic:true})},userId);await refresh();}
   catch(e){setError(e instanceof Error?e.message:"Action unavailable");}finally{setBusy(false);}

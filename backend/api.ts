@@ -10,7 +10,8 @@ import { createRealtime, rawSql } from "@neon/realtime/server";
 import { neon } from "@neon/ai-sdk-provider";
 import { generateText } from "ai";
 import { z } from "zod";
-import { cases, crewRuns, outreachActions, caseReplies, replyMonitors, documents, documentExtractions, type BillCase } from "./schema";
+import { cases, crewRuns, outreachActions, caseReplies, replyMonitors, documents, documentExtractions, caseAuthorities, type BillCase } from "./schema";
+import {authorizeCase,revokeCaseAuthority,readCaseAutonomy} from "./autonomy-service";
 import {setReplyMonitoring} from "./reply-monitor";
 
 import { crewConfiguration, naiveClient, startCrew, repairCrew } from "./providers/naive";
@@ -81,6 +82,8 @@ app.post("/cases/live", async (c) => c.json(await realtime.seal({
 })));
 app.delete("/cases/:id", async (c) => {
   if (!z.uuid().safeParse(c.req.param("id")).success) return c.json({ error: "Invalid case ID." }, 400);
+  const [authority]=await db.select({id:caseAuthorities.id}).from(caseAuthorities).innerJoin(cases,eq(cases.id,caseAuthorities.case_id)).where(owned(c.req.param("id"),c.get("userId"))).limit(1);
+  if(authority)return c.json({error:"This case has retained standing authorization records and cannot be deleted."},409);
   const [document] = await db.select({id:documents.id}).from(documents).innerJoin(cases,eq(documents.case_id,cases.id)).where(owned(c.req.param("id"),c.get("userId"))).limit(1);
   if(document)return c.json({error:"This case has retained documents. Document deletion is not yet supported."},409);
   const [action] = await db.select({id:outreachActions.id}).from(outreachActions).innerJoin(cases,eq(outreachActions.case_id,cases.id)).where(owned(c.req.param("id"),c.get("userId"))).limit(1);
@@ -93,6 +96,24 @@ app.delete("/cases/:id", async (c) => {
 
 // Access is limited to operator-listed test users until spending and patient authorization flows exist.
 const crewAllowed = (userId: string) => (process.env.CREW_ALLOWED_USER_IDS ?? "").split(",").includes(userId);
+app.get("/cases/:id/autonomy",async c=>{
+ if(!await ownedCase(c.req.param("id"),c.get("userId")))return c.json({error:"Case not found."},404);
+ return c.json(await readCaseAutonomy(db,c.req.param("id"),c.get("userId")));
+});
+app.post("/cases/:id/autonomy",async c=>{
+ if(!await ownedCase(c.req.param("id"),c.get("userId")))return c.json({error:"Case not found."},404);
+ if(!crewAllowed(c.get("userId")))return c.json({error:"Standing authorization is limited to configured test operators."},403);
+ const body=await c.req.json().catch(()=>null);
+ if(body?.authorize!==true)return c.json({error:"Explicit standing authorization is required."},400);
+ try{return c.json(await authorizeCase(db,c.req.param("id"),c.get("userId"),body.policy),201);}
+ catch(error){const code=error instanceof Error?error.message:"INVALID_AUTHORITY";
+  return c.json({error:code==="AUTHORITY_ALREADY_EXISTS"?"Stop the existing authority before creating another.":code==="REVIEW_REQUIRED"?"Save a review for the current case details first.":code==="CONTACT_NOT_ALLOWED"?"Every contact must be an approved synthetic test recipient.":"Provide a valid bounded authority expiring within 30 days."},409);}
+});
+app.post("/cases/:id/autonomy/:authorityId/revoke",async c=>{
+ if(!await ownedCase(c.req.param("id"),c.get("userId"))||!z.uuid().safeParse(c.req.param("authorityId")).success)return c.json({error:"Authority not found."},404);
+ try{return c.json(await revokeCaseAuthority(db,c.req.param("id"),c.req.param("authorityId"),c.get("userId")));}
+ catch{return c.json({error:"Authority not found."},404);}
+});
 app.get("/stack/status", (c) => c.json({
   naive: { configured: !!crewConfiguration(), enabledForUser: crewAllowed(c.get("userId")) },
   outreach: { callConfigured: outreachEnabled("call"), emailConfigured: outreachEnabled("email"), enabledForUser: crewAllowed(c.get("userId")) },

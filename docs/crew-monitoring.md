@@ -8,6 +8,8 @@ The `crewpoll` Neon Function checks existing Naïve sessions every five minutes 
 
 Automatic checks cover runs created within the last 30 days. Older or never-started runs require manual reconciliation. A `start_pending` row without a provider session ID is not retried by this worker. Checks can be delayed by backlog or service downtime. The app currently shows a newly saved result on status refresh or page reload; this change does not add a live review subscription.
 
+Next-check times are rounded down to the minute before adding the delay. Otherwise a check ending a few seconds after a cron tick would miss the next five-minute tick and wait another full cycle.
+
 Migration `0010_next_nehzno.sql` adds the next-check time, lease, last-check time, coarse status, and scheduler invocation ID to `advocacy_crew_runs`. No provider errors, credentials, or case content are written to logs. `backend/crew-worker.ts` accepts only a verified Neon schedule delivery named `crew-monitor`; anonymous and forged public requests return 401. `neon.ts` declares the Function and trigger. Its only custom credential is the existing Naïve API key; it receives no telephony or email credentials.
 
 ## Verification

@@ -1,6 +1,6 @@
 import { defineConfig } from "@neon/config/v1";
 
-const appOrigins = ["http://localhost:5173", "http://localhost:4173", "https://assurance-claims.vercel.app"];
+const appOrigins = ["http://localhost:5173", "http://localhost:4173", "https://assurance-claims.vercel.app", "https://assurance.claims"];
 
 export default defineConfig({
   // Declare your Neon services here
@@ -11,6 +11,22 @@ export default defineConfig({
   auth: true,
   aiGateway: true,
   functions: {
+    autopoll: {
+      name: "Assurance autonomous case worker",
+      source: "./backend/autonomy-worker.ts",
+      env: {
+        NAIVE_API_KEY: { value: process.env.NAIVE_API_KEY, required: true },
+        NAIVE_COORDINATOR_ID: { value: process.env.NAIVE_COORDINATOR_ID, required: true },
+        NAIVE_RUN_BUDGET_MICRO_USD: { value: process.env.NAIVE_RUN_BUDGET_MICRO_USD, required: true },
+        AGENTMAIL_API_KEY: { value: process.env.AGENTMAIL_API_KEY, required: true },
+        AGENTMAIL_INBOX_ID: { value: process.env.AGENTMAIL_INBOX_ID, required: true },
+        OUTREACH_ALLOWED_EMAILS: process.env.OUTREACH_ALLOWED_EMAILS ?? "",
+        OUTREACH_ALLOWED_PHONES: process.env.OUTREACH_ALLOWED_PHONES ?? "",
+        ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY ?? "",
+        ELEVENLABS_OUTREACH_AGENT_ID: process.env.ELEVENLABS_OUTREACH_AGENT_ID ?? "",
+        ELEVENLABS_PHONE_NUMBER_ID: process.env.ELEVENLABS_PHONE_NUMBER_ID ?? "",
+      },
+    },
     crewpoll: {
       name: "Assurance review monitor",
       source: "./backend/crew-worker.ts",
@@ -39,6 +55,9 @@ export default defineConfig({
         AGENTPHONE_API_KEY: process.env.AGENTPHONE_API_KEY ?? "",
         AGENTPHONE_AGENT_ID: process.env.AGENTPHONE_AGENT_ID ?? "",
         AGENTPHONE_NUMBER_ID: process.env.AGENTPHONE_NUMBER_ID ?? "",
+        ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY ?? "",
+        ELEVENLABS_OUTREACH_AGENT_ID: process.env.ELEVENLABS_OUTREACH_AGENT_ID ?? "",
+        ELEVENLABS_PHONE_NUMBER_ID: process.env.ELEVENLABS_PHONE_NUMBER_ID ?? "",
         AGENTMAIL_API_KEY: process.env.AGENTMAIL_API_KEY ?? "",
         AGENTMAIL_INBOX_ID: process.env.AGENTMAIL_INBOX_ID ?? "",
         OUTREACH_ALLOWED_PHONES: process.env.OUTREACH_ALLOWED_PHONES ?? "",
@@ -48,6 +67,7 @@ export default defineConfig({
     },
   },
   triggers: {
+    "case-autonomy": { type: "schedule", function: "autopoll", functionPath: "/poll", cron: "*/5 * * * *" },
     "crew-monitor": { type: "schedule", function: "crewpoll", functionPath: "/poll", cron: "*/5 * * * *" },
     "reply-monitor": { type: "schedule", function: "replypoll", functionPath: "/poll", cron: "*/5 * * * *" },
   },
