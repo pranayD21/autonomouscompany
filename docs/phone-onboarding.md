@@ -32,6 +32,10 @@ Inbound hosted calls cannot take a per-call prompt, so `scripts/configure-agentp
 
 Limitations: phone caller ID can be spoofed, so a spoofed callback could add a false account to an attempt awaiting information. The legacy `PHONE_FLOW_ENABLED` inbound path stays off and is unrelated.
 
+## Customer communication
+
+Advocates reach the case owner only through the website conversation. `backend/open-case-actions.ts` refuses `send_email` with role `customer` on open (version 2) authorities, and the advocate instructions say the same. Calls and third-party email are unchanged. Earlier authorities keep their original paths.
+
 ## Persistence and configuration
 
 `backend/phone-schema.ts` defines `advocacy_phone_onboarding`; migration `0030_phone_onboarding.sql` adds it. The row binds owner, verified phone, exact consent, routing IDs, provider receipt, transcript/hash, intended case ID, created case ID, status, reason, and polling lease. No credentials or recordings are stored in the row. Statuses are `not_started` (response only), `dispatching`, `submitted`, `unknown`, `failed`, `needs_information`, `ready`, `activating`, `active`, and `cancelled`.

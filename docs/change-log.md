@@ -1029,3 +1029,7 @@ A real onboarding call reached voicemail, and the user asked to be able to call 
 ## 2026-11-08 — Accept hedged case categories from callers
 
 The first real callback was captured, but the caller said the category naturally, with hedging, and the exact-phrase check rejected it. Category detection now accepts natural wording in non-negated sentences of up to twenty words, and a saved callback is re-evaluated if it becomes sufficient. See [phone onboarding](phone-onboarding.md). Verification is recorded in that release's commit message.
+
+## 2026-11-08 — No customer email from advocates
+
+The user asked that customers hear from their advocate in chat, not by email. An email seen in the workspace came from an old demo case on an email account, but the rule was still only an instruction. Open-authority `send_email` to a customer is now refused. Verification is recorded in that release's commit message.

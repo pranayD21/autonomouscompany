@@ -26,6 +26,8 @@ export async function takeOpenCaseAction(db:NodePgDatabase,identity:CaseToolIden
   if(decision.evidence_refs.some(ref=>!context.evidence_refs.includes(ref)))throw Error("UNKNOWN_EVIDENCE");
   const [uncertain]=await tx.select().from(outreachActions).where(and(eq(outreachActions.case_id,item.id),inArray(outreachActions.state,["dispatching","unknown"])));
   const [unfinished]=await tx.select({id:caseDecisions.id}).from(caseDecisions).where(and(eq(caseDecisions.authority_id,authority.id),inArray(caseDecisions.state,["executing","running","unknown"])));
+  // Customers hear from their advocate in the website conversation. Email is for third parties.
+  if(decision.tool==="contact_customer"&&input.channel==="email")throw Error("CUSTOMER_EMAIL_DISABLED_USE_WEBSITE_CONVERSATION");
   const contact=decision.tool==="contact_customer"||decision.tool==="contact_insurer";
   if((uncertain||unfinished)&&(contact||decision.tool==="stop_case"))throw Error("DISPATCH_NEEDS_RECONCILIATION");
   if(decision.tool==="stop_case"&&["goal_met","synthetic_demo_completed"].includes(decision.outcome)&&!decision.evidence_refs.some(ref=>context.current_outcome_refs.includes(ref)))throw Error("CURRENT_OUTCOME_REQUIRED");
