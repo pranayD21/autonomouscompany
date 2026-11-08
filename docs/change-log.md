@@ -1082,3 +1082,10 @@ The user asked that a new case work like onboarding: call, say what happened, an
 ## 2026-11-08 — Voice agent knows the caller's open cases
 
 The user asked that the phone agent know a caller's open cases: skip the new-or-existing question when there are none, otherwise ask, and fetch details for an existing case. Added `backend/voice-tools.ts`, hosted-agent custom tools, and `AGENTPHONE_TOOL_SECRET`. Calls that reach a case are recorded so they do not open another. See [phone onboarding](phone-onboarding.md). Verification and limits are recorded in that release's commit message.
+
+## 2026-11-08 — Approved tool calls are repeated immediately
+
+On the first real phone case, Front Desk looped for ten minutes: `firm.hire_advocate` paused for confirmation, and after each approval the model called `firm.update_board_card` instead of repeating the hire, which paused again. The one earlier immediate retry had run. Confirmation reasons in `backend/firm-runner.ts` and `backend/case-agent-approval.ts` now tell the model to repeat the same call next. See [firm runtime](firm-runtime.md).
+
+Verification: firm runner and case session suites on the disposable database, with a mocked provider. Hosted behavior is recorded once observed on the phone case.
+

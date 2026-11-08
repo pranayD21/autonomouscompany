@@ -13,6 +13,8 @@ const defaults:FirmProvider={request:firmNaive};
 const hash=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const approvalId=(fingerprint:string)=>`${fingerprint.slice(0,8)}-${fingerprint.slice(8,12)}-4${fingerprint.slice(13,16)}-a${fingerprint.slice(17,20)}-${fingerprint.slice(20,32)}`;
 function binding(role:FirmRole,remote:Remote){const registered=firmRegistry()[role];return registered&&remote.agent_id===registered.agent_id&&remote.identity_id===registered.identity_id;}
+// Naïve runs an approved call only when the model repeats it next. Without this, a role can loop on other tools and never run it.
+export const approvalRetryReason=(name:string)=>`Approved within your role. Call ${name} again now with exactly the same arguments as your very next action, before any other tool. It will run.`;
 export async function approveFirmPending(db:NodePgDatabase,role:FirmRole,sessionId:string,provider:FirmProvider=defaults){
  const unresolved=await db.execute(sql`SELECT id FROM advocacy_firm_operations WHERE tool='provider_tool_confirmation' AND state<>'completed' AND result->>'session_id'=${sessionId} LIMIT 1`);
  if(unresolved.rows.length)return {state:'uncertain'};
@@ -33,7 +35,7 @@ export async function approveFirmPending(db:NodePgDatabase,role:FirmRole,session
   // Re-read after reservation: stale pending actions must not be approved under a new identity/turn.
   const fresh=await provider.request('GET',`/v1/sessions/${encodeURIComponent(sessionId)}`);
   if(!binding(role,fresh)||fresh.status!=='idle'||fresh.stop_reason!=='awaiting_approval'||!fresh.pending_actions?.some((a:unknown)=>hash(a)===hash(action)))return {state:'uncertain'};
-  await provider.request('POST',`/v1/sessions/${encodeURIComponent(sessionId)}/tool_confirmations`,{tool_call_id:action.tool_call_id,decision:action.name==='board_write'?'deny':'allow',scope:action.name==='board_write'?'call':'session',reason:action.name==='board_write'?'Use firm.update_board_card for durable company board work. Native board_write is not authorized. Continue staffing with hire_advocate even when a CEO budget is not yet allocated; that tool queues the CEO request.':`Authorized Assurance ${role} company tool within the role boundary.`});
+  await provider.request('POST',`/v1/sessions/${encodeURIComponent(sessionId)}/tool_confirmations`,{tool_call_id:action.tool_call_id,decision:action.name==='board_write'?'deny':'allow',scope:action.name==='board_write'?'call':'session',reason:action.name==='board_write'?'Use firm.update_board_card for durable company board work. Native board_write is not authorized. Continue staffing with hire_advocate even when a CEO budget is not yet allocated; that tool queues the CEO request.':approvalRetryReason(action.name)});
   await db.update(firmOperations).set({state:'completed',result:{session_id:sessionId,tool_call_id:action.tool_call_id,state:'confirmed'}}).where(eq(firmOperations.id,id));return {state:'confirmed'};
  }catch(error){if(isNaiveAdmissionRejected(error)){await db.delete(firmOperations).where(eq(firmOperations.id,id));throw error;}return {state:'uncertain'};}
 }
