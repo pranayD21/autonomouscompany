@@ -1,5 +1,11 @@
 # Change log
 
+## November 8, 2026 — Landing-themed claim conversation
+
+Refined the claim's agent panel in `src/Autonomy.tsx` and `src/style.css` using the supplied rounded prompt-box reference while keeping Assurance's paper, ink, DM Sans and blue landing-page theme. Added `src/ui/ClaimComposer.tsx` with an autosizing response field, accessible circular send action, real saving state, character count, keyboard submission and a shortcut to the existing document uploader. Active direct-model cases can receive owner updates while working or waiting, not just when a question is pending. Questions and the latest successfully saved local update now have distinct message treatments. The subtle orb animates only during active work and respects reduced motion. Case-keyed mounting resets local drafts/receipts across claims. Existing stop/resume controls, Naïve approval boundaries and update idempotency remain intact. No fake voice/search/reasoning controls, new dependencies, or provider changes were added. See [frontend.md](frontend.md).
+
+Verification: all 14 composer rendering, activation-state and progress tests passed. TypeScript and the Vite production build passed using explicitly supplied non-production placeholder public service URLs; the first ordinary build failed because local public URL configuration was missing. Existing bundle-size and mixed static/dynamic import warnings remain. `git diff --check` passed. Browser interactions, visual layouts and hosted behavior were not verified, and nothing was deployed. The update bubble is a local save receipt, not persisted chat history or a generated answer; updates themselves continue to persist in case notes through the existing API.
+
 ## 2026-11-08 — Stop divider lines flashing on landing load
 
 On page load, the "Loading your session…" shell (with its `.app-header` bottom border and `.app-footer` top border) showed for a moment while the auth check ran, before the landing page replaced it. `src/main.tsx` now renders the landing page immediately for `#home` and renders nothing during the check for other non-workspace URLs. Workspace routes keep the loading shell.

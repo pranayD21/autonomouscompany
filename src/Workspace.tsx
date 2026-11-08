@@ -187,7 +187,7 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
       </div>
     </div>
 
-    <Autonomy caseId={item.id} userId={userId} enabled={crewEnabled} between={<Outcomes caseId={item.id} userId={userId} revision={item.revision}/>}/>
+    <Autonomy key={item.id} caseId={item.id} userId={userId} enabled={crewEnabled} between={<Outcomes caseId={item.id} userId={userId} revision={item.revision}/>}/>
 
     <Documents key={`documents-${item.id}`} caseId={item.id} userId={userId} revision={item.revision}/>
 
