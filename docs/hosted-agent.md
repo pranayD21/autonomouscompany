@@ -10,7 +10,7 @@ The runner reads the current case and sets a stable goal/finish condition. It us
 
 `backend/autonomy-worker.ts` polls direct runs before legacy jobs on a one-minute scheduler tick. It claims at most one direct run per tick; idle cases do no inference. Legacy decision, session, and setup paths exclude direct authorities. `backend/case-agent-events.ts` routes owner edits, ready uploads, confirmed transcriptions, replies, and completed calls to the direct event queue. Agent-written facts change the case revision but do not queue their own wake event. Idle runs do no inference until evidence, an event, or a due follow-up arrives. Owner-help states resume through an owner response, an owner-triggered completed document reading, or the explicit resume control; third-party text cannot resume permission. Completed outcomes retain their reported/simulated status.
 
-`read_public_source` retrieves actual public HTTPS text/PDFs and navigable links with DNS/IP, redirect, size, and timeout protection. `cite_source` checks an exact quotation and retains its source. This is source retrieval/navigation, not a search-engine integration. Private case details must never be placed in a URL. See [research.md](research.md).
+`read_public_source` retrieves actual public HTTPS text/PDFs and navigable links with DNS/IP, redirect, size, and timeout protection. `cite_source` checks an exact quotation and retains its source. Private case details must never be placed in a URL. See [research.md](research.md).
 
 ## Deployment configuration
 

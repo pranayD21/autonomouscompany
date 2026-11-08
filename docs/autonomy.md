@@ -16,7 +16,7 @@ Five tests in `scripts/autonomy-policy.test.ts` pass. They cover allowed custome
 
 ## Durable execution
 
-`backend/autonomy-service.ts` binds standing authorizations to case owners and requires a completed review of the current case revision. `backend/schema.ts` and migration `0011_bored_sabretooth.sql` store authorizations and immutable decision rounds. The API exposes owner-scoped history, authorization, and revocation endpoints. `src/Autonomy.tsx` shows decision history and the stop control; the UI has no form for creating a legacy grant.
+`backend/autonomy-service.ts` binds standing authorizations to case owners and requires a completed review of the current case revision. `backend/schema.ts` and migration `0011_bored_sabretooth.sql` store authorizations and immutable decision rounds. The API exposes owner-scoped history, authorization, and revocation endpoints. `src/Autonomy.tsx` shows decision history and the stop control.
 
 `backend/providers/autonomy.ts` asks the existing Naïve coordinator for one typed decision. The coordinator chooses the action; `backend/autonomy-runner.ts` validates it and invokes the transport. This is an application tool bridge, not a native Naïve MCP integration. The local crew prompt distinguishes review-only tasks from tasks covered by standing authority. The revised prompts are published. Coordinator version 17 references intake version 7 and investigator, advocate, and verifier version 6. A provider read confirmed every roster reference matches the current specialist version and all five agents retain the approved $2 monthly and $0.25 per-task caps. The corresponding version variables were updated in the private environment.
 

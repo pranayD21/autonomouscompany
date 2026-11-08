@@ -14,4 +14,4 @@ The live OpenAPI at https://api.vetta.sh/v1/openapi.json (API version 2026-09-30
 
 Run `npx tsx --test scripts/case-portal.test.ts` for schema/destination checks. Run `scripts/case-portal-db.test.ts` serially against a disposable `OUTREACH_TEST_DATABASE_URL` for identity, scope, credential handling, idempotency, uncertainty and revocation checks. These tests mock the provider.
 
-The live agent schema accepts arbitrary tool configuration maps and does not document the built-in browser tool name, arguments or configuration. `GET /v1/agents/{id}/computer` exists, with no agent-computer attachment write route. Harness discovery confirms native injected tools and approvals without enumerating browser tools. The case approval whitelist stays limited to Assurance MCP tools.
+The case approval whitelist stays limited to Assurance MCP tools.

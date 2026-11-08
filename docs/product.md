@@ -23,11 +23,11 @@ A worker suffers a chemical burn at a pharmaceutical office. Starting with conta
 6. Record receipt/reference number, outstanding documents, stated next action, and a source-backed follow-up date.
 7. Resume on a response and verify the actual claim decision, payment, or revised responsibility.
 
-Report claim acceptance, payment to a provider, benefits paid to the person, and reduced patient responsibility separately. None should be invented from a bill/EOB mismatch. See [insurance workflows](insurance-workflows.md) for the two paths and their current limits.
+Report claim acceptance, payment to a provider, benefits paid to the person, and reduced patient responsibility separately. None should be invented from a bill/EOB mismatch. See [insurance workflows](insurance-workflows.md) for the two paths.
 
 ## Company operations
 
-Company operations include authorized intake, case delivery, updates, and cost tracking. Pricing is unvalidated. A previously discussed 15% success fee is not approved pricing or a validated legal/commercial model. Finance tools remain restricted to Stripe test mode; real fee collection is not authorized.
+Company operations include authorized intake, case delivery, updates, and cost tracking. Finance tools remain restricted to Stripe test mode; real fee collection is not authorized.
 
 Track case outcomes, autonomous actions, human interventions, model/call/email costs, and exception-handling effort. Insurer payment to a provider is not automatically patient savings or a patient refund.
 

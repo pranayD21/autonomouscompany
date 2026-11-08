@@ -8,7 +8,7 @@ Intake identifies the injured worker, employer, insurer or claims administrator,
 
 The workflow prepares the relevant information, coordinates required employer involvement, confirms receipt, tracks requests, and explains documented decisions. In California, the official DWC filing guide describes employee and employer sections of the claim form and the employer forwarding it to the insurance company. This supports a multi-party workflow rather than pretending the injured person simply bypasses the employer. [California DWC filing guide](https://www.dir.ca.gov/DWC/FileAClaim.htm).
 
-The injured person is the beneficiary. Whether the employer pays for the product, assists filing, or is merely a case participant has not been decided. Do not grant employers access to an individual's case merely because they are named in it.
+The injured person is the beneficiary. Do not grant employers access to an individual's case merely because they are named in it.
 
 ## Health-insurance dispute path
 

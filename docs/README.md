@@ -40,7 +40,7 @@ Every repository change must update the relevant documentation in the same chang
 
 - [Persistent case sessions](case-sessions.md): durable session bindings, inbound event delivery, scheduler leases, and activation requirements.
 
-- [Recorded case outcomes](outcomes.md) — agent calculations, exact evidence quotes, retry handling, and verification limits.
+- [Recorded case outcomes](outcomes.md) — agent calculations, exact evidence quotes, and retry handling.
 
 - [Test-mode finance](payments.md) — unconfirmed Stripe test PaymentIntents, cost reporting, and no real collection.
 
@@ -79,6 +79,6 @@ Every repository change must update the relevant documentation in the same chang
 - [Company runtime](firm-runtime.md): durable company events, role tools, case staffing, budgets, board, and learning.
 
 - [Authentication session recovery](auth-session-recovery.md): historical phone-session token contention, and preserved login credentials.
-- [Case-isolated native browser portals](case-portals.md): portal service, private owner connection, durable action receipts and current upload gap.
+- [Case-isolated native browser portals](case-portals.md): portal service, private owner connection, and durable action receipts.
 
 - [Requested phone onboarding](phone-onboarding.md): verified phone → one requested AgentPhone call → owner transcript → automatic isolated Naïve case setup, with no-redial recovery.
