@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-08 — Scrolling photo backdrop in the landing hero
+
+The user asked for a faded background of people struggling with injuries behind the hero, to add a human touch, scrolling through several images. Added `src/components/hero-backdrop.tsx`, twelve CC0 photos in `public/hero/`, and `.hero-backdrop*` styles in `src/landing.css`. The photos are grayscale at low opacity and drift slowly left behind the wordmark. Sources are listed in frontend.md.
+
+Verification: `tsc --noEmit` and `vite build` (placeholder `VITE_*` URLs) passed. The built landing page was rendered in headless Chromium at 1440px and 390px, and screenshots 5.5 seconds apart showed the strip moving with the heading, wordmark and button still readable. Live production was not checked.
+
 ## 2026-11-08 — Remove landing FAQ section
 
 Removed the "Questions" (FAQ) section from `src/Landing.tsx` and its `.questions` styles from `src/landing.css`, as the user requested. The page now goes from the "How it works" steps to the footer. See frontend.md.
