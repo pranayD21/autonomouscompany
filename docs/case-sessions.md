@@ -157,3 +157,11 @@ A fresh zero-outbound synthetic fixture was provisioned for that experiment, but
 After the cooldown, remote cleanup returned another 429. Database readback confirmed `no_remote_session=true`, `authority_state=revoked`, `credential_revoked=true`, and `outbound=0`. Remote vault/identity removal remains pending in the ignored `test-results/rotation-live-smoke.json` fixture; do not create a replacement fixture until cleanup finishes.
 
 Cleanup subsequently completed after the shared cooldown: the remote vault credential, vault, and identity were removed, followed by the local fixture rows. The cleanup command confirmed zero outbound rows and marked the saved fixture cleaned. There are no remaining resources from this experiment. Same-session rotation is still unverified because the session never started.
+
+### Live replacement did not refresh an existing session
+
+A second isolated experiment reached a real idle session after a successful revision-1 case read. While it was idle, the setup client created a replacement vault credential, deleted the old sealed credential, updated the local session binding, and revoked the old database token. The session ID, authority, and budget stayed unchanged. A revision-2 evidence event was accepted as sequence 30. After one explicit approval for that case's read, the tool returned `the tool server assurance answered 401`; the session ended its turn without reading revision 2.
+
+This disproves transparent same-session rotation for the tested path. Cached credentials are a possible explanation, not a verified provider implementation detail. Do not enable automatic create-new/delete-old rotation on this evidence. Renewal needs a provider-supported refresh mechanism or another tested design that preserves authorization and total spending limits.
+
+Cleanup of this second experiment is pending remote cancellation after repeated capacity 429 responses. Local credentials and authority are revoked, and the database confirms zero outbound rows. Resume the ignored `rotation-runner-2.ts cleanup` command with its existing state; do not replace this fixture. An alternative to investigate is issuing credentials with the existing owner-approved authority expiry, avoiding mid-session replacement without extending the authority itself.

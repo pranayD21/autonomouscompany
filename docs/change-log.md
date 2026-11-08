@@ -522,3 +522,10 @@ Implemented an additive Better Auth phone identity service, verified-number acco
 ### Preserve managed email methods in phone adapter
 
 Hosted verification found that object-spreading the managed auth client's Proxy omitted its dynamic signUp/signIn methods. Replaced the spread with explicit references. Full local E2E then passed real email signup, persistence, isolation, sign-out/password sign-in, plus mocked permission/approval controls. Added a dry-run-first individual SMS registration command with a private attempt journal and no automatic paid resubmission; its read-only plan validated the prepared draft and public opt-in screenshot without submitting. Phone feature and recipient allowlist remain disabled.
+
+Phone rollout verification: post-fix commit 2c23098 auto-deployed and hosted E2E exited 0. Real email auth, persistence, Realtime, readiness/isolation, deletion, sign-out/password sign-in and mocked approval controls passed. Disabled phone status/OTP and forged scheduler denial were read back. One concurrent outbox regression passed after the global notification-budget lock. No registration, SMS, call, or inbound routing change occurred; the prepared $25 registration is awaiting explicit approval.
+
+
+### Live vault replacement fails same-session authentication
+
+A fresh bounded synthetic session read revision 1, then its idle-session vault credential was replaced and old database token revoked. The original session accepted revision-2 event sequence 30. After an explicit approval for that case read, the tool returned HTTP 401 and the session ended without revision 2. This is evidence against transparent in-place credential rotation, not proof of a particular provider caching implementation. Automatic rotation remains disabled. Cleanup revoked all local case credentials and the authority; remote cancellation repeatedly returned capacity 429. The ignored rotation-live-smoke-2 fixture retains the remote session and resource IDs for cleanup. Database readback confirmed zero outbound actions. No spending caps or phone settings changed.
