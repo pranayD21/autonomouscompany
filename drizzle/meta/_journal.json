@@ -57,6 +57,13 @@
       "when": 1794095701931,
       "tag": "0007_uneven_sue_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794096047676,
+      "tag": "0008_tricky_wild_pack",
+      "breakpoints": true
     }
   ]
 }

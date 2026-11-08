@@ -1,13 +1,15 @@
 import {useEffect,useState,type FormEvent} from "react";
 import {api} from "./services";
-import type {OutreachAction} from "../backend/schema";
-export function Outreach({caseId,userId,enabled,plan,revision}:{caseId:string;userId:string;enabled:boolean;plan:string;revision:number}) {
+import type {OutreachAction,CaseReply} from "../backend/schema";
+export function Outreach({caseId,userId,enabled,plan,revision,canDraft=true}:{caseId:string;userId:string;enabled:boolean;plan:string;revision:number;canDraft?:boolean}) {
+ const [replyData,setReplyData]=useState<{replies:CaseReply[];has_more:boolean}>({replies:[],has_more:false});
+ const [notice,setNotice]=useState("");
  const [actions,setActions]=useState<OutreachAction[]>([]);
  const [kind,setKind]=useState<"call"|"email">("email");
  const [requestId,setRequestId]=useState(()=>crypto.randomUUID());
  const [busy,setBusy]=useState(false),[error,setError]=useState("");
  const path=`/cases/${caseId}/actions`;
- async function refresh(){setActions(await api<OutreachAction[]>(path,{},userId));}
+ async function refresh(){const [actions,replies]=await Promise.all([api<OutreachAction[]>(path,{},userId),api<{replies:CaseReply[];has_more:boolean}>(`/cases/${caseId}/replies`,{},userId)]);setActions(actions);setReplyData(replies);}
  useEffect(()=>{void refresh().catch(e=>setError(e.message));},[caseId,userId]);
  async function create(event:FormEvent<HTMLFormElement>){
   event.preventDefault();const form=event.currentTarget;const f=new FormData(form);setBusy(true);setError("");
@@ -21,14 +23,17 @@ export function Outreach({caseId,userId,enabled,plan,revision}:{caseId:string;us
   setBusy(true);setError("");try{await api(`${path}/${action.id}/${authorize?"authorize":"refresh"}`,{method:"POST",body:JSON.stringify({authorize:true,synthetic:true})},userId);await refresh();}
   catch(e){setError(e instanceof Error?e.message:"Action unavailable");}finally{setBusy(false);}
  }
+ async function sync(action:OutreachAction){setBusy(true);setError("");setNotice("");try{const result=await api<{imported:number;changed:number;held:number;partial:boolean}>(`${path}/${action.id}/replies/sync`,{method:"POST"},userId);setNotice(`${result.imported} new reply(s); ${result.held} held for review.${result.partial?" More thread history remains at the provider.":""} No email was sent.`);await refresh();}catch(e){setError(e instanceof Error?e.message:"Reply check failed");}finally{setBusy(false);}}
  return <section className="analysis"><h4>Outreach</h4><p>Save a discussion plan or email, then review it before authorizing one action. Only approved test recipients can be contacted.</p>
- <form onSubmit={create}>
+ {!canDraft&&<p>Complete the current case review before preparing new outreach. Earlier communication history remains below.</p>}
+ {canDraft&&<form onSubmit={create}>
   <label>Outreach channel<select value={kind} onChange={e=>setKind(e.target.value as "call"|"email")}><option value="email">Email</option><option value="call">AI phone call</option></select></label>
   <label>{kind==="call"?"Recipient phone (E.164)":"Recipient email"}<input name="destination" type={kind==="call"?"tel":"email"} required maxLength={254}/></label>
-  <label>Subject or call purpose<input name="subject" defaultValue="Synthetic billing demo — document questions" required maxLength={160}/></label>
-  <label htmlFor={`outreach-body-${caseId}`}>{kind==="call"?"Discussion plan":"Email text"}</label><textarea id={`outreach-body-${caseId}`} name="body" defaultValue={`This is a synthetic billing demo, not a real patient case.\n\n${plan}`} required maxLength={4000} rows={6}/>
+  <label>Subject or call purpose<input name="subject" defaultValue="Assurance synthetic claim — document questions" required maxLength={160}/></label>
+  <label htmlFor={`outreach-body-${caseId}`}>{kind==="call"?"Discussion plan":"Email text"}</label><textarea id={`outreach-body-${caseId}`} name="body" defaultValue={`This is a synthetic insurance-claim demo, not a real patient case.\n\n${plan}`} required maxLength={4000} rows={6}/>
   <button disabled={busy}>Save outreach draft</button>
- </form>
+ </form>}
+ {notice&&<p role="status">{notice}</p>}
  {error&&<p role="alert">{error}</p>}
  {actions.map(action=><div className="outreach-draft" key={action.id} data-action-id={action.id}>
   <h4>{action.kind==="call"?"AI call":"Email"}: {action.subject}</h4><p>To: {action.destination}</p><p className="outreach-body">{action.body}</p>
@@ -37,7 +42,10 @@ export function Outreach({caseId,userId,enabled,plan,revision}:{caseId:string;us
   {["unknown","dispatching"].includes(action.state)&&<p>Do not send again. Check the provider before taking another action; the outcome may be uncertain.</p>}
   {action.error_code&&<p>Provider result: {action.error_code}</p>}
   <div className="actions">{action.state==="draft"&&<button disabled={busy||!enabled||action.case_revision!==revision} onClick={()=>void act(action,true)}>{action.kind==="call"?"Review and authorize call":"Review and authorize email"}</button>}
-  {action.provider_id&&<button className="text-button" disabled={busy} onClick={()=>void act(action,false)}>Check provider status</button>}</div>
+  {action.provider_id&&<button className="text-button" disabled={busy} onClick={()=>void act(action,false)}>Check provider status</button>}
+  {action.kind==="email"&&action.provider_thread_id&&action.approved_at&&<button className="text-button" disabled={busy} onClick={()=>void sync(action)}>Check replies</button>}</div>
  </div>)}
+ <h4>Received correspondence</h4><p>Included replies are reported information, not verified coverage or payment. Held replies are not sent to the claim agents.</p>{replyData.has_more&&<p>Showing the latest 100 replies.</p>}{replyData.replies.length===0&&<p>No replies imported yet.</p>}
+ {replyData.replies.map(reply=><article key={reply.id} id={`reply-${reply.id}`}><h5>{reply.subject||"Reply without subject"}</h5><p>From: {reply.sender} · {new Date(reply.received_at).toLocaleString()}</p><p>{reply.disposition==="accepted"?"Included as reported information":"Held — not included in agent review"}</p><small>{reply.reason}</small><p className="outreach-body">{reply.body||"No supported plain-text body."}</p>{reply.attachment_count>0&&<p>{reply.attachment_count} attachment(s) not imported or read.</p>}</article>)}
  <small>A sent email or completed call is not evidence of a reduced bill or refund.</small></section>;
 }

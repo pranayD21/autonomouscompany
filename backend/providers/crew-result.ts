@@ -16,13 +16,15 @@ export type CrewSnapshot = {
 export function completedCrewSnapshot(session: {
   status: string; stop_reason: string | null; consumed_micro_usd: number;
   structured_output: unknown; pending_actions: unknown[];
-}, expectedDifference?: number | null, sources?: {document_id:string;sha256:string}[],research?:ResearchBundle): CrewSnapshot {
+}, expectedDifference?: number | null, sources?: {document_id:string;sha256:string}[],research?:ResearchBundle,replies?:{reply_id:string;sha256:string}[]): CrewSnapshot {
   const parsed = crewOutput.safeParse(session.structured_output);
   const finished = session.status === "completed" || (session.status === "idle" && session.stop_reason === "end_turn");
   const refs=parsed.success?parsed.data.document_references??[]:[];
   const referencesValid=sources===undefined || (refs.every(r=>sources.some(s=>s.document_id===r.document_id&&s.sha256===r.sha256)) && (!sources.length||refs.length>0));
   const researchValid=!research || (parsed.success&&researchFindingsValid(parsed.data.research_findings??[],research));
-  const valid = researchValid && referencesValid && finished && parsed.success && session.pending_actions.length === 0 && (expectedDifference === undefined || parsed.data.potential_discrepancy_cents === expectedDifference);
+  const replyRefs=parsed.success?parsed.data.reply_references??[]:[];
+  const repliesValid=replies===undefined || (replyRefs.every(r=>replies.some(s=>s.reply_id===r.reply_id&&s.sha256===r.sha256))&&(!replies.length||replyRefs.length>0));
+  const valid = repliesValid && researchValid && referencesValid && finished && parsed.success && session.pending_actions.length === 0 && (expectedDifference === undefined || parsed.data.potential_discrepancy_cents === expectedDifference);
   return {
     ...(research?{research:publicResearch(research)}:{}),
     status: session.status, stop_reason: session.stop_reason,

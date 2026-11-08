@@ -5,8 +5,8 @@ Updated November 7, 2026. See [stack operations](stack.md) for account configura
 ## Verified
 
 - Neon CLI authentication and the requested production project setup completed. Postgres, Auth, Functions, Realtime, and AI Gateway credentials are provisioned.
-- All eight Drizzle migrations applied. The case Function is deployed with server-only Naïve configuration.
-- `npm run build` passes, including TypeScript checks for backend, frontend, scripts, and provider configuration. Latest build: 265 modules, 542.84 kB JavaScript. The chunk-size warning remains.
+- All nine Drizzle migrations applied. The case Function is deployed with server-only Naïve configuration.
+- `npm run build` passes, including TypeScript checks for backend, frontend, scripts, and provider configuration. Latest build: 265 modules, 544.97 kB JavaScript. The chunk-size warning remains.
 - `npm start` serves the preview; use http://localhost:4173.
 - `npm run test:e2e` passes signup/session validation, authenticated Function access, database create/persistence/delete, Realtime delivery, reload, and sign-out. It also verifies 401 for missing/invalid tokens, 400 for negative amounts, and 403 for unlisted users trying to spend crew credits.
 - Live authorized app crew test passed: signup, case creation, duplicate-start deduplication, Naïve completion, saved Postgres review, and UI reload. Four focused tests reject intermediate/error/approval-pending output. Saved review records remain readable without another provider call.
@@ -27,13 +27,13 @@ Updated November 7, 2026. See [stack operations](stack.md) for account configura
 
 ## Next work
 
-Add inbound reply handling, agent-driven outreach proposals, and scheduled follow-ups; verify a newly authorized case-linked call when a recipient agrees. Resolve AgentPhone SIP and gateway credits with the operator before paid operations. Publish a frontend only after configuring its exact Auth/CORS/Realtime origin.
+Add scheduled reply checks, agent-driven outreach proposals, and authorized follow-ups; verify a newly authorized case-linked call when a recipient agrees. Resolve AgentPhone SIP and gateway credits with the operator before paid operations. Publish a frontend only after configuring its exact Auth/CORS/Realtime origin.
 
 The team still needs a real interview participant. No customer savings or testimonial has been established. See [demo and research](demo-and-research.md).
 
 ## Selected product direction
 
-The user selected an insurer-facing workplace chemical-burn workflow, from initial injury/insurance-card intake to supported claim resolution and final bill reconciliation. Product context and Naïve prompts now reflect that direction (intake version 6; other specialists version 5). The app now supports progressive injury/insurance intake, nullable financial amounts, and revision-aware case editing/reviews. Insurance-card/document upload and transcription are implemented. Initial official-source research is implemented; claim forms, broader jurisdiction/policy research, and autonomous reply/follow-up handling remain incomplete. Prior infrastructure tests do not establish completion of this new end-to-end workflow. See insurance-workflows.md.
+The user selected an insurer-facing workplace chemical-burn workflow, from initial injury/insurance-card intake to supported claim resolution and final bill reconciliation. Product context and Naïve prompts now reflect that direction (intake version 6; other specialists version 5). The app now supports progressive injury/insurance intake, nullable financial amounts, and revision-aware case editing/reviews. Insurance-card/document upload and transcription are implemented. Initial official-source research is implemented; claim forms, broader jurisdiction/policy research, and scheduled reply handling and autonomous follow-up remain incomplete. Prior infrastructure tests do not establish completion of this new end-to-end workflow. See insurance-workflows.md.
 
 ## Document intake update
 
@@ -48,3 +48,7 @@ The live document review included an unsupported payer-priority statement and re
 ## Official-source research update
 
 California workplace reviews now retrieve DWC filing/overview guidance automatically; health-insurance reviews have a general HealthCare.gov appeal adapter. Sources are immutable per run, with text hashes and timestamps, and displayed findings require exact quotations and applicability limits. The live combined document/research test passed after one bounded correction; the first invalid result was rejected. The coordinator now uses GPT-5.4 mini, with unchanged approved caps; other specialists retain Qwen Flash. See [research](research.md) for scope and remaining limitations.
+
+## Reply ingestion update
+
+The app now reads the authorized AgentMail thread and stores matching received replies as untrusted reported information. Held replies are visible but excluded from reviews. Concurrent imports, evidence revocation, owner isolation, and original-content retention passed seven isolated database/provider tests. The real test reply arrived and was imported once through the deployed UI; reload, repeat sync, and cross-user denial passed. A correspondence-aware agent review passed, with an exact reference to the received reply and a persistent UI link. Its first result failed arithmetic validation; one correction in the same session passed. No follow-up email has been sent. See [reply handling](replies.md).

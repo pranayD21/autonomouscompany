@@ -81,3 +81,22 @@ export const documentExtractions = pgTable("advocacy_document_extractions", {
  confirmed_at:timestamp("confirmed_at",{withTimezone:true}),
  created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
 });
+
+export const caseReplies = pgTable("advocacy_case_replies", {
+ id:uuid("id").primaryKey().defaultRandom(),
+ case_id:uuid("case_id").notNull().references(()=>cases.id,{onDelete:"restrict"}),
+ action_id:uuid("action_id").notNull().references(()=>outreachActions.id,{onDelete:"restrict"}),
+ inbox_id:text("inbox_id").notNull(),
+ message_id:text("message_id").notNull(),
+ thread_id:text("thread_id").notNull(),
+ sender:text("sender").notNull(),
+ subject:text("subject").notNull(),
+ body:text("body").notNull(),
+ sha256:text("sha256").notNull(),
+ disposition:text("disposition").$type<"accepted"|"held">().notNull(),
+ reason:text("reason").notNull(),
+ attachment_count:integer("attachment_count").notNull().default(0),
+ received_at:timestamp("received_at",{withTimezone:true}).notNull(),
+ created_at:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),
+},t=>[uniqueIndex("advocacy_reply_provider_idx").on(t.inbox_id,t.message_id),index("advocacy_reply_case_idx").on(t.case_id)]);
+export type CaseReply=typeof caseReplies.$inferSelect;

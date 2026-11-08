@@ -19,3 +19,4 @@ Every repository change must update the relevant documentation in the same chang
 
 - [Private case documents](documents.md): upload, storage, ownership, retry behavior, and extraction limitations.
 - [Official-source research](research.md): source selection, retrieval, immutable snapshots, citations, and coverage limits.
+- [Case email replies](replies.md): thread ingestion, sender checks, held messages, evidence revisions, and correspondence references.
