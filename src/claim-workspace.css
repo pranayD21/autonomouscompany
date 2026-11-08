@@ -178,7 +178,10 @@ li[data-kind="wait"] > .activity-marker, li[data-kind="closed"] > .activity-mark
   /* Case info becomes a full-screen bottom sheet above the mobile bar (z-index 40) and below the nav drawer (90/100). */
   .chat-sheet-layer { position: fixed; inset: 0; z-index: 60; align-items: flex-end; }
   .chat-sheet { width: 100%; height: auto; max-height: 88dvh; overflow: hidden; border-radius: 22px 22px 0 0; box-shadow: 0 -18px 40px -24px rgb(0 0 0 / .4); }
-  .chat-sheet-grab { display: block; position: absolute; top: 8px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--rule); }
+  .chat-sheet-grab { display: block; position: absolute; top: 8px; left: 50%; z-index: 1; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--rule); }
+  /* Swipe down to close (CaseView's touch handlers): the handle and header never scroll, so they always move the sheet. */
+  .chat-sheet-grab::before { content: ""; position: absolute; inset: -10px -40px; }
+  .chat-sheet-grab, .chat-sheet-head { touch-action: none; }
   .chat-sheet-head { padding: 20px 16px 12px; border-top-left-radius: 22px; border-top-right-radius: 22px; }
   .chat-sheet-body { padding: 0 16px max(20px, env(safe-area-inset-bottom)); }
   .sheet-block .facts { grid-template-columns: minmax(0, 1fr); }

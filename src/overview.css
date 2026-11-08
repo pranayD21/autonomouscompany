@@ -13,49 +13,28 @@
 .ov-cta:hover { background: #30352c; transform: translateY(-2px); }
 .ov-cta:hover .ov-cta-arrow { transform: rotate(45deg); }
 
-/* Bento: dark hatched savings card + two linked stat cards */
-.ov-bento { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-bottom: 44px; }
-.ov-card-slot { display: grid; }
-.ov-card { position: relative; display: flex; flex-direction: column; gap: 10px; min-height: 212px; padding: 24px 26px; border: 1px solid var(--rule); border-radius: 26px; background: #fff; overflow: hidden; }
-.ov-card-label, .ov-chip { font-size: 10px; font-weight: 650; letter-spacing: 1.6px; text-transform: uppercase; color: var(--quiet); }
-.ov-big { font-size: 56px; font-weight: 600; letter-spacing: -.06em; line-height: 1; font-variant-numeric: tabular-nums; }
-
-.ov-savings { justify-content: space-between; background: var(--ink); border-color: var(--ink); color: var(--paper); }
-.ov-savings::before { content: ""; position: absolute; right: -80px; bottom: -120px; width: 320px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgba(36, 101, 239, .45), transparent 65%); pointer-events: none; }
-.ov-hatch { position: absolute; inset: 0 0 auto auto; width: 62%; height: 75%; background: repeating-linear-gradient(-45deg, rgba(245, 244, 239, .09) 0 1px, transparent 1px 9px); -webkit-mask-image: radial-gradient(ellipse at 100% 0%, #000 0%, transparent 70%); mask-image: radial-gradient(ellipse at 100% 0%, #000 0%, transparent 70%); pointer-events: none; }
-.ov-chip { position: relative; align-self: flex-start; padding: 6px 12px; border-radius: 100px; background: rgba(245, 244, 239, .1); color: rgba(245, 244, 239, .75); }
-.ov-savings-value { position: relative; font-size: clamp(46px, 5.2vw, 72px); font-weight: 600; letter-spacing: -.06em; line-height: 1; font-variant-numeric: tabular-nums; }
-.surface .ov-savings p { position: relative; margin: 0; max-width: 340px; color: rgba(245, 244, 239, .62); font-size: 12px; line-height: 1.6; }
-
-.ov-attention { color: var(--ink); transition: border-color .2s, box-shadow .25s var(--ease), transform .25s var(--ease); }
-.ov-attention[data-alert="true"] { border-color: #f0d8bd; background: linear-gradient(160deg, #fffaf3 40%, #fdf0e1); }
-.ov-attention[data-alert="true"] .ov-big { color: var(--warn); }
-a.ov-attention:hover { transform: translateY(-2px); box-shadow: 0 16px 34px -22px rgba(162, 85, 28, .55); }
-.ov-attention-case { display: grid; gap: 3px; margin-top: auto; font-size: 14px; font-weight: 600; letter-spacing: -.2px; line-height: 1.35; }
-.ov-attention-case small { font-size: 12px; font-weight: 450; color: var(--quiet); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ov-card-foot { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin: 4px -26px -24px; padding: 12px 26px; border-top: 1px solid #f0d8bd; font-size: 12px; font-weight: 600; color: var(--warn); }
-.ov-card-foot svg { transition: transform .2s var(--ease); }
-a.ov-attention:hover .ov-card-foot svg { transform: translate(2px, -2px); }
-
-.ov-meter { display: flex; gap: 4px; height: 10px; margin-top: auto; }
-.ov-meter > span { display: block; min-width: 10px; border-radius: 100px; background: var(--rule); }
-.ov-meter > span[data-owner="you"] { background: var(--warn); }
-.ov-meter > span[data-owner="waiting"] { background: var(--blue); }
-.ov-meter > span[data-owner="done"] { background: var(--ok); }
-.ov-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11px; color: var(--quiet); }
-.ov-legend > span { display: inline-flex; align-items: center; gap: 6px; }
-.ov-legend i { width: 7px; height: 7px; border-radius: 50%; background: var(--rule); }
-.ov-legend [data-owner="you"] i { background: var(--warn); }
-.ov-legend [data-owner="waiting"] i { background: var(--blue); }
-.ov-legend [data-owner="done"] i { background: var(--ok); }
+/* Summary: one plain card split into three stats, styled like the case list (white, rule border). */
+.ov-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 40px; border: 1px solid var(--rule); border-radius: 22px; background: #fff; overflow: hidden; }
+.ov-stat { position: relative; display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 20px 22px; color: var(--ink); }
+.ov-stat + .ov-stat { border-left: 1px solid var(--rule); }
+.ov-stat-label { font-size: 11px; font-weight: 650; letter-spacing: 1.3px; text-transform: uppercase; color: var(--quiet); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ov-stat-value { font-size: 40px; font-weight: 600; letter-spacing: -.05em; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ov-stat-foot { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--quiet); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ov-stat[data-alert="true"] .ov-stat-value, .ov-stat[data-alert="true"] .ov-stat-foot { color: var(--warn); }
+.ov-stat[data-alert="true"] .ov-stat-foot { font-weight: 600; }
+a.ov-stat { transition: background .2s; }
+a.ov-stat:focus-visible { outline: 2px solid var(--blue); outline-offset: -4px; }
+@media (hover: hover) { a.ov-stat:hover { background: #fffaf3; } }
 
 /* Case list: the landing "How it works" numbered rows */
 .ov-list-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; padding-bottom: 16px; border-bottom: 1px solid var(--rule); }
 .surface .ov-list-head h2 { font-size: 26px; font-weight: 550; letter-spacing: -1px; }
 .ov-filters { display: inline-flex; gap: 2px; padding: 4px; border: 1px solid var(--rule); border-radius: 100px; background: #fff; }
 .surface .ov-filter { position: relative; gap: 7px; padding: 8px 14px; background: transparent; color: var(--quiet); font-size: 12px; font-weight: 600; }
-.surface .ov-filter:hover:not(:disabled) { background: transparent; color: var(--ink); }
-.surface .ov-filter[aria-selected="true"] { color: var(--paper); }
+.surface .ov-filter:hover:not(:disabled), .surface .ov-filter:active:not(:disabled) { background: transparent; }
+@media (hover: hover) { .surface .ov-filter:hover:not(:disabled) { color: var(--ink); } }
+/* Selected text stays light even while iOS keeps the tapped button in :hover. */
+.surface .ov-filter[aria-selected="true"], .surface .ov-filter[aria-selected="true"]:hover:not(:disabled) { color: var(--paper); }
 .ov-filter > span:not(.ov-filter-pill) { position: relative; z-index: 1; }
 .ov-filter-pill { position: absolute; inset: 0; border-radius: 100px; background: var(--ink); }
 .ov-filter-count { min-width: 18px; padding: 1px 6px; border-radius: 100px; background: var(--tint); color: var(--quiet); font-size: 10px; font-variant-numeric: tabular-nums; }
@@ -79,26 +58,20 @@ a.ov-attention:hover .ov-card-foot svg { transform: translate(2px, -2px); }
 .ov-skeleton { display: inline-block; width: 180px; max-width: 100%; height: 12px; border-radius: 100px; background: linear-gradient(90deg, var(--tint) 30%, #f7f7f2 50%, var(--tint) 70%) 0 0/250% 100%; animation: ov-shimmer 1.4s ease-in-out infinite; vertical-align: middle; }
 .ov-skeleton--badge { width: 78px; height: 22px; }
 @keyframes ov-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
-.surface .ov-empty { padding: 30px 0; color: var(--quiet); }
+.surface .ov-rows > li.ov-empty { display: grid; justify-items: center; gap: 4px; padding: 36px 16px 32px; border-bottom: 0; text-align: center; }
+.ov-empty-icon { display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 8px; border-radius: 50%; background: var(--tint); color: var(--quiet); }
+.ov-empty strong { font-size: 16px; font-weight: 600; letter-spacing: -.2px; }
+.ov-empty > span:last-child { font-size: 14px; color: var(--quiet); }
 
 .ov-new { display: inline-flex; align-items: center; gap: 12px; margin-top: 22px; font-size: 13px; font-weight: 600; color: var(--ink); }
 .ov-new-plus { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; border: 1.5px dashed var(--blue); color: var(--blue); transition: background .2s, color .2s, transform .25s var(--ease); }
 .ov-new:hover { color: var(--blue); }
 .ov-new:hover .ov-new-plus { background: var(--blue); color: #fff; border-style: solid; transform: rotate(90deg); }
 
-@media (max-width: 1080px) {
-  .ov-bento { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .ov-savings { grid-column: 1 / -1; min-height: 190px; }
-}
 @media (max-width: 820px) {
   .ov-head { flex-direction: column; align-items: flex-start; gap: 22px; }
-  .surface p.ov-summary { font-size: 15px; }
 }
 @media (max-width: 640px) {
-  .ov-bento { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-  .ov-card { min-height: 0; padding: 20px; border-radius: 22px; }
-  .ov-card-foot { margin: 4px -20px -20px; padding: 12px 20px; }
-  .ov-big { font-size: 46px; }
   .ov-filters { width: 100%; overflow-x: auto; scrollbar-width: none; }
   .surface .ov-filter { flex: 1; padding: 8px 6px; flex-shrink: 0; font-size: 11px; }
   .ov-filter-count { display: none; }
@@ -107,13 +80,10 @@ a.ov-attention:hover .ov-card-foot svg { transform: translate(2px, -2px); }
   .ov-row-arrow { grid-column: 3; grid-row: 1; width: 36px; height: 36px; }
   .ov-row-title { font-size: 19px; }
 }
-/* Phones: readable labels, a scrollable filter bar that never widens the page, and a compact bento
-   so the case list starts near the fold. Desktop sizes above are unchanged. */
+/* Phones: readable labels and a scrollable filter bar that never widens the page. */
 @media (max-width: 820px) {
   .ov .eyebrow { font-size: 12px !important; letter-spacing: 1.4px; }
-  .ov-card-label, .ov-chip { font-size: 12px; letter-spacing: 1.3px; }
   .ov-row-kind { font-size: 11.5px; letter-spacing: 1.1px; }
-  .ov-legend { font-size: 13px; }
   .surface .ov-filter { font-size: 13px; }
   .ov-filter-count { font-size: 11px; }
 }
@@ -122,26 +92,20 @@ a.ov-attention:hover .ov-card-foot svg { transform: translate(2px, -2px); }
   .ov-filters::-webkit-scrollbar { display: none; }
   .surface .ov-filter { flex: 1 0 auto; padding: 8px 12px; font-size: 13px; white-space: nowrap; }
 }
-@media (max-width: 480px) {
-  .ov-bento { gap: 10px; }
-  .ov-card { gap: 6px; padding: 16px 18px; border-radius: 20px; }
-  .ov-card-foot { margin: 2px -18px -16px; padding: 10px 18px; }
-  .ov-big { font-size: 36px; }
-  .ov-savings { min-height: 0; gap: 10px; }
-  .ov-savings-value { font-size: clamp(30px, 9vw, 40px); }
-  .ov-attention-case { font-size: 14px; }
-  .ov-meter { height: 8px; margin-top: 6px; }
+/* Phones: the two counts side by side, reported savings across the full width below so any amount fits.
+   Labels and footers wrap instead of truncating; nothing is cut off with an ellipsis. */
+@media (max-width: 640px) {
+  .ov-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 30px; border-radius: 20px; }
+  .ov-stat { gap: 4px; padding: 16px 16px 18px; }
+  .ov-stat--savings { grid-column: 1 / -1; border-top: 1px solid var(--rule); }
+  .ov-stat + .ov-stat.ov-stat--savings { border-left: 0; }
+  .ov-stat-label { font-size: 11px; letter-spacing: 1px; line-height: 1.3; white-space: normal; overflow: visible; }
+  .ov-stat-value { font-size: 32px; overflow: visible; }
+  .ov-stat-foot { font-size: 13px; line-height: 1.35; white-space: normal; overflow: visible; }
 }
-@media (min-width: 360px) and (max-width: 480px) {
-  /* Needs you stays full width on top; the two summary cards share a row beneath it. */
-  .ov-bento { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "you you" "save mix"; }
-  .ov-card-slot { grid-area: you; }
-  .ov-savings { grid-area: save; padding: 16px; }
-  .ov-mix { grid-area: mix; padding: 16px; }
-  .ov-savings-value { font-size: clamp(24px, 7.4vw, 32px); }
-  .surface .ov-savings p { font-size: 12px; line-height: 1.5; }
-  .ov-savings .ov-chip { padding: 5px 10px; font-size: 11.5px; letter-spacing: 1px; }
-  .ov-mix .ov-card-label { font-size: 11.5px; letter-spacing: 1px; }
-  .ov-mix .ov-legend { flex-direction: column; gap: 2px; }
+/* iPhone SE and other 320px screens: all four filters fit without scrolling. */
+@media (max-width: 360px) {
+  .surface .ov-filter { padding: 8px 8px; }
+  .ov-stat { padding: 14px 14px 16px; }
 }
 @media (prefers-reduced-motion: reduce) { .ov-skeleton { animation: none; } }

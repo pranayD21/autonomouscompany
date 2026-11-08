@@ -8,7 +8,7 @@ export function EmailSignIn(){
   event.preventDefault();setBusy(true);setError('');const form=new FormData(event.currentTarget);
   const credentials={email:String(form.get('email')).trim(),password:String(form.get('password'))};
   try{const result=signup?await auth.signUp.email({...credentials,name:String(form.get('name')).trim()}):await auth.signIn.email(credentials);
-   if(result.error)throw Error(result.error.message??'Unable to sign in.');selectEmailSession();window.location.assign(`/${window.location.search}#workspace`);
+   if(result.error)throw Error(result.error.message??'Unable to sign in.');selectEmailSession();window.location.replace(`/${window.location.search}#workspace`);
   }catch(error){setError(error instanceof Error?error.message:'Unable to sign in. Please try again.');}finally{setBusy(false);}
  }
  return <section className="auth-card"><h1>{signup?'Create your account.':'Sign in to your cases.'}</h1>

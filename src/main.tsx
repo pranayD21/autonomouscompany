@@ -13,6 +13,10 @@ import {MotionConfig} from "motion/react";
 import "./mobile.css";
 import {ErrorBoundary} from "./ErrorBoundary";
 import {formatPhone} from "./format";
+import {installPhoneHashNavigation, isRouteHash} from "./mobile-nav";
+
+const removePhoneHashNavigation = installPhoneHashNavigation();
+if (import.meta.hot) import.meta.hot.dispose(removePhoneHashNavigation);
 
 const message = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Please try again.";
 
@@ -30,7 +34,7 @@ function App() {
   const [locationHash, setLocationHash] = useState(window.location.hash);
   useEffect(() => {
     const syncHash = () => {
-      setLocationHash(window.location.hash);
+      if (isRouteHash(window.location.hash)) setLocationHash(window.location.hash);
       const target = document.getElementById(window.location.hash.slice(1));
       if (target) {
         let parent = target.parentElement;

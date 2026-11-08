@@ -14,18 +14,18 @@ const GROUP_MS=10*60*1000;
 function timestamp(value:string){const date=new Date(value);return Number.isNaN(date.getTime())?'':date.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
 /** The case conversation. The case page supplies the header pieces, a banner above the composer, and an overlay (children). */
 export function CaseChat({caseId,userId,revision,title,headerStart,headerEnd,beforeCompose,pausedNote=true,fallbackStatus,children}:{caseId:string;userId:string;revision:number;title?:string;headerStart?:ReactNode;headerEnd?:ReactNode;beforeCompose?:ReactNode;pausedNote?:boolean;fallbackStatus?:{label:string;owner?:string};children?:ReactNode}){
- const [conversation,setConversation]=useState<CaseConversation>({messages:[]}),[loaded,setLoaded]=useState(false),[draft,setDraft]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [conversation,setConversation]=useState<CaseConversation>({messages:[]}),[loaded,setLoaded]=useState(false),[draft,setDraft]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const pending=useRef<{id:string;text:string}|null>(null),list=useRef<HTMLDivElement>(null),follow=useRef(true),alive=useRef(true);
  const path=`/cases/${caseId}/messages`;
  const seen=useRef<Set<string>|null>(null);
- const refresh=useCallback(async()=>{const data=await api<CaseConversation>(path,{},userId);if(alive.current){setConversation(data);setLoaded(true);if(pending.current&&data.messages.some(m=>m.id===pending.current!.id)){pending.current=null;setDraft('');setError('');setNotice('Message saved.');}}return data;},[path,userId]);
+ const refresh=useCallback(async()=>{const data=await api<CaseConversation>(path,{},userId);if(alive.current){setConversation(data);setLoaded(true);if(pending.current&&data.messages.some(m=>m.id===pending.current!.id)){pending.current=null;setDraft('');setError('');}}return data;},[path,userId]);
  useEffect(()=>{alive.current=true;const read=()=>void refresh().catch(e=>{if(alive.current)setError(e instanceof Error?e.message:'Could not load your conversation.');});read();const timer=setInterval(read,5000);const changed=(event:Event)=>{if((event as CustomEvent).detail===caseId)read();};window.addEventListener('assurance:case-changed',changed);return()=>{alive.current=false;clearInterval(timer);window.removeEventListener('assurance:case-changed',changed);};},[refresh,caseId]);
  useEffect(()=>{void refresh().catch(()=>{});},[revision,refresh]);
  useEffect(()=>{if(follow.current&&list.current)list.current.scrollTop=list.current.scrollHeight;},[conversation.messages]);
  async function send(event:FormEvent<HTMLFormElement>){
   event.preventDefault();if(busy||!draft.trim()||conversation.can_send===false)return;
-  const request=pending.current??{id:crypto.randomUUID(),text:draft.trim()};pending.current=request;setBusy(true);setError('');setNotice('');follow.current=true;
-  try{await api(path,{method:'POST',body:JSON.stringify(request)},userId);pending.current=null;setDraft('');setNotice('Message saved.');await refresh();}
+  const request=pending.current??{id:crypto.randomUUID(),text:draft.trim()};pending.current=request;setBusy(true);setError('');follow.current=true;
+  try{await api(path,{method:'POST',body:JSON.stringify(request)},userId);pending.current=null;setDraft('');await refresh();}
   catch(e){setError(e instanceof Error?e.message:'Could not confirm that your message was saved. Retry to check the same message.');await refresh().catch(()=>{});}
   finally{if(alive.current)setBusy(false);}
  }
@@ -60,9 +60,8 @@ export function CaseChat({caseId,userId,revision,title,headerStart,headerEnd,bef
   {stopped&&pausedNote&&<p className="case-chat-note">Assurance is paused on this case. Your messages are still saved, but they won’t restart the work.</p>}
   {beforeCompose}
   <div className="case-chat-compose">
-   <ClaimComposer value={draft} onChange={value=>{setDraft(value);setNotice('');}} onSubmit={send} busy={busy} disabled={!loaded||conversation.can_send===false} readOnly={pending.current!==null} needsAnswer={conversation.state==='human_required'} sendLabel={pending.current?'Retry message':'Send message'} attachment={<CaseDocumentUpload/>}/>
+   <ClaimComposer value={draft} onChange={setDraft} onSubmit={send} busy={busy} disabled={!loaded||conversation.can_send===false} readOnly={pending.current!==null} needsAnswer={conversation.state==='human_required'} sendLabel={pending.current?'Retry message':'Send message'} attachment={<CaseDocumentUpload/>}/>
    <CaseDocumentFeedback/>
-   {notice&&<p className="case-chat-feedback" role="status">{notice}</p>}
    {error&&<p className="case-chat-feedback" role="alert">{error}</p>}
   </div>
   {children}

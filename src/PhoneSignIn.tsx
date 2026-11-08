@@ -31,7 +31,7 @@ export function PhoneSignIn({linkExisting=false,status}:{linkExisting?:boolean;s
   if(!linkExisting)await auth.clearManagedSession().catch(()=>undefined);
   if(linkExisting){try{const proof=await phoneSession();const r=await fetch(`${import.meta.env.VITE_CASES_API_URL}/phone/link`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${prior?.data?.session.token}`},body:JSON.stringify({phone_token:proof?.session.token})});if(!r.ok)throw Error((await r.json()).error??'Unable to link phone.');}catch(e){await endPhoneSession();throw e;}}
   if(allowCall&&!linkExisting&&status.onboardingEnabled===true&&status.smsReady&&!fictional(number)&&!tests.includes(number)){await requestOnboardingCall();}
-  window.location.assign('/#workspace');
+  window.location.replace('/#workspace');
  }
  async function submit(e:FormEvent){e.preventDefault();if(!status.enabled)return;setBusy(true);setError('');try{
   const number=toE164(phone);if(!status.smsReady&&!tests.includes(number))throw Error(tests.length?'Live SMS is not available yet. Choose a fictional test number below.':'Text sign-in is unavailable right now. Please try again shortly.');

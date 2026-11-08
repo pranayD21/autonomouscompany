@@ -1,12 +1,24 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useId,useRef,useState} from 'react';
 import {api} from './services';
 import {phoneSession} from './phone-session';
+import {formatPhone} from './format';
 
 type OnboardingStatus={enabled?:boolean;phone?:string;status:string;case_id?:string|null;reason?:string|null;callback_number?:string|null;transcript?:Array<{role:'user'|'agent';text:string;time?:string}>};
 type CallNotice={ownerId:string;state:'requesting'|'requested'|'unconfirmed';message:string};
 const key='assurance-onboarding-call';
 function read():CallNotice|null{try{return JSON.parse(sessionStorage.getItem(key)??'null');}catch{return null;}}
 function save(value:CallNotice){sessionStorage.setItem(key,JSON.stringify(value));window.dispatchEvent(new Event('assurance-onboarding-call'));}
+function readPreference(storageKey:string){try{return localStorage.getItem(storageKey)==='true';}catch{return false;}}
+function useNoticePreference(storageKey:string){
+ const [preference,setPreference]=useState(()=>({key:storageKey,value:readPreference(storageKey)}));
+ useEffect(()=>setPreference({key:storageKey,value:readPreference(storageKey)}),[storageKey]);
+ const value=preference.key===storageKey&&preference.value;
+ function setValue(next:boolean){
+  setPreference({key:storageKey,value:next});
+  try{localStorage.setItem(storageKey,String(next));}catch{}
+ }
+ return [value,setValue] as const;
+}
 
 /** Invoked by the explicit verification action, never by mounting the dashboard. */
 export async function requestOnboardingCall(){
@@ -64,22 +76,31 @@ export function OnboardingCallNotice({userId}:{userId:string}){
  const server=status&&status.status!=='not_started'?status.status:null;
  // "not_started" has nothing to report; a local note only matters until the server knows about the call.
  const message=server?callStatus(server):local&&local.state!=='requested'?local.message:null;
- const dismissKey=`assurance-onboarding-dismissed:${userId}`,noticeKey=server??local?.state??'';
- const [dismissed,setDismissed]=useState(()=>{try{return localStorage.getItem(dismissKey);}catch{return null;}});
- const dismiss=()=>{setDismissed(noticeKey);try{localStorage.setItem(dismissKey,noticeKey);}catch{/* per-browser convenience only */}};
- const settled=!server||['active','cancelled','failed'].includes(server);
- if(!error&&(!message||(settled&&dismissed===noticeKey)))return null;
- const canStop=!!status&&status.status!=='not_started'&&status.status!=='cancelled';
- return <aside className="onboarding-call-notice" aria-label="Onboarding call">
-  {settled&&message&&<button type="button" className="onboarding-dismiss" aria-label="Dismiss" onClick={dismiss}>×</button>}
-  {message&&<p role="status">{message}</p>}
-  {status?.reason&&<p>{status.reason}</p>}
-  {status?.callback_number&&<p>Call us back from this phone at <a className="text-link" href={`tel:${status.callback_number}`}>{status.callback_number.replace(/^\+1(\d{3})(\d{3})(\d{4})$/,'($1) $2-$3')}</a>. Say “workplace injury” or “health insurance,” then tell us what happened. Your case opens here after the call.</p>}
-  {error&&<p role="alert">{error}</p>}
-  {(canStop||status?.case_id)&&<div className="onboarding-actions">
-   {status?.case_id&&<a className="text-link onboarding-open" href={`#case/${status.case_id}`}>Open your case</a>}
-   {canStop&&<button type="button" className="text-button onboarding-stop" disabled={stopping} onClick={()=>void stop()}>{stopping?'Stopping onboarding…':'Stop onboarding and case work'}</button>}
+ const noticeKey=`${userId}:${server??local?.state??'unavailable'}`;
+ const [dismissed,setDismissed]=useNoticePreference(`assurance-onboarding-dismissed:${noticeKey}`);
+ const [expanded,setExpanded]=useNoticePreference(`assurance-onboarding-expanded:${noticeKey}`);
+ const detailsId=useId();
+ const settled=!!server&&['active','cancelled','failed'].includes(server);
+ if(!error&&(!message||(settled&&dismissed)))return null;
+ const canStop=server?server!=='cancelled':!!local;
+ const urgent=!!error||server==='needs_information'||server==='failed'||server==='unknown';
+ const callback=status?.callback_number;
+ const hasDetails=canStop||!!callback||!!status?.case_id||!!status?.transcript?.length;
+ return <aside className="onboarding-call-notice" data-expanded={expanded} data-urgent={urgent} aria-label="Onboarding call">
+  <div className="onboarding-bar">
+   <span className="onboarding-bar-dot" aria-hidden="true"/>
+   <p role={error||urgent?'alert':'status'}>{error||(server==='needs_information'?'We need a little more information to open your case.':message)}</p>
+   {hasDetails&&<button type="button" className="onboarding-toggle" aria-expanded={expanded} aria-controls={detailsId} aria-label={expanded?'Hide call details':'Show call details'} onClick={()=>setExpanded(!expanded)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>}
+   {settled&&message&&!error&&<button type="button" className="onboarding-dismiss" aria-label="Dismiss onboarding notice" onClick={()=>setDismissed(true)}>×</button>}
+  </div>
+  {hasDetails&&<div id={detailsId} className="onboarding-details" hidden={!expanded}>
+   {callback&&<p className="onboarding-callback">{server==='needs_information'?'Call from your verified phone. Say “workplace injury” or “health insurance” to continue.':server==='active'?'Call from your verified phone if you need help with your case.':server==='cancelled'?'You can call from your verified phone to start again.':'Call from your verified phone if you need help.'}</p>}
+   <div className="onboarding-actions">
+    {callback&&<a className="text-link onboarding-open" href={`tel:${callback}`}>Call {formatPhone(callback)}</a>}
+    {status?.case_id&&<a className="text-link onboarding-open" href={`#case/${status.case_id}`}>Open your case</a>}
+    {canStop&&<button type="button" className="text-button onboarding-stop" disabled={stopping} onClick={()=>void stop()}>{stopping?'Stopping onboarding…':'Stop onboarding and case work'}</button>}
+   </div>
+   {!!status?.transcript?.length&&<details><summary>Call transcript</summary>{status.transcript.map((line,index)=><p key={index}><strong>{line.role==='user'?'You':'Assurance'}:</strong> {line.text}</p>)}</details>}
   </div>}
-  {!!status?.transcript?.length&&<details><summary>Onboarding conversation</summary>{status.transcript.map((line,index)=><p key={index}><strong>{line.role==='user'?'You':'Assurance'}:</strong> {line.text}</p>)}</details>}
  </aside>;
 }

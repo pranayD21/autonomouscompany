@@ -42,7 +42,6 @@
   .doc-head strong { min-width: 0; flex-basis: calc(100% - 40px); }
   .doc-head .text-button { margin-left: auto; }
   .empty { padding: 24px 18px; }
-  .onboarding-call-notice { padding: 16px; }
   .floating-error { max-width: calc(100% - 32px); }
 
   .mobile-bar { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
