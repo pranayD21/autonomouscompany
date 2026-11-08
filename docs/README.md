@@ -36,3 +36,5 @@ Every repository change must update the relevant documentation in the same chang
 - [Expanded autonomy proposal](autonomy-plan.md): user-supplied target architecture; proposal statements are not proof of implementation. The user superseded its coordination instruction and assigned all files to this agent.
 
 - [Case tool server](agent-tools.md): MCP transport, case credentials, sourced statements, and verification.
+
+- [Persistent case sessions](case-sessions.md): durable session bindings, inbound event delivery, scheduler leases, and activation requirements.

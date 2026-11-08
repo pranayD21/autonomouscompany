@@ -29,7 +29,7 @@ Updated November 7, 2026. See [stack operations](stack.md) for account configura
 
 ## Next work
 
-Verify the remaining authorized email decision and same-thread delivery if Naïve chooses contact. Complete Twilio legal/tax details, review its funding quote, provision a number, and verify a newly authorized case-linked call. AgentPhone SIP is no longer required. Resolve gateway credits before claiming successful gateway inference. The frontend is hosted at https://assurance.claims with exact Auth/CORS/Realtime origins; the old Vercel hostname redirects there. GitHub auto-deployment still needs a working account connection.
+Obtain a compatible Naïve setup credential, verify two-case vault isolation, and activate the prepared persistent-session path with a newly scoped synthetic test. The existing own-inbox grant is human_required and must not be reset. Twilio is funded and identity-approved, but the user declined the number purchase. If another Twilio issue occurs, the requested fallback is direct AgentPhone without ElevenLabs. Case-linked calling still needs an authorized test. Resolve gateway access before claiming inference works. GitHub auto-deployment still needs a working Vercel account connection.
 
 The team still needs a real interview participant. No customer savings or testimonial has been established. See [demo and research](demo-and-research.md).
 
@@ -78,3 +78,8 @@ The standing-authority schema, case API, and scheduled worker are deployed. Elev
 The user supplied docs/autonomy-plan.md and assigned all files to this agent. Migrations 0013–0015 and the MCP tools Function are deployed. Case reads, sourced statements, public-source citations, email/call actions, follow-up scheduling, human-help, and stopping are implemented behind case credentials and existing standing authority. Completed-call transcript ingestion feeds case evidence. Live MCP checks prove citation retrieval/storage and the human-help transition, including retry handling and inactive-authority send rejection. No outbound message was sent by these new tool checks.
 
 Naïve vault/session wiring still needs an admin-scoped key for the configured Managed Agents organization. A temporary key from dashboard.usenaive.ai was incompatible and was revoked. Native action permissions and open research are prepared locally, not published to the agent. Persistent per-case sessions, outcome accounting, test checkout, expanded intake, and a complete claim roleplay remain unfinished. Existing bounded grant limits remain unchanged. See agent-tools.md, research.md, and outreach.md for current behavior and tests.
+
+
+## Persistent case sessions
+
+Migration 0016 and the session/event worker are deployed. Eight session tests plus 21 existing regressions passed, as did the build and hosted E2E checks. Production has no registered persistent sessions. Events from replies, call evidence, claimant edits, uploads, and confirmed transcriptions can resume an existing identity-bound Naïve session after setup; native action tools retain authority checks. Live activation, the customer-facing session controls, and credential renewal remain unfinished. See [case sessions](case-sessions.md).

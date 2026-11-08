@@ -1,3 +1,5 @@
+import {drizzle} from "drizzle-orm/node-postgres";
+import {queueCaseAgentEvent} from "./case-agent-events";
 import {extractionRoutes} from "./document-extraction-routes";
 import { Hono } from "hono";
 import type { Pool } from "pg";
@@ -51,7 +53,7 @@ export function documentRoutes(pool: Pool) {
       await finish.query("BEGIN");
       await finish.query("SELECT id FROM advocacy_cases WHERE id=$1 FOR UPDATE",[caseId]);
       const changed=await finish.query("UPDATE advocacy_documents SET state='ready' WHERE id=$1 AND state='uploading' RETURNING id",[id]);
-      if(changed.rowCount)await finish.query("UPDATE advocacy_cases SET revision=revision+1,analysis=NULL,status='new' WHERE id=$1",[caseId]);
+      if(changed.rowCount){await finish.query("UPDATE advocacy_cases SET revision=revision+1,analysis=NULL,status='new' WHERE id=$1",[caseId]);await queueCaseAgentEvent(drizzle(finish),caseId!,`document:${id}`,"document_ready",{document_id:id});}
       await finish.query("COMMIT");
     }catch(e){await finish.query("ROLLBACK");throw e;}finally{finish.release();}
     return c.json({id,state:"ready"},201);

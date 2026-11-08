@@ -1,3 +1,4 @@
+import {queueCaseAgentEvent} from "./case-agent-events";
 import {importCallEvidence} from "./call-evidence-service";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -74,9 +75,11 @@ app.patch("/cases/:id",async c=>{
   const body=await c.req.json().catch(()=>null);
   const parsed=caseInput.safeParse(body);
   if(!parsed.success||!z.number().int().positive().safeParse(body?.revision).success)return c.json({error:"Provide complete valid case details and the current revision."},400);
-  const [updated]=await db.update(cases).set({...parsed.data,revision:sql`${cases.revision}+1`,analysis:null,status:"new"})
-    .where(and(where,eq(cases.revision,body.revision)))
-    .returning({id:cases.id,revision:cases.revision,txid:sql<string>`pg_current_xact_id()::text`});
+  const updated=await db.transaction(async tx=>{
+    const [saved]=await tx.update(cases).set({...parsed.data,revision:sql`${cases.revision}+1`,analysis:null,status:"new"})
+      .where(and(where,eq(cases.revision,body.revision))).returning({id:cases.id,revision:cases.revision,txid:sql<string>`pg_current_xact_id()::text`});
+    if(saved)await queueCaseAgentEvent(tx,saved.id,`claimant-revision:${saved.revision}`,"claimant_updated_case",{revision:saved.revision});return saved;
+  });
   return updated?c.json(updated):c.json({error:"This case changed while you were editing. Reload the latest details before saving."},409);
 });
 app.post("/cases/live", async (c) => c.json(await realtime.seal({

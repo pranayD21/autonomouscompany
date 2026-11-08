@@ -197,3 +197,22 @@ export const caseSources=pgTable("advocacy_case_sources",{
  text:text("text").notNull(),quote:text("quote").notNull(),sha256:text("sha256").notNull(),
  retrieved_at:timestamp("retrieved_at",{withTimezone:true}).notNull(),
 },t=>[uniqueIndex("advocacy_case_source_operation_idx").on(t.case_id,t.operation_id),uniqueIndex("advocacy_case_source_hash_idx").on(t.case_id,t.sha256)]);
+
+export const caseAgentSessions=pgTable("advocacy_case_agent_sessions",{
+ id:uuid("id").primaryKey().defaultRandom(),
+ case_id:uuid("case_id").notNull().references(()=>cases.id,{onDelete:"restrict"}),
+ authority_id:uuid("authority_id").notNull().references(()=>caseAuthorities.id,{onDelete:"restrict"}),
+ credential_id:uuid("credential_id").notNull().references(()=>caseToolCredentials.id,{onDelete:"restrict"}),
+ identity_id:text("identity_id").notNull(),agent_id:text("agent_id").notNull(),agent_version:integer("agent_version").notNull(),
+ session_id:text("session_id"),state:text("state").$type<"starting"|"running"|"idle"|"human_required"|"stopped">().notNull().default("starting"),
+ next_check_at:timestamp("next_check_at",{withTimezone:true}).defaultNow(),
+ lease_id:uuid("lease_id"),lease_until:timestamp("lease_until",{withTimezone:true}),
+ reason:text("reason"),created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
+},t=>[uniqueIndex("advocacy_case_agent_authority_idx").on(t.authority_id),uniqueIndex("advocacy_case_agent_remote_idx").on(t.session_id)]);
+export const caseAgentEvents=pgTable("advocacy_case_agent_events",{
+ id:uuid("id").primaryKey().defaultRandom(),
+ run_id:uuid("run_id").notNull().references(()=>caseAgentSessions.id,{onDelete:"restrict"}),
+ event_key:text("event_key").notNull(),kind:text("kind").notNull(),
+ payload:jsonb("payload").$type<Record<string,unknown>>().notNull(),
+ accepted_seq:integer("accepted_seq"),delivered_at:timestamp("delivered_at",{withTimezone:true}),created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
+},t=>[uniqueIndex("advocacy_case_agent_event_key_idx").on(t.run_id,t.event_key)]);

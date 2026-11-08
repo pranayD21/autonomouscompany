@@ -1,3 +1,4 @@
+import {queueCaseAgentEvent} from "./case-agent-events";
 import {and,eq,inArray,sql} from "drizzle-orm";
 import type {NodePgDatabase} from "drizzle-orm/node-postgres";
 import {cases,outreachActions,callEvidence,caseAuthorities} from "./schema";
@@ -17,6 +18,7 @@ export async function saveCallEvidence(db:NodePgDatabase,caseId:string,actionId:
   await tx.update(outreachActions).set({provider_status:"completed",checked_at:new Date()}).where(eq(outreachActions.id,actionId));
   if(!saved){const [prior]=await tx.select().from(callEvidence).where(and(eq(callEvidence.action_id,actionId),eq(callEvidence.sha256,evidence.sha256)));return prior;}
   await tx.update(cases).set({revision:sql`${cases.revision}+1`,analysis:null,status:"new"}).where(eq(cases.id,caseId));
+  await queueCaseAgentEvent(tx,caseId,`call:${saved.id}`,"call_completed",{evidence_id:saved.id,sha256:saved.sha256});
   // Wake only existing live authority. Never restore stopped/revoked authority or reset limits.
   await tx.update(caseAuthorities).set({next_wake_at:new Date()}).where(and(eq(caseAuthorities.case_id,caseId),inArray(caseAuthorities.state,["active","waiting"])));
   return saved;

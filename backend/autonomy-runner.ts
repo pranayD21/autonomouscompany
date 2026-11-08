@@ -1,6 +1,6 @@
 import {and,desc,eq,inArray,sql} from "drizzle-orm";
 import type {NodePgDatabase} from "drizzle-orm/node-postgres";
-import {caseAuthorities,caseDecisions,cases,outreachActions} from "./schema";
+import {caseAuthorities,caseDecisions,cases,outreachActions,caseAgentSessions} from "./schema";
 import {checkCaseDecision,type CaseDecision} from "./autonomy-policy";
 import {caseDecisionInput} from "./autonomy-service";
 import {startCaseDecision,autonomyOutput} from "./providers/autonomy";
@@ -82,6 +82,8 @@ export async function advanceCaseAuthority(db:NodePgDatabase,id:string,deps:Auto
   await db.update(caseAuthorities).set({state:"stopped",reason:"Standing authorization expired.",next_wake_at:null}).where(live(id));return;
  }
  let [round]=await db.select().from(caseDecisions).where(eq(caseDecisions.authority_id,id)).orderBy(desc(caseDecisions.round)).limit(1);
+ const [persistent]=await db.select({id:caseAgentSessions.id}).from(caseAgentSessions).where(eq(caseAgentSessions.authority_id,id));
+ if(persistent&&(!round||round.state==="finished"||round.input.native_tool!==true))return;
  if(!round||round.state==="finished"){
   if(authority.decisions_used>=authority.policy.max_decisions){await db.update(caseAuthorities).set({state:"human_required",reason:"Agent decision limit reached; review the case before authorizing more work.",next_wake_at:null}).where(live(id));return;}
   const context=await caseDecisionInput(db,authority.case_id,authority.policy);
@@ -126,6 +128,7 @@ export async function pollAutonomousCases(db:NodePgDatabase,deps:AutonomyDepende
   const claimed=await db.execute(sql`WITH due AS (
    SELECT a.id FROM advocacy_case_authorities a JOIN advocacy_cases c ON c.id=a.case_id
    WHERE a.state IN ('active','waiting') AND (a.next_wake_at<=now() OR (a.state='waiting' AND c.revision>a.observed_revision))
+    AND (NOT EXISTS (SELECT 1 FROM advocacy_case_agent_sessions s WHERE s.authority_id=a.id) OR EXISTS (SELECT 1 FROM advocacy_case_decisions d WHERE d.authority_id=a.id AND d.input->>'native_tool'='true' AND d.state IN ('running','executing')))
     AND (a.lease_until IS NULL OR a.lease_until<now()) ORDER BY a.next_wake_at,a.id LIMIT 1 FOR UPDATE OF a SKIP LOCKED
   ) UPDATE advocacy_case_authorities a SET lease_id=gen_random_uuid(),lease_until=now()+interval '10 minutes'
    FROM due WHERE a.id=due.id RETURNING a.id,a.lease_id`);

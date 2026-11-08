@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-07 — Persistent case sessions and event queue
+
+Added one durable Naïve session binding per standing authority, with pinned identity/version, the existing $0.25 budget, stable create/wake identifiers, scheduler leases, and provider backoff. Incoming evidence and claimant edits enqueue events within their database transactions. Follow-ups resume the same session; unresolved provider stops require review. Revocation cancels the session, and the legacy scheduler cannot start parallel inference for a bound authority. Case tools now expose confirmed document transcriptions. See case-sessions.md for the internal activation contract and remaining gaps.
+
+Verification: all 29 sequential database/regression tests passed (eight session, eleven autonomy, three call-evidence, seven reply tests). Build passed with the existing bundle-size warning. Migration 0016 applied to production, and all six Neon Functions deployed. Hosted E2E passed authentication, persistence, Realtime, authorization, isolation, deletion, and sign-out checks; gateway inference remains unavailable because no model is enabled. A production read confirmed zero persistent-session registrations. No new model session, email, call, or budget increase was made. Live session activation still requires a compatible admin credential and verified remote identity/vault binding; mocked transport tests do not prove that integration.
+
 ## 2026-11-07 — Native case action tools
 
 Added send_email, place_call, schedule_followup, request_human, and stop_case to the deployed MCP service. They reuse existing authority validation, typed decisions, send-once dispatch, email threading, and reply monitoring. Per-authority leases serialize tool retries with scheduled work. The scheduler recovers reserved native decisions without another inference request. Case reads expose authority/counters; bounded decision snapshots now include saved citations and statements. Existing grant limits and spending caps remain unchanged. The tools Function now receives server-only outreach credentials and allowlists.

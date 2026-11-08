@@ -1,3 +1,4 @@
+import {queueCaseAgentEvent} from "./case-agent-events";
 import {and,eq,sql} from "drizzle-orm";
 import type {NodePgDatabase} from "drizzle-orm/node-postgres";
 import {caseReplies,cases,outreachActions,type OutreachAction} from "./schema";
@@ -23,7 +24,9 @@ export async function syncReplies(db:NodePgDatabase,action:OutreachAction,userId
    }
    if(reply.disposition==="held")held++;
   }
-  if(changed)await tx.update(cases).set({revision:sql`${cases.revision}+1`,analysis:null,status:"new"}).where(eq(cases.id,item.id));
+  if(changed){await tx.update(cases).set({revision:sql`${cases.revision}+1`,analysis:null,status:"new"}).where(eq(cases.id,item.id));
+   await queueCaseAgentEvent(tx,item.id,`reply-revision:${item.revision+1}`,"correspondence_changed",{revision:item.revision+1});
+  }
   await tx.update(outreachActions).set({checked_at:new Date()}).where(eq(outreachActions.id,action.id));
   return {imported,changed,held,partial:result.partial,revision:item.revision+(changed?1:0)};
  });

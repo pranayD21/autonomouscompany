@@ -1,3 +1,5 @@
+import {drizzle} from "drizzle-orm/node-postgres";
+import {queueCaseAgentEvent} from "./case-agent-events";
 import {Hono} from "hono";
 import type {Pool} from "pg";
 import {z} from "zod";
@@ -79,6 +81,7 @@ export function extractionRoutes(pool:Pool){
    if(!row.confirmed_at){
     await client.query("UPDATE advocacy_document_extractions SET confirmed_at=now() WHERE document_id=$1",[c.req.param("documentId")]);
     await client.query("UPDATE advocacy_cases SET revision=revision+1,analysis=NULL,status='new' WHERE id=$1",[c.req.param("id")]);
+    await queueCaseAgentEvent(drizzle(client),c.req.param("id")!,`transcription:${c.req.param("documentId")}`,"transcription_confirmed",{document_id:c.req.param("documentId")});
    }
    await client.query("COMMIT");return c.json({confirmed:true});
   }catch(e){await client.query("ROLLBACK");throw e;}finally{client.release();}
