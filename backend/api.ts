@@ -21,7 +21,7 @@ import {setReplyMonitoring} from "./reply-monitor";
 import { crewConfiguration, naiveClient, startCrew, repairCrew } from "./providers/naive";
 import { completedCrewSnapshot } from "./providers/crew-result";
 import {saveCrewCompletion} from "./crew-completion";
-import { actionInput, destinationAllowed, outreachEnabled, readOutreach } from "./providers/outreach";
+import { actionInput, destinationAllowed, outreachEnabled, voiceProvider, readOutreach } from "./providers/outreach";
 import {syncReplies} from "./reply-service";
 import { dispatchOnce } from "./outreach-service";
 import {caseInput, potentialDifference} from "./claim-input";
@@ -137,14 +137,14 @@ app.post("/cases/:id/autonomy/:authorityId/revoke",async c=>{
 });
 app.get("/stack/status", (c) => c.json({
   naive: { configured: !!crewConfiguration(), enabledForUser: crewAllowed(c.get("userId")) },
-  outreach: { callConfigured: outreachEnabled("call"), emailConfigured: outreachEnabled("email"), enabledForUser: crewAllowed(c.get("userId")) },
+  outreach: { callProvider: voiceProvider(), callConfigured: outreachEnabled("call"), emailConfigured: outreachEnabled("email"), enabledForUser: crewAllowed(c.get("userId")) },
   voice: { enabled: false, reason: "Case-linked calls are not enabled. The standalone synthetic phone test is verified." },
 }));
 app.post("/cases/:id/crew", async (c) => {
   if (!z.uuid().safeParse(c.req.param("id")).success) return c.json({ error: "Invalid case ID." }, 400);
   const [item] = await db.select().from(cases).where(owned(c.req.param("id"), c.get("userId")));
   if (!item) return c.json({ error: "Case not found." }, 404);
-  if (!crewConfiguration()) return c.json({ error: "Naïve requires credentials, a provisioned coordinator, and an approved run budget." }, 503);
+  if (!crewConfiguration()) return c.json({ error: "Naïve requires credentials, a provisioned coordinator, a verified general agent version, and an approved run budget." }, 503);
   if (!crewAllowed(c.get("userId"))) return c.json({ error: "Crew runs are limited to configured test operators." }, 403);
   const [existingRun]=await db.select().from(crewRuns).where(and(eq(crewRuns.case_id,item.id),eq(crewRuns.case_revision,item.revision)));
   const research=existingRun?undefined:await researchCase(item.case_type,item.intake);

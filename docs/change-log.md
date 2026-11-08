@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-07 — Pin general sessions and verify persistent bindings
+
+Ordinary reviews and bounded decisions now require an explicit immutable general agent version and keep the existing task-budget ceiling. A live provider read confirmed version 21 has no MCP connectors and only delegation/wait tools enabled. Set the private runtime version to 21 and declared it for cases/autopoll. The persistent worker now checks its pinned case URL, identity metadata, attachment, tool default, and approved budget before starting inference; mismatches require review, and provider failures retain backoff.
+
+Verification: three unit tests, nine persistent-session database tests, and build passed. No model session or outbound action was started. Deployment is being handled by the concurrent user-requested AgentPhone pivot to avoid overlapping releases; production verification of this pin/preflight is pending. Fresh user-case provisioning and renewal remain unfinished. See case-sessions.md.
+
 ## 2026-11-07 — Explicit synthetic completion and integration review
 
 Added synthetic_demo_completed as a distinct stop outcome. It requires current recorded-outcome evidence, synthetic authority, and no uncertain dispatch. Dispatch rechecks evidence and stores an explicit no-real-payout label. Real goal_met remains separately gated. Case reads and bounded decision inputs expose current outcome references; the bounded prompt now asks one question per message. Integrated the completed case-specific Managed Agents connector fix and made the connector helper reject bare shared URLs or mismatched case paths.

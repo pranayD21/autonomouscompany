@@ -14,7 +14,7 @@ import type {CaseAuthority} from "../backend/autonomy-policy";
 if(!process.env.OUTREACH_TEST_DATABASE_URL)throw Error("Disposable branch required");
 const pool=new Pool({connectionString:process.env.OUTREACH_TEST_DATABASE_URL.replace("sslmode=require","sslmode=verify-full"),max:5}),db=drizzle(pool),ids:string[]=[],owner=randomUUID();process.env.CREW_ALLOWED_USER_IDS=owner;
 const policy:CaseAuthority={synthetic:true,goal:"Gather fictional claim facts",contacts:[{id:"customer",role:"customer",channel:"email",destination:"demo@example.com"}],max_decisions:3,max_outbound:2,min_contact_interval_minutes:60,expires_at:new Date(Date.now()+86400000).toISOString()};
-const deps:CaseSessionDependencies={start:async()=>({id:`ses_${randomUUID()}`}),read:async()=>({status:"idle",stop_reason:"end_turn",pending_actions:[]}),send:async()=>({accepted_seq:7}),cancel:async()=>({})};
+const deps:CaseSessionDependencies={verifyBinding:async()=>true,start:async()=>({id:`ses_${randomUUID()}`}),read:async()=>({status:"idle",stop_reason:"end_turn",pending_actions:[]}),send:async()=>({accepted_seq:7}),cancel:async()=>({})};
 before(async()=>{await migrate(db,{migrationsFolder:"drizzle"});});
 after(async()=>{if(ids.length){const runs=await db.select().from(caseAgentSessions).where(inArray(caseAgentSessions.case_id,ids));if(runs.length)await db.delete(caseAgentEvents).where(inArray(caseAgentEvents.run_id,runs.map(r=>r.id)));await db.delete(caseAgentSessions).where(inArray(caseAgentSessions.case_id,ids));await db.delete(caseToolCredentials).where(inArray(caseToolCredentials.case_id,ids));await db.delete(caseAuthorities).where(inArray(caseAuthorities.case_id,ids));await db.delete(cases).where(inArray(cases.id,ids));}await pool.end();});
 async function fixture(){const [item]=await db.insert(cases).values({owner_id:owner,title:"Synthetic persistent case"}).returning();ids.push(item.id);const [authority]=await db.insert(caseAuthorities).values({case_id:item.id,approved_by:owner,policy,next_wake_at:null}).returning();const credential=await issueCaseToolCredential(db,item.id,owner);const input={case_id:item.id,authority_id:authority.id,credential_id:credential.id,identity_id:`idn_${randomUUID()}`,agent_id:"agt_test",agent_version:18};const run=await registerCaseAgentSession(db,input,owner);return{item,authority,credential,input,run};}
@@ -59,4 +59,11 @@ test("failed start backs off and retries the same session-create idempotency key
  await pollCaseAgentSessions(db,{...deps,start:async(_input,key)=>{keys.push(key);throw Error("Provider at capacity");}});assert.equal(keys.length,1);assert.ok((await get(f.run.id)).lease_until!>new Date());
  await db.update(caseAgentSessions).set({lease_until:new Date(0),next_check_at:new Date(0)}).where(eq(caseAgentSessions.id,f.run.id));
  await pollCaseAgentSessions(db,{...deps,start:async(input,key)=>{keys.push(key);return deps.start(input,key);}});assert.equal(keys.length,2);assert.equal(keys[0],keys[1]);
+});
+
+
+test("a mismatched remote binding prevents session creation",async()=>{
+ const f=await fixture();let starts=0;
+ await advanceCaseAgentSession(db,f.run.id,{...deps,verifyBinding:async()=>false,start:async input=>{starts++;return {id:"ses_must_not_start"};}});
+ assert.equal(starts,0);assert.equal((await get(f.run.id)).state,"human_required");assert.equal((await get(f.run.id)).session_id,null);
 });

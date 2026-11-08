@@ -28,9 +28,18 @@ The existing `autopoll` Function processes call evidence, persistent sessions, a
 
 `case-agent-session.test.ts` uses a disposable database and fake provider transports. It checks owner/binding isolation, concurrent starts, session/identity/budget preservation, event deduplication, same-key retry after uncertain delivery, cancellation on revocation, revocation during a provider read, budget-pause handling, and backoff without a replacement session. Existing reply, call-evidence, and autonomy suites cover the changed transaction/scheduler paths.
 
-No production persistent session has been registered. Activation still requires an admin-scoped setup key for Assurance's Managed Agents organization, successful two-case vault-isolation verification, and a real start/wake test. The legacy dashboard key was incompatible and revoked. The original own-inbox grant remains human_required with its existing counts; this implementation does not reactivate it. A customer-facing activation/status interface and automatic credential renewal are not implemented.
+No production persistent session has been registered. The compatible admin setup and two-case tool-isolation test have now passed using case-specific connector URLs; their fixtures and temporary setup keys were removed. Activation still requires provisioning a fresh authorized case binding and verifying a real persistent start/wake cycle. The original own-inbox grant remains human_required with its existing counts; this implementation does not reactivate it. A customer-facing activation/status interface and automatic credential renewal are not implemented.
 
 
 ## Owner-visible session status
 
 The owner-only autonomy history API now returns session state, next check time, and any recorded reason. It excludes credentials, remote identity/session IDs, agent IDs, and worker leases. The prepared frontend shows this status next to the existing authority stop control. A scheduled status check is not a promise that contact will occur. Human-help decisions display the actual question and a count within the returned decision history (at most 100 decisions), not a count of all operator actions or all-time human interventions. The frontend is published at assurance.claims and hosted browser checks passed.
+
+
+## Version and binding preflight
+
+Ordinary crew reviews and bounded decisions explicitly use `NAIVE_GENERAL_AGENT_VERSION`, rather than the coordinator’s changing default version. The configured version 21 was read from the live provider and has zero MCP servers, deny-by-default tools, and only delegation/wait tools enabled. This prevents a concurrent case-specific version publication from redirecting a general review to that case. Updating this environment value requires verifying the replacement version is connector-free. Missing/invalid versions or a task budget above the existing $0.25 cap disable general session creation.
+
+Before the persistent worker starts a remote session, `backend/providers/case-binding.ts` reads the pinned version, identity metadata, and identity’s attached agents. It requires exactly the expected case-specific Assurance connector, no literal credential headers, deny-by-default permissions, the existing $2/month and $0.25/task budget, matching case identity metadata, and the correct agent attachment. A mismatch records human_required without starting inference. Provider read failures use the existing backoff instead. The worker receives the public `NAIVE_CASE_TOOLS_URL` base via its server environment.
+
+These checks do not prove that the vault contains the correct sealed token; the provisioning operation must still create and verify that binding before registration. Public per-user provisioning and renewal remain unfinished. The runtime preflight needs no new admin key and does not mutate remote agents.
