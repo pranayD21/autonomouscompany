@@ -23,6 +23,16 @@ test('staffing retries reuse one request and refuse silent authority transfer',a
  assert.equal((await pool.query('SELECT count(*)::int n FROM advocacy_firm_events WHERE case_id=$1',[f.id])).rows[0].n,2);
  await assert.rejects(()=>requestFirmStaffing(db,f.id,randomUUID()),/EXPLICIT_HANDOVER/);
 });
+test('restarting after the owner stopped work restaffs the case with a fresh advocate',async()=>{
+ const f=await fixture();await requestFirmStaffing(db,f.id,f.authority);
+ await pool.query("UPDATE advocacy_firm_staffing SET state='active',agent_id='agt_old',budget_micro_usd=1000 WHERE case_id=$1",[f.id]);
+ await pool.query("UPDATE advocacy_case_authorities SET state='revoked' WHERE id=$1",[f.authority]);
+ const {rows:[next]}=await pool.query("INSERT INTO advocacy_case_authorities(case_id,approved_by,policy) VALUES($1,$2,$3::jsonb) RETURNING id",[f.id,f.owner,JSON.stringify({version:2,consent:'Handle this fictional case.'})]);
+ await requestFirmStaffing(db,f.id,next.id);
+ const {rows:[staff]}=await pool.query('SELECT authority_id,state,agent_id,budget_micro_usd FROM advocacy_firm_staffing WHERE case_id=$1',[f.id]);
+ assert.deepEqual(staff,{authority_id:next.id,state:'requested',agent_id:null,budget_micro_usd:null});
+ assert.equal((await pool.query("SELECT count(*)::int n FROM advocacy_firm_events WHERE case_id=$1 AND kind='budget_needed'",[f.id])).rows[0].n,2);
+});
 test('case requests are scoped, idempotent and blocked by revocation',async()=>{
  const f=await fixture(),other=await fixture(),input={operation_id:operation(),role:'reviewer' as const,request:'Check the documented outcome evidence.'};
  const first=await requestCompanyHelp(db,f.identity,input);assert.deepEqual(await requestCompanyHelp(db,f.identity,input),first);

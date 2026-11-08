@@ -93,9 +93,11 @@ export function Autonomy({caseId, userId, enabled, between, compact = false}: {c
         {!compact && <span className="claim-orb" data-working={working} aria-hidden="true"><span/></span>}
         <h2>{label}</h2>
         {!compact && <p className="status-detail">{detail}</p>}
+        {compact && !current && available && session?.state !== "completed" && <p className="status-detail agent-scope-line">Assurance will research, contact the relevant organizations, and follow up for you. You can stop it anytime.</p>}
         {current && <button className="text-button quiet-button" disabled={busy} onClick={() => stop(current.id)}>Stop agent work</button>}
+        {compact && !current && available && session?.state !== "completed" && <form onSubmit={start} aria-label="Start case agent"><button disabled={busy}>{busy ? "Starting…" : "Start handling my case"}</button></form>}
       </div>
-      {compact ? <details className="agent-scope"><summary>What Assurance is handling</summary><p className="status-detail">{detail}</p>{session?.goal && <p className="status-goal"><span>Goal</span><span className="status-goal-text">{session.goal}</span></p>}</details> : session?.goal && <p className="status-goal"><span>Goal</span><span className="status-goal-text">{session.goal}</span></p>}
+      {compact ? session?.goal && current && <details className="agent-scope"><summary>What Assurance is handling</summary><p className="status-detail">{detail}</p><p className="status-goal"><span>Goal</span><span className="status-goal-text">{session.goal}</span></p></details> : session?.goal && <p className="status-goal"><span>Goal</span><span className="status-goal-text">{session.goal}</span></p>}
 
       {needsYou && (!compact || current?.policy.version !== 2) && <div className="ask">
         {question && "question" in question && <div className="claim-agent-message"><span className="claim-message-label">Assurance needs a little more information</span><p className="ask-question">{question.question}</p></div>}
@@ -109,7 +111,7 @@ export function Autonomy({caseId, userId, enabled, between, compact = false}: {c
         {needsYou && <button type="button" className="text-button claim-resume" disabled={busy} onClick={() => resume(session.authority_id)}>Continue with updated information</button>}
       </div>}
 
-      {!current && available && session?.state !== "completed" && <form onSubmit={start} aria-label="Start case agent">
+      {!compact && !current && available && session?.state !== "completed" && <form onSubmit={start} aria-label="Start case agent">
         <p className="caveat">Assurance will research, contact the relevant organizations, and follow up for you. You can stop it anytime.</p>
         <button disabled={busy}>{busy ? "Starting…" : "Start handling my case"}</button>
       </form>}

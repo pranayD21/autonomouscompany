@@ -61,9 +61,17 @@ export function OnboardingCallNotice({userId}:{userId:string}){
   finally{version.current++;stopPending.current=false;setStopping(false);}
  }
  const local=notice?.ownerId===userId?notice:null;
- if(!status&&!local&&!error)return null;
+ const server=status&&status.status!=='not_started'?status.status:null;
+ // "not_started" has nothing to report; a local note only matters until the server knows about the call.
+ const message=server?callStatus(server):local&&local.state!=='requested'?local.message:null;
+ const dismissKey=`assurance-onboarding-dismissed:${userId}`,noticeKey=server??local?.state??'';
+ const [dismissed,setDismissed]=useState(()=>{try{return localStorage.getItem(dismissKey);}catch{return null;}});
+ const dismiss=()=>{setDismissed(noticeKey);try{localStorage.setItem(dismissKey,noticeKey);}catch{/* per-browser convenience only */}};
+ const settled=!server||['active','cancelled','failed'].includes(server);
+ if(!error&&(!message||(settled&&dismissed===noticeKey)))return null;
  return <aside className="onboarding-call-notice" aria-label="Onboarding call">
-  <p role="status">{status&&status.status!=='not_started'?callStatus(status.status):local?.message??callStatus('not_started')}</p>
+  {settled&&message&&<button type="button" className="onboarding-dismiss" aria-label="Dismiss" onClick={dismiss}>×</button>}
+  {message&&<p role="status">{message}</p>}
   {status?.reason&&<p>{status.reason}</p>}
   {status?.callback_number&&<p>Call us back from this phone at <a className="text-link" href={`tel:${status.callback_number}`}>{status.callback_number.replace(/^\+1(\d{3})(\d{3})(\d{4})$/,'($1) $2-$3')}</a>. Say “workplace injury” or “health insurance,” then tell us what happened. Your case opens here after the call.</p>}
   {error&&<p role="alert">{error}</p>}

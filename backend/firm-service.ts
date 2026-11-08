@@ -97,7 +97,7 @@ export async function executeFirmTool(db:NodePgDatabase,role:FirmRole,name:strin
   if(name==='hire_advocate'){
    const item=await currentCase(db,caseId!);const [staff]=await db.select().from(firmStaffing).where(eq(firmStaffing.case_id,item.id));if(!staff)throw Error('STAFFING_NOT_REQUESTED');
    const [authority]=await db.select().from(caseAuthorities).where(eq(caseAuthorities.id,staff.authority_id));if(!authority||authority.case_id!==item.id||authority.approved_by!==item.owner_id||!['active','waiting'].includes(authority.state))throw Error('AUTHORITY_NOT_ACTIVE');
-   if(!staff.budget_micro_usd){await queueFirmEvent(db,{role:'ceo',event_key:`budget-needed:${caseId}`,kind:'budget_needed',case_id:item.id});return {state:'waiting_for_ceo_budget'};}
+   if(!staff.budget_micro_usd){await queueFirmEvent(db,{role:'ceo',event_key:`budget-needed:${staff.authority_id}`,kind:'budget_needed',case_id:item.id,payload:{authority_id:staff.authority_id}});return {state:'waiting_for_ceo_budget'};}
    if(staff.state==='active'&&staff.agent_id)return {case_id:item.id,agent_id:staff.agent_id,state:'already_hired'};
    const claimed=await reserveFirmHire(db,item.id,staff.authority_id);
    if(!claimed){

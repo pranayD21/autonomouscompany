@@ -1,5 +1,13 @@
 # Change log
 
+## November 8, 2026 — Restart after stop, quieter onboarding notice, slimmer status row
+
+**Problem:** Starting a stopped case failed with the misleading "Provide your permission in your own words…" error. The real cause was `requestFirmStaffing` refusing to rebind a case whose staffing row still pointed at the revoked authority, plus a `budget-needed:<case>` event key that would have deduplicated the new budget request away. The phone onboarding banner showed "Your phone account is ready" forever, because the `not_started` status fell back to that default message. The compact status card was a large box that repeated the chat header.
+
+**Changes:** Staffing is rebound to the new authority, clearing the advocate, budget and state, when the previous authority is no longer open. Budget-needed keys are now per authority. The API maps the handover error and returns a generic retry message for unexpected failures, which are also logged. `src/phone-onboarding.tsx` shows nothing for `not_started`, drops local "requested" notes once the server knows about the call, and lets settled notices (`active`, `cancelled`, `failed`) be dismissed per browser until the status changes. `src/Autonomy.tsx` compact mode is one row with the status, the scope sentence and Start or Stop; the handling disclosure appears only when work is active and a goal exists.
+
+**Verification:** Typecheck and production build passed, and 18 focused UI tests passed. Added a DB test that restarting after a revoke restaffs the case; it was not run because no `OUTREACH_TEST_DATABASE_URL` is configured locally. The stopped state was checked in the synthetic full-page fixture with a desktop screenshot. Not deployed.
+
 ## November 8, 2026 — Friendlier landing CTA and mobile hero layout
 
 Changed the landing CTA from **Open a case** to **Tell us what happened** (user-chosen wording), on desktop and mobile. On screens 820px and narrower, rearranged the landing hero into one column: wordmark, headline, a short line explaining the phone-first start, full-width CTA, and a “See how it works” link; also tightened the header, steps and footer. Desktop layout rules are unchanged; the only desktop-visible change is the CTA label. `scripts/phone-ui-check.ts` now looks for the new CTA name. See [frontend.md](frontend.md).
