@@ -1,6 +1,7 @@
 import { config } from "dotenv";
 import { createClient, ApiError } from "@usenaive-sdk/managed-agents";
 import { Pool } from "pg";
+import {voiceProvider,outreachEnabled} from "../backend/providers/outreach";
 config({ path: [".env.local", ".env"], quiet: true });
 let failures = 0;
 function report(service: string, state: string) { console.log(`${service}: ${state}`); }
@@ -29,11 +30,17 @@ await check("Neon AI Gateway", ["NEON_AI_GATEWAY_BASE_URL", "NEON_AI_GATEWAY_TOK
 });
 await check("Naïve", ["NAIVE_API_KEY"], async () => { const client = createClient({ baseUrl: "https://api.vetta.sh", apiKey: process.env.NAIVE_API_KEY! }); const agents = await client.agents.list({limit:100}); return `CONNECTED — ${agents.data.length} agents visible; coordinator ${agents.data.some(a => a.name === "bill-advocate-coordinator") ? "present" : "not provisioned"}`; });
 await check("ElevenLabs", ["ELEVENLABS_API_KEY"], async () => { await get("https://api.elevenlabs.io/v1/convai/agents", { "xi-api-key": process.env.ELEVENLABS_API_KEY! }); return "CONNECTED — agent list accessible (no call placed)"; });
+if(voiceProvider()==="agentphone") {
+  await check("AgentPhone calling",["AGENTPHONE_API_KEY","AGENTPHONE_AGENT_ID","AGENTPHONE_NUMBER_ID"],async()=>{
+    return outreachEnabled("call")?"CONFIGURED — direct AgentPhone selected; current account access and live calling not verified":"NOT CONFIGURED";
+  });
+} else if(voiceProvider()==="elevenlabs") {
 await check("ElevenLabs/Twilio calling", ["ELEVENLABS_API_KEY", "ELEVENLABS_OUTREACH_AGENT_ID", "ELEVENLABS_PHONE_NUMBER_ID"], async () => {
   const headers={"xi-api-key":process.env.ELEVENLABS_API_KEY!};
   const number=await get(`https://api.elevenlabs.io/v1/convai/phone-numbers/${encodeURIComponent(process.env.ELEVENLABS_PHONE_NUMBER_ID!)}`,headers);
   if(number.provider!=="twilio"||number.supports_outbound===false)throw new Error("Twilio number is not outbound-capable");
   return "CONFIGURED — imported Twilio number accessible; live calling not verified";
 });
+} else { failures++; report("Voice routing","BLOCKED — invalid OUTREACH_VOICE_PROVIDER"); }
 await check("AgentMail", ["AGENTMAIL_API_KEY", "AGENTMAIL_INBOX_ID"], async () => { await get(`https://api.agentmail.to/v0/inboxes/${encodeURIComponent(process.env.AGENTMAIL_INBOX_ID!)}/messages`, { Authorization: `Bearer ${process.env.AGENTMAIL_API_KEY}` }); return "CONNECTED — scoped inbox messages accessible (no email sent)"; });
 process.exitCode = failures ? 1 : 0;

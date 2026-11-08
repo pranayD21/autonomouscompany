@@ -253,3 +253,7 @@ Confirmed the operator’s $20 funding receipt against the refreshed console: ac
 ## Voice preference updated
 
 The operator declined the Twilio number rental and directed that the next Twilio issue should trigger a switch to AgentPhone without ElevenLabs. Recorded this in agents.md and voice/readiness docs, superseding the earlier avoid-AgentPhone direction. No number purchase, provider switch, call, or deployment occurred. AgentPhone direct-call readiness must be checked before use; ambiguous calls must not be retried on another provider.
+
+## AgentPhone fallback prepared
+
+Added explicit OUTREACH_VOICE_PROVIDER selection, defaulting to existing ElevenLabs routing. AgentPhone mode restores direct calls without ElevenLabs or SIP; no automatic retry or cross-provider fallback occurs. Added provider-aware setup checks, neutral call-confirmation wording, scheduler/API env declarations, and five AgentPhone regressions. All 11 voice transport tests and the build passed. No deployment, live provider switch, purchase, or call occurred.
