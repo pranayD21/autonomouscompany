@@ -4,7 +4,7 @@ import type {NodePgDatabase} from 'drizzle-orm/node-postgres';
 import {firmEvents,firmOperations,firmRecords} from './schema';
 import {firmEnabled} from './firm-events';
 import {firmRoles,firmTools,firmBudget,firmWindow,type FirmRole} from './firm-blueprint';
-import {firmNaive,firmRegistry} from './firm-service';
+import {firmNaive,firmRegistry,resumeInterruptedHires} from './firm-service';
 import {firmToolSchemas} from './firm-tools';
 import {isNaiveAdmissionRejected,isNaiveCapacityError,naiveRetryAt} from './naive-retry';
 type Remote=Record<string,any>;
@@ -61,6 +61,7 @@ export async function firmBusinessResult(db:NodePgDatabase,event:typeof firmEven
  if(!row.owner_bound||!['active','waiting','human_required'].includes(String(row.authority_state)))return unmet('owner authority is no longer active');
  if(budgetEvent)return Number(row.budget_micro_usd)>0&&!!row.budget_reason?{state:'finished',reason:null}:unmet('CEO budget and rationale not recorded',`No budget is saved for case ${event.case_id}. Earlier tool errors or approval waits were temporary. Call firm.set_case_budget for this case now with a new operation ID and your reason.`);
  if(event.kind==='new_case'&&row.staffing_state!=='active'&&row.dependency_pending)return {state:'running',reason:'Waiting for the existing CEO allocation or budgeted hiring event; onboarding is not complete.'};
+ if(row.staffing_state==='hiring'&&row.agent_id&&!row.provision_pending)return {state:'running',reason:'The hire is started; the scheduler is finishing it.'};
  if(row.staffing_state==='hiring'&&row.provision_pending)return {state:'running',reason:'Waiting for the existing durable advocate provisioning job; onboarding is not complete.'};
  if(row.staffing_state!=='active'||!row.agent_id||!row.run_bound||!row.credential_bound)return unmet('advocate not hired and bound to this case authority',`No advocate is hired for case ${event.case_id}. Earlier tool errors or approval waits were temporary. Call firm.hire_advocate for this case now with a new operation ID.`);
  if(row.run_state==='stopped')return unmet('advocate stopped before onboarding completed');
@@ -133,6 +134,7 @@ export async function pollFirmEvents(db:NodePgDatabase,provider:FirmProvider=def
  const stats={enabled:firmEnabled(),checked:0,deferred:0,failed:0,approvals:0};if(!stats.enabled)return stats;
  // A bounded invocation slice, not a limit on case work; all provider calls remain serialized.
  const started=Date.now();
+ if(provider===defaults)try{await resumeInterruptedHires(db);}catch(error){if(isNaiveCapacityError(error))stats.deferred++;else stats.failed++;}
  for(let step=0;step<(options.maxEvents??3)&&Date.now()-started<45000;step++){
  const result=await db.execute(sql`WITH due AS (SELECT id FROM advocacy_firm_events WHERE state IN ('queued','running') AND (lease_until IS NULL OR lease_until<now()) ORDER BY COALESCE(lease_until,created_at),created_at LIMIT 1 FOR UPDATE SKIP LOCKED) UPDATE advocacy_firm_events e SET lease_until=date_trunc('milliseconds',now())+interval '3 minutes' FROM due WHERE e.id=due.id RETURNING e.*`);
  const raw=result.rows[0];if(!raw)break;

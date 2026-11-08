@@ -1119,3 +1119,11 @@ The first real phone case's hire created its agent at about 11:27 UTC and was th
 
 Verification: firm service suite on the disposable database, with a mocked provider and mailbox, including repeat calls. Hosted result is recorded once observed on the phone case.
 
+## 2026-11-08 — Scheduler finishes started hires; AgentMail inbox limit found
+
+The first real phone case's hire kept stopping because AgentMail returned HTTP 403 `limit_exceeded` (the plan allows 3 inboxes), and the tool wrapper hid that behind `FIRM_TOOL_NOT_COMPLETED`. The earlier entry's suspected deployment interruption was not the cause. Front Desk then saw `hiring` with an agent assigned and ended its turn as complete. The scheduler now finishes started hires, and firm tool failures log their error code.
+
+The inbox of the revoked, fictional QA case had no messages and no outreach, and was reassigned by hand to the phone case. Nothing was deleted. All 3 inboxes are now in use, so the next new case will fail at the mailbox step until the plan is upgraded or a free inbox exists. See [firm runtime](firm-runtime.md).
+
+Verification: firm service and runner suites on the disposable database, with a mocked provider and mailbox, including a failing mailbox step followed by success.
+

@@ -102,7 +102,7 @@ test('business completion requires the bound advocate first turn and saved CEO r
  assert.equal((await firmBusinessResult(readDb,{...event,kind:'new_case'})).state,'running');
  row.dependency_pending=false;assert.equal((await firmBusinessResult(readDb,{...event,kind:'new_case'})).state,'human_required');
  row.staffing_state='hiring';row.provision_pending=true;assert.equal((await firmBusinessResult(readDb,event)).state,'running');
- row.provision_pending=false;assert.equal((await firmBusinessResult(readDb,event)).state,'human_required');
+ row.provision_pending=false;assert.equal((await firmBusinessResult(readDb,event)).state,'running');
 });
 
 test('one event tick confirms an already pending batch without duplicate dispatch',async()=>{
