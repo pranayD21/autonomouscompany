@@ -1,3 +1,4 @@
+import {outreachRestricted} from './providers/outreach';
 import {caseToolServices} from "./case-tool-service";
 import {recordFirmTestFee} from "./firm-finance";
 import {queueCaseAgentEvent} from "./case-agent-events";
@@ -12,7 +13,7 @@ import {naiveFetch} from './providers/naive-capacity';
 import {openCaseToolInstructions} from './providers/case-agent';
 import {ensureCaseInbox,sendLeadInvitation} from './agentmail-webhook';
 import {readCaseConversation} from './case-messages';
-import {firmTools,firmHarness,DEFAULT_CASE_BUDGET_MICRO_USD} from './firm-blueprint';
+import {firmTools,firmHarness} from './firm-blueprint';
 
 export async function firmNaive(method:string,path:string,body?:unknown,key?:string){
  const response=await naiveFetch()(`https://api.vetta.sh${path}`,{method,headers:{Authorization:`Bearer ${process.env.NAIVE_SETUP_API_KEY}`,'Content-Type':'application/json',...(key?{'Idempotency-Key':key}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});
@@ -35,6 +36,27 @@ async function once(db:NodePgDatabase,role:FirmRole,tool:string,id:string,input:
 async function currentCase(db:NodePgDatabase,caseId:string){
  const [item]=await db.select().from(cases).where(eq(cases.id,z.uuid().parse(caseId)));if(!item)throw Error('NOT_FOUND');return item;
 }
+// The agent's default stays general, so a case session pins a separate connector version. An unstarted run needs a
+// connector version carrying the new budget. Reuses a published one on retry and restores the general default.
+export async function fundedConnectorVersion(agentId:string,authorityId:string,amount:number):Promise<number>{
+ const versions=(await firmNaive('GET',`/v1/agents/${agentId}/versions`)).data as {version:number;mcp_servers:unknown[];tools:unknown;system:string;budget:{cap_micro_usd:number;max_task_micro_usd:number};metadata:Record<string,unknown>}[];
+ const connectors=versions.filter(v=>v.mcp_servers.length>0&&v.metadata.assurance_authority===authorityId).sort((a,b)=>b.version-a.version);
+ const connector=connectors[0];if(!connector)throw Error('ADVOCATE_CONNECTOR_VERSION_MISSING');
+ const current=await firmNaive('GET',`/v1/agents/${agentId}`);
+ let published=connector.budget.max_task_micro_usd===amount?connector.version:null;
+ let head=current.current_version;
+ if(published===null){
+  const general=current.mcp_servers.length?current.metadata.assurance_restore_version:current.current_version;
+  const updated=await firmNaive('PATCH',`/v1/agents/${agentId}`,{mcp_servers:connector.mcp_servers,tools:connector.tools,system:connector.system,budget:{period:'month',cap_micro_usd:Math.max(amount,connector.budget.cap_micro_usd),max_task_micro_usd:amount},metadata:{...connector.metadata,assurance_restore_version:general},expected_version:current.current_version});
+  published=updated.current_version as number;head=published;
+ }
+ const latest=head===current.current_version?current:await firmNaive('GET',`/v1/agents/${agentId}`);
+ if(latest.mcp_servers.length){const restore=latest.metadata.assurance_restore_version;if(!Number.isSafeInteger(restore)||restore<1)throw Error('MISSING_RESTORE_VERSION');await firmNaive('POST',`/v1/agents/${agentId}/rollback`,{to_version:restore,expected_version:latest.current_version});}
+ // Naïve checks a session budget against the default version's cap, not the pinned version's.
+ const general=await firmNaive('GET',`/v1/agents/${agentId}`);
+ if(general.budget.cap_micro_usd<amount||general.budget.max_task_micro_usd<amount)await firmNaive('PATCH',`/v1/agents/${agentId}`,{budget:{...general.budget,cap_micro_usd:Math.max(amount,general.budget.cap_micro_usd),max_task_micro_usd:Math.max(amount,general.budget.max_task_micro_usd)},expected_version:general.current_version});
+ return published;
+}
 export async function executeFirmTool(db:NodePgDatabase,role:FirmRole,name:string,raw:Record<string,unknown>){
  if(!firmTools[role].includes(name))throw Error('ROLE_TOOL_DENIED');
  const caseId=typeof raw.case_id==='string'?raw.case_id:undefined;
@@ -51,23 +73,26 @@ export async function executeFirmTool(db:NodePgDatabase,role:FirmRole,name:strin
  }
  const operationId=z.uuid().parse(raw.operation_id);
  return once(db,role,name,operationId,raw,async()=>{
+  if(name==='open_email_lead'&&outreachRestricted())throw Error('OUTREACH_RESTRICTED_BY_OWNER');
   if(name==='open_email_lead')return sendLeadInvitation(db,z.uuid().parse(raw.lead_id),{operationId,text:z.string().trim().min(1).parse(raw.message),subject:z.string().trim().min(1).parse(raw.subject)});
   if(name==='set_case_budget'){
-   const item=await currentCase(db,caseId!);const requested=z.number().int().positive().parse(raw.budget_micro_usd),reason=z.string().trim().min(1).parse(raw.reason),recovery=raw.expected_recovery_cents==null?null:z.number().int().nonnegative().parse(raw.expected_recovery_cents);
+   const item=await currentCase(db,caseId!);const amount=z.number().int().positive().parse(raw.budget_micro_usd),reason=z.string().trim().min(1).parse(raw.reason),recovery=raw.expected_recovery_cents==null?null:z.number().int().nonnegative().parse(raw.expected_recovery_cents);
    const [staff]=await db.select().from(firmStaffing).where(eq(firmStaffing.case_id,item.id));if(!staff)throw Error('STAFFING_NOT_REQUESTED');
    const [authority]=await db.select().from(caseAuthorities).where(eq(caseAuthorities.id,staff.authority_id));if(!authority||authority.case_id!==item.id||authority.approved_by!==item.owner_id||!['active','waiting'].includes(authority.state))throw Error('AUTHORITY_NOT_ACTIVE');
-   const balance=await firmNaive('GET','/v1/credits/balance');if(requested>balance.balance_micro_usd)throw Error('INSUFFICIENT_EXISTING_CREDIT');
-   const amount=Math.max(requested,Math.min(DEFAULT_CASE_BUDGET_MICRO_USD,balance.balance_micro_usd));
    if(staff.state==='hiring'&&amount!==staff.budget_micro_usd)throw Error('HIRING_IN_PROGRESS_RETRY_BUDGET_AFTER_START');
    const [existingRun]=await db.select().from(caseAgentSessions).where(eq(caseAgentSessions.authority_id,staff.authority_id));
    if(staff.agent_id&&existingRun&&!existingRun.session_id&&staff.budget_micro_usd&&amount<staff.budget_micro_usd)throw Error('SESSION_START_PENDING_RETRY_BUDGET_AFTER_START');
    if(existingRun?.session_id){const current=await firmNaive('GET',`/v1/sessions/${existingRun.session_id}`);if(amount<current.budget_micro_usd)throw Error('PROVIDER_ONLY_SUPPORTS_BUDGET_RAISES');}
-   if(staff.agent_id){let agent=await firmNaive('GET',`/v1/agents/${staff.agent_id}`);if(amount>agent.budget.cap_micro_usd||amount>agent.budget.max_task_micro_usd)agent=await firmNaive('PATCH',`/v1/agents/${staff.agent_id}`,{budget:{...agent.budget,cap_micro_usd:Math.max(amount,agent.budget.cap_micro_usd),max_task_micro_usd:Math.max(amount,agent.budget.max_task_micro_usd)},expected_version:agent.current_version});
-    const [run]=await db.select().from(caseAgentSessions).where(eq(caseAgentSessions.authority_id,staff.authority_id));if(run?.session_id){const session=await firmNaive('GET',`/v1/sessions/${run.session_id}`);if(amount>session.budget_micro_usd)await firmNaive('PATCH',`/v1/sessions/${run.session_id}/budget`,{cap_micro_usd:amount});else if(amount<session.budget_micro_usd)throw Error('PROVIDER_ONLY_SUPPORTS_BUDGET_RAISES');}
-    // An unstarted session pins the version carrying the new budget and retries now rather than after its failure backoff.
-    else if(run)await db.update(caseAgentSessions).set({agent_version:agent.current_version,next_check_at:new Date(),lease_id:null,lease_until:null}).where(eq(caseAgentSessions.id,run.id));}
+   if(staff.agent_id){const [run]=await db.select().from(caseAgentSessions).where(eq(caseAgentSessions.authority_id,staff.authority_id));
+    if(run&&!run.session_id){
+     const version=await fundedConnectorVersion(staff.agent_id,staff.authority_id,amount);
+     await db.update(caseAgentSessions).set({agent_version:version,state:'starting',reason:null,next_check_at:new Date(),lease_id:null,lease_until:null}).where(and(eq(caseAgentSessions.id,run.id),sql`${caseAgentSessions.session_id} IS NULL`));
+    }else{
+     const agent=await firmNaive('GET',`/v1/agents/${staff.agent_id}`);if(amount>agent.budget.cap_micro_usd||amount>agent.budget.max_task_micro_usd)await firmNaive('PATCH',`/v1/agents/${staff.agent_id}`,{budget:{...agent.budget,cap_micro_usd:Math.max(amount,agent.budget.cap_micro_usd),max_task_micro_usd:Math.max(amount,agent.budget.max_task_micro_usd)},expected_version:agent.current_version});
+     if(run?.session_id){const session=await firmNaive('GET',`/v1/sessions/${run.session_id}`);if(amount>session.budget_micro_usd)await firmNaive('PATCH',`/v1/sessions/${run.session_id}/budget`,{cap_micro_usd:amount});}
+    }}
    await db.update(firmStaffing).set({budget_micro_usd:amount,expected_recovery_cents:recovery,budget_reason:reason,state:staff.state==='hiring'?'hiring':staff.agent_id?'active':'budgeted',updated_at:new Date()}).where(eq(firmStaffing.case_id,item.id));
-   if(!staff.agent_id)await queueFirmEvent(db,{role:'frontdesk',event_key:`budget:${operationId}`,kind:'budget_allocated',case_id:item.id,payload:{budget_micro_usd:amount,reason}});return {case_id:item.id,budget_micro_usd:amount,requested_micro_usd:requested,reason};
+   if(!staff.agent_id)await queueFirmEvent(db,{role:'frontdesk',event_key:`budget:${operationId}`,kind:'budget_allocated',case_id:item.id,payload:{budget_micro_usd:amount,reason}});return {case_id:item.id,budget_micro_usd:amount,reason};
   }
   if(name==='hire_advocate'){
    const item=await currentCase(db,caseId!);const [staff]=await db.select().from(firmStaffing).where(eq(firmStaffing.case_id,item.id));if(!staff)throw Error('STAFFING_NOT_REQUESTED');

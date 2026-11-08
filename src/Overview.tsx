@@ -68,7 +68,7 @@ export function Overview({cases, userId, userName, crewEnabled, live}: {cases: r
         <span className="ov-hatch" aria-hidden="true"/>
         <span className="ov-chip">Reported savings</span>
         <strong className="ov-savings-value"><NumberTicker value={saved} format={n => money(Math.round(n))}/></strong>
-        <p>{saved ? `Across ${plural(savedCases, "case")}, from recorded insurer decisions. Not a verified payout.` : "Shows up once an insurer decision is recorded."}</p>
+        <p>{saved ? `Across ${plural(savedCases, "case")}, from recorded insurer decisions.` : "Shows up once an insurer decision is recorded."}</p>
       </motion.article>
 
       <motion.div className="ov-card-slot" initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, delay: 0.06, ease}}>

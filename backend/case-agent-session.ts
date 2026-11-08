@@ -131,11 +131,16 @@ async function advanceWithAdmissionRetries(db:NodePgDatabase,id:string,deps:Case
   }
  }
 }
+function providerFailureReason(error:unknown){
+ const {status,code,message}=(error??{}) as {status?:number;code?:string;message?:string};
+ return status?`Naïve returned ${status}${code?` ${code}`:""}: ${String(message).slice(0,200)}. Retrying the same session/event identity.`:"Provider unavailable; retry the same session/event identity.";
+}
 async function requestCaseBudgetRaise(db:NodePgDatabase,id:string){
  const [run]=await db.select({case_id:caseAgentSessions.case_id,authority_id:caseAgentSessions.authority_id}).from(caseAgentSessions).where(eq(caseAgentSessions.id,id));
  if(!run)return;
- const staffed=await db.execute(sql`SELECT 1 FROM advocacy_firm_staffing WHERE authority_id=${run.authority_id}`);
- if(staffed.rows.length)await queueFirmEvent(db,{role:"ceo",event_key:`budget-needed:provider:${id}`,kind:"budget_needed",case_id:run.case_id,payload:{reason:"Naïve refused the advocate session because the case budget is below its pre-flight quote. Raise it with set_case_budget."}});
+ const staffed=await db.execute(sql`SELECT budget_micro_usd FROM advocacy_firm_staffing WHERE authority_id=${run.authority_id}`);
+ // One request per funded amount: a raise that is still too small can ask again without looping on the same amount.
+ if(staffed.rows.length)await queueFirmEvent(db,{role:"ceo",event_key:`budget-needed:provider:${id}:${staffed.rows[0].budget_micro_usd}`,kind:"budget_needed",case_id:run.case_id,payload:{reason:"Naïve refused the advocate session because the case budget is below its pre-flight quote. Raise it with set_case_budget."}});
 }
 export async function pollCaseAgentSessions(db:NodePgDatabase,deps:CaseSessionDependencies=defaults){
  const stats={checked:0,failed:0,deferred:0};
@@ -161,12 +166,12 @@ export async function pollCaseAgentSessions(db:NodePgDatabase,deps:CaseSessionDe
    failed=true;
    const deferred=isNaiveCapacityError(error);
    if(deferred)stats.deferred++;else stats.failed++;
-   const retryAt=await naiveRetryAt(db,error,900000);
+   const retryAt=await naiveRetryAt(db,error,60000);
    const underfunded=(error as {status?:number})?.status===402;
    if(underfunded)await requestCaseBudgetRaise(db,claim.id);
    else if(!deferred)console.error(JSON.stringify({event:"case_session_advance_failed",run_id:claim.id,status:(error as {status?:number})?.status??null,code:(error as {code?:string})?.code??null}));
    await db.update(caseAgentSessions).set({next_check_at:retryAt,lease_until:retryAt,
-    reason:underfunded?"Naïve refused the request because the case budget is below its pre-flight quote. The CEO has been asked to raise it.":deferred?"The shared Naïve request queue is busy. The same session and pending event are queued for retry.":"Provider unavailable; retry the same session/event identity."
+    reason:underfunded?"Naïve refused the request because the case budget is below its pre-flight quote. The CEO has been asked to raise it.":deferred?"The shared Naïve request queue is busy. The same session and pending event are queued for retry.":providerFailureReason(error)
    }).where(and(eq(caseAgentSessions.id,claim.id),eq(caseAgentSessions.lease_id,claim.lease_id)));
   }
   finally{if(!failed)await db.update(caseAgentSessions).set({lease_id:null,lease_until:null}).where(and(eq(caseAgentSessions.id,claim.id),eq(caseAgentSessions.lease_id,claim.lease_id)));}

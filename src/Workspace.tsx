@@ -89,7 +89,7 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
   let view: ReactNode;
   let viewKey: string;
   if (data === undefined) { view = <p role="status" className="loading-line">Connecting to your cases…</p>; viewKey = "loading"; }
-  else if (showIntake) { view = <Intake hasCases={cases.length > 0} disabled={busy !== null} onCancel={() => go("#workspace")} onSave={(d,files) => saveDetails(d,undefined,files)} live={live}/>; viewKey = "new"; }
+  else if (showIntake) { view = <Intake hasCases={cases.length > 0} disabled={busy !== null} userId={userId} onCancel={() => go("#workspace")} onSave={(d,files) => saveDetails(d,undefined,files)} live={live}/>; viewKey = "new"; }
   else if (route.view === "case" && !selected) { view = <div className="empty"><p>This case isn’t available. It may have been deleted.</p><a className="text-link" href="#workspace">Back to all cases</a></div>; viewKey = "missing"; }
   else if (selected) { view = <CaseView key={selected.id} item={selected} userId={userId} crewEnabled={crewEnabled} busy={busy} live={live} onSave={d => saveDetails(d, selected)} onAct={() => remove(selected.id)}/>; viewKey = `case-${selected.id}`; }
   else { view = <Overview cases={cases} userId={userId} userName={userName} crewEnabled={crewEnabled} live={live}/>; viewKey = "overview"; }
@@ -115,13 +115,31 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
   </div>;
 }
 
-function Intake({hasCases, disabled, onCancel, onSave, live}: {hasCases: boolean; disabled: boolean; onCancel: () => void; onSave: (d: CaseInput,files?:File[]) => Promise<void>; live: ReactNode}) {
+function CallForNewCase({userId}: {userId: string}) {
+  const [info, setInfo] = useState<{call_number?: string; last_call?: {state: string; reason: string | null} | null} | null>(null);
+  useEffect(() => {
+    let active = true;
+    const read = () => api<NonNullable<typeof info>>("/phone/onboarding", {}, userId).then(result => { if (active) setInfo(result); }).catch(() => {});
+    void read();
+    const timer = setInterval(() => void read(), 10000);
+    return () => { active = false; clearInterval(timer); };
+  }, [userId]);
+  const number = info?.call_number;
+  return <div className="intake-card new-case-call">
+    <h2>Call us to open it</h2>
+    <p>Call from this phone and say you want a new case. Tell us what happened, and it opens here after you hang up.</p>
+    {number && <a className="primary-link" href={`tel:${number}`}>{number.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, "($1) $2-$3")}</a>}
+    {info?.last_call?.state === "needs_information" && info.last_call.reason && <p role="status">{info.last_call.reason}</p>}
+  </div>;
+}
+
+function Intake({hasCases, disabled, userId, onCancel, onSave, live}: {hasCases: boolean; disabled: boolean; userId: string; onCancel: () => void; onSave: (d: CaseInput,files?:File[]) => Promise<void>; live: ReactNode}) {
   return <>
     <div className="page-head">
-      <div>{hasCases && <button className="back-link" onClick={onCancel}><ArrowLeft size={16} aria-hidden="true"/>All cases</button>}<h1>{hasCases ? "Open a new case." : phoneSelected() ? "Your cases" : "Open your first case."}</h1><p className="lede">{phoneSelected()&&!hasCases ? "Your cases will appear here. You can add details and documents below." : "Tell us what happened or upload your documents. Assurance takes it from there."}</p></div>
+      <div>{hasCases && <button className="back-link" onClick={onCancel}><ArrowLeft size={16} aria-hidden="true"/>All cases</button>}<h1>{hasCases ? "Open a new case." : phoneSelected() ? "Your cases" : "Open your first case."}</h1><p className="lede">{phoneSelected() ? "No forms. Just call." : "Tell us what happened or upload your documents. Assurance takes it from there."}</p></div>
       {live}
     </div>
-    {phoneSelected()&&!hasCases ? <details className="intake-card"><summary>Add case details yourself (optional)</summary><CaseForm disabled={disabled} onSave={onSave}/></details> : <div className="intake-card"><CaseForm disabled={disabled} onSave={onSave}/></div>}
+    {phoneSelected() ? <CallForNewCase userId={userId}/> : <div className="intake-card"><CaseForm disabled={disabled} onSave={onSave}/></div>}
   </>;
 }
 
@@ -152,7 +170,6 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
     {phoneSelected() && <dl className="case-key-numbers" aria-label="Key amounts">
       {([["Bill", item.bill_cents], ["EOB", item.eob_cents], ["Possible discrepancy", diff]] as const).map(([label, cents]) =>
         <div key={label}><dt>{label}</dt><dd>{cents === null ? "—" : money(cents)}</dd></div>)}
-      {diff !== null && <small>Discrepancy is to investigate, not verified savings</small>}
     </dl>}
 
     <Autonomy key={item.id} caseId={item.id} userId={userId} enabled={crewEnabled} between={<>

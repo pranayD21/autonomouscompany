@@ -32,6 +32,28 @@ Inbound hosted calls cannot take a per-call prompt, so `scripts/configure-agentp
 
 Limitations: phone caller ID can be spoofed, so a spoofed callback could add a false account to an attempt awaiting information. The legacy `PHONE_FLOW_ENABLED` inbound path stays off and is unrelated.
 
+## Sign-in and account separation
+
+The phone token and sign-in mode live in `localStorage`, shared across tabs, so a new tab cannot fall back to an older saved email account. `src/phone-session.ts` moves any earlier per-tab login on load. Verifying a phone also signs out the managed email session in that browser, except when deliberately linking a phone to an existing account. Cases belong to one owner; an unlinked phone account never reads another account's cases. Storing the token in `localStorage` trades some exposure to page scripts for this behavior.
+
+Shared fictional test accounts only appear in the Vite development server. The phone Function's `/status` still returns the test numbers and fixed code, and they still sign in, because `scripts/phone-flow.test.ts` covers them.
+
+## Opening another case
+
+Phone accounts open every later case by calling, with no form. The New case page shows `call_number` from `GET /phone/onboarding` and the result of the last call. After onboarding is `active`, `reconcileNewCaseCalls` treats each completed inbound call from the verified number, started after the first case, as a request for a new case. `advocacy_phone_call_cases` (migration `0031`) holds one row per call, so retries cannot open a second case and a deleted case does not return. The same intake rules apply. A call about an existing case, an unclear call, or a stop request opens nothing and is reported as `last_call`. Stopping onboarding stops new cases too. The scheduler and the open dashboard both check. Email accounts keep the form.
+
+The transcript is only linked through caller ID, so a spoofed caller could open a false case and start its advocate on a verified account. Fix this before wider use.
+
+## Outreach restriction
+
+Set `OUTREACH_RESTRICT_TO_ALLOWLIST=true` on the `firm`, `tools`, `autopoll`, and `cases` Functions to limit outside contact to `OUTREACH_ALLOWED_EMAILS` and `OUTREACH_ALLOWED_PHONES`. `takeOpenCaseAction` refuses other recipients before recording an action, and `sendOutreach` refuses them again at the send. Portals and `open_email_lead` are refused while it is on. Email-address verification mail and requested onboarding calls use separate paths and are unaffected. New advocate sessions are told the allowed address and that it is the owner's inbox, not an insurer. Authenticated `GET /stack/status` reports `outreach.restricted`. To lift it, set the flag to `false` and redeploy.
+
+Web search and page reads stay available for research. Read-only requests can still reach outside websites, so this limits contact, not all network access.
+
+## Call wording
+
+Greetings identify Assurance without an opening AI statement, at the user's direction. The prompts require a truthful answer if someone sincerely asks whether they are speaking with an AI, and forbid claiming to be human. Onboarding and callback greetings still announce that a transcript is saved. Some jurisdictions restrict undisclosed AI calls or require consent to recording; this has not been legally reviewed.
+
 ## Customer communication
 
 Advocates reach the case owner only through the website conversation. `backend/open-case-actions.ts` refuses `send_email` with role `customer` on open (version 2) authorities, and the advocate instructions say the same. Calls and third-party email are unchanged. Earlier authorities keep their original paths.

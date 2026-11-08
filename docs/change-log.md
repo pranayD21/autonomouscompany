@@ -1039,3 +1039,42 @@ The first real callback was captured, but the caller said the category naturally
 ## 2026-11-08 — No customer email from advocates
 
 The user asked that customers hear from their advocate in chat, not by email. An email seen in the workspace came from an old demo case on an email account, but the rule was still only an instruction. Open-authority `send_email` to a customer is now refused. Verification is recorded in that release's commit message.
+
+## 2026-11-08 — $250 CEO case allocations and advocate start repair
+
+The hired onboarding advocate never started. Naïve returned HTTP 402 `budget_exceeded` ("the remaining budget for this task is below the pre-flight quote") because the CEO had allocated $0.05 to each case it funded. The scheduler reported this as "Provider unavailable" and retried after 15 minutes, while `set_case_budget` refused any change before the session started, so the case could not recover.
+
+At the user's direction the CEO mandate now instructs a $250 allocation per case. The tool records the amount the CEO supplies and no longer checks it against the credit balance; real spend still stops at available credit, and buying credits remains unauthorized. A 402 records its real reason and queues a CEO `budget_needed` event per funded amount. Funding an unstarted advocate publishes a new connector version with the budget, restores the general default, pins the run, and makes it due immediately, without another Front Desk hiring event. The scheduler also retries local admission rejections within one invocation. See [firm runtime](firm-runtime.md#case-budgets) and [Naïve capacity](naive-capacity.md).
+
+An intermediate version of this fix pinned the fixture's run to the general default, which has no connector, and the binding check correctly parked it `human_required`. No session started and no outreach occurred. The run and its onboarding events were repaired by hand to the connector version so the corrected path could run.
+
+The first hosted raise then failed with HTTP 400 `validation_failed` ("a session budget cannot exceed the agent's budget cap"), because Naïve checks the default version's cap and the restore had returned the default to $0.05. Funding now raises the default too. The session retry after a provider rejection dropped from 15 minutes to one minute, and the saved reason now carries Naïve's status, code, and message.
+
+Migration `0030_phone_onboarding.sql` was applied to production (31 journal entries), `PHONE_ONBOARDING_ENABLED=true` was set in the private environment, and role instructions were reconciled to new provider versions.
+
+Verification: firm service, tools, runner, session, and phone onboarding suites passed on the disposable database with mocked provider responses. On production, the zero-contact fixture hit the 402, the CEO recorded a $250 allocation with its own reason, the session started at about 10:46 UTC, and the first goal persisted at 10:50:21 UTC with zero outreach. The fixture's onboarding events had not yet been marked finished, so the formal proof script has not passed. This change placed no SMS or call; a separate session ran the real phone journey.
+## 2026-11-08 — Separate real calls from old test cases and remove demo wording
+
+The user reported old demo cases colliding with real calls and asked that real workflows not be labelled as demos.
+
+- Database readback found the phone account separate from the old demo account. The collision paths were per-tab phone login falling back to a saved email login, and old test cases competing for Naive capacity. The phone login now spans tabs, and verifying a phone clears the older email session.
+- Using the normal revoke service, stopped six old cases on production, without deleting them: `f6e8e2cf`, `bc4f03c4`, `a23c8127`, `44306094`, `057812f9`, `079d5943`. None had pending sends. `f6e8e2cf` has no test label, but it belonged to the QA account. Their open firm events were marked superseded. `365aea33` stayed running for an in-progress proof.
+- Removed "synthetic demo" wording from outbound voice, the hosted agent's name and description, and the advocate's stop tool. Shared test accounts no longer show in production. Legacy autonomy paths keep their original wording for earlier grants.
+- At the user's direction, removed the opening AI statement from call greetings and the "not verified" captions from the website. Voice agents still answer truthfully if asked whether they are AI and never claim to be human. Transcript notices, the "reported" and "estimated" names on amounts, and the rule against presenting a fictional case as real remain.
+
+Verification is recorded in that release's commit message. This does not establish healthcare privacy compliance for real data.
+
+
+## 2026-11-08 — Role sessions continue after transient tool errors
+
+The first real phone case stalled at staffing. Its CEO and Front Desk sessions each hit a transient tool result (`FIRM_TOOL_NOT_COMPLETED`, "is waiting for approval") and ended their turn, and the runner parked both events `human_required` with no budget or advocate. The runner now messages the same session up to three times, naming the missing tool, before escalating. See [firm runtime](firm-runtime.md).
+
+Verification: the firm runner suite covers three continuations followed by escalation, with a mocked provider. Hosted continuation is not yet verified. The fixture's onboarding proof passed on production after the earlier budget fix: budget recorded, advocate bound, session started, first goal saved, onboarding events finished, zero outreach.
+
+## 2026-11-08 — Restrict outside contact to the owner's inbox
+
+The user confirmed their phone case is real and asked that it contact no insurers, only their own inbox for now. Open permissions did not check the recipient allowlist, so added `OUTREACH_RESTRICT_TO_ALLOWLIST` with checks at the action and the send, and refusals for portals and emailed-lead invitations. Advocate sessions are told the limit. See [phone onboarding](phone-onboarding.md). Verification is recorded in that release's commit message.
+
+## 2026-11-08 — Open new cases by calling
+
+The user asked that a new case work like onboarding: call, say what happened, and the case opens without manual input. Added `reconcileNewCaseCalls`, migration `0031_phone_call_cases.sql`, the call panel in place of the form for phone accounts, and an updated hosted greeting. See [phone onboarding](phone-onboarding.md). Verification is recorded in that release's commit message.

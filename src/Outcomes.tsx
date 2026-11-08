@@ -50,6 +50,6 @@ export function Outcomes({caseId, userId, revision}: {caseId: string; userId: st
       <h4>Supporting quotes</h4>
       {r.evidence.map((source, i) => <blockquote key={i}>{source.quote}<small>{source.source_ref.startsWith("document:") ? "From a document" : "From a reply"}</small></blockquote>)}
     </details>
-    <p className="caveat">Reported by Assurance from your documents and replies. Not a verified payout.</p>
+    <p className="caveat">Reported by Assurance from your documents and replies.</p>
   </section>;
 }

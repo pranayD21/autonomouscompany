@@ -7,7 +7,9 @@ import {migrate} from 'drizzle-orm/node-postgres/migrator';
 import {takeOpenCaseAction,type OpenActionInput} from '../backend/open-case-actions';
 import {takeCaseAction} from '../backend/case-action-service';
 import {autonomyDependencies} from '../backend/autonomy-runner';
-import {DispatchFailure} from '../backend/providers/outreach';
+import {DispatchFailure,sendOutreach} from '../backend/providers/outreach';
+import {portalOpen} from '../backend/case-portal';
+import {caseSessionInput} from '../backend/providers/case-agent';
 import {dispatchOnce} from '../backend/outreach-service';
 import {outreachActions} from '../backend/schema';
 import {eq,sql} from 'drizzle-orm';
@@ -21,6 +23,22 @@ function contact(f:Awaited<ReturnType<typeof fixture>>):OpenActionInput{return {
 const receipt={provider_id:'fake-message',provider_thread_id:'fake-thread',provider_status:'accepted'};
 test('v2 service sends to owner-permitted destination, retries once and rejects conflicting operation',async()=>{const f=await fixture(),input=contact(f);let sends=0;const deps={...autonomyDependencies,send:async()=>{sends++;return receipt;}};const first=await takeCaseAction(db,f.identity,input,deps);assert.equal(first.action?.state,'submitted');assert.deepEqual(await takeCaseAction(db,f.identity,input,deps),first);assert.equal(sends,1);await assert.rejects(()=>takeCaseAction(db,f.identity,{...input,destination:'other@example.test'},deps),/OPERATION_CONFLICT/);assert.equal((await pool.query('SELECT enabled FROM advocacy_reply_monitors WHERE action_id=$1',[input.operation_id])).rows[0].enabled,true);});
 test('customer email is refused before any send; insurer email still works',async()=>{const f=await fixture(),insurer=contact(f);let sends=0;await assert.rejects(()=>takeOpenCaseAction(db,f.identity,{...insurer,decision:{tool:'contact_customer',contact_id:'customer',subject:'Fictional claim',body:'Please clarify the fictional claim.',reason:'Missing claim information',evidence_refs:['case:1']}},async()=>{sends++;return receipt;}),/CUSTOMER_EMAIL_DISABLED/);assert.equal(sends,0);assert.equal((await pool.query('SELECT count(*)::int AS n FROM advocacy_outreach_actions WHERE case_id=$1',[f.caseId])).rows[0].n,0);assert.equal((await takeOpenCaseAction(db,f.identity,insurer,async()=>{sends++;return receipt;})).action?.state,'submitted');assert.equal(sends,1);});
+test('restricted outreach reaches only the allowlisted inbox on every channel',async()=>{
+ const prior={r:process.env.OUTREACH_RESTRICT_TO_ALLOWLIST,e:process.env.OUTREACH_ALLOWED_EMAILS,p:process.env.OUTREACH_ALLOWED_PHONES};
+ process.env.OUTREACH_RESTRICT_TO_ALLOWLIST='true';process.env.OUTREACH_ALLOWED_EMAILS='consenting@example.test';process.env.OUTREACH_ALLOWED_PHONES='';
+ try{
+  const f=await fixture(),insurer=contact(f);let sends=0;const sender=async()=>{sends++;return receipt;};
+  await assert.rejects(()=>takeOpenCaseAction(db,f.identity,{...insurer,destination:'claims@insurer.example'},sender),/OUTREACH_RESTRICTED_BY_OWNER/);
+  await assert.rejects(()=>takeOpenCaseAction(db,f.identity,{...contact(f),channel:'call',destination:'+14155550199'},sender),/OUTREACH_RESTRICTED_BY_OWNER/);
+  assert.equal(sends,0);assert.equal((await pool.query('SELECT count(*)::int AS n FROM advocacy_outreach_actions WHERE case_id=$1',[f.caseId])).rows[0].n,0);
+  assert.equal((await takeOpenCaseAction(db,f.identity,insurer,sender)).action?.state,'submitted');assert.equal(sends,1);
+  await assert.rejects(()=>sendOutreach({kind:'email',destination:'claims@insurer.example'} as Parameters<typeof sendOutreach>[0],async()=>{throw Error('no provider request');}),/OUTREACH_RESTRICTED/);
+  await assert.rejects(()=>portalOpen(db,f.identity,{operation_id:randomUUID(),url:'https://portal.example.test'}),/OUTREACH_RESTRICTED_BY_OWNER/);
+  const session=caseSessionInput({agentId:'a',agentVersion:1,identityId:'i',caseId:f.caseId,budget:1,message:'go',openPermission:true});assert.match(session.message,/only address you may contact is consenting@example\.test/);
+ }finally{
+  for(const [key,value] of [['OUTREACH_RESTRICT_TO_ALLOWLIST',prior.r],['OUTREACH_ALLOWED_EMAILS',prior.e],['OUTREACH_ALLOWED_PHONES',prior.p]] as const){if(value===undefined)delete process.env[key];else process.env[key]=value;}
+ }
+});
 test('concurrent different operations cannot bypass a dispatch in progress',async()=>{const f=await fixture();let release!:()=>void,entered!:()=>void;const started=new Promise<void>(r=>entered=r),gate=new Promise<void>(r=>release=r);const first=takeOpenCaseAction(db,f.identity,contact(f),async()=>{entered();await gate;return receipt;});await started;await assert.rejects(()=>takeOpenCaseAction(db,f.identity,contact(f),async()=>receipt),/DISPATCH_NEEDS_RECONCILIATION/);release();await first;});
 test('unknown outcome parks authority and never retries',async()=>{const f=await fixture(),input=contact(f);let sends=0;const sender=async()=>{sends++;throw new Error('lost response');};const first=await takeOpenCaseAction(db,f.identity,input,sender);assert.equal(first.action?.state,'unknown');await takeOpenCaseAction(db,f.identity,input,sender);assert.equal(sends,1);assert.equal((await pool.query('SELECT state FROM advocacy_case_authorities WHERE id=$1',[f.authorityId])).rows[0].state,'human_required');});
 test('definite rejection remains rejected and cannot be replayed',async()=>{const f=await fixture(),input=contact(f);let sends=0;const sender=async()=>{sends++;throw new DispatchFailure('HTTP_429',true);};assert.equal((await takeOpenCaseAction(db,f.identity,input,sender)).action?.state,'rejected');await takeOpenCaseAction(db,f.identity,input,sender);assert.equal(sends,1);});

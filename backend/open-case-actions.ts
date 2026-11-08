@@ -9,7 +9,7 @@ import {caseDecisionInput} from "./autonomy-service";
 import {dispatchOnce} from "./outreach-service";
 import {setReplyMonitoring} from "./reply-monitor";
 import type {CaseToolIdentity} from "./case-tools";
-import {sendOutreach,outreachEnabled} from "./providers/outreach";
+import {sendOutreach,outreachEnabled,outreachBlocked,outreachRestricted,destinationAllowed} from "./providers/outreach";
 export type OpenActionInput={operation_id:string;authority_id:string;decision:CaseDecision;channel?:"email"|"call";destination?:string};
 export async function takeOpenCaseAction(db:NodePgDatabase,identity:CaseToolIdentity,input:OpenActionInput,sender=sendOutreach){
  const decision=caseDecision.parse(input.decision);
@@ -27,7 +27,8 @@ export async function takeOpenCaseAction(db:NodePgDatabase,identity:CaseToolIden
   const [uncertain]=await tx.select().from(outreachActions).where(and(eq(outreachActions.case_id,item.id),inArray(outreachActions.state,["dispatching","unknown"])));
   const [unfinished]=await tx.select({id:caseDecisions.id}).from(caseDecisions).where(and(eq(caseDecisions.authority_id,authority.id),inArray(caseDecisions.state,["executing","running","unknown"])));
   // Customers hear from their advocate in the website conversation. Email is for third parties.
-  if(decision.tool==="contact_customer"&&input.channel==="email")throw Error("CUSTOMER_EMAIL_DISABLED_USE_WEBSITE_CONVERSATION");
+  if(decision.tool==="contact_customer"&&input.channel==="email"&&!(outreachRestricted()&&destinationAllowed("email",input.destination??decision.contact_id)))throw Error("CUSTOMER_EMAIL_DISABLED_USE_WEBSITE_CONVERSATION");
+  if((decision.tool==="contact_customer"||decision.tool==="contact_insurer")&&input.channel&&outreachBlocked(input.channel,input.destination??decision.contact_id))throw Error("OUTREACH_RESTRICTED_BY_OWNER");
   const contact=decision.tool==="contact_customer"||decision.tool==="contact_insurer";
   if((uncertain||unfinished)&&(contact||decision.tool==="stop_case"))throw Error("DISPATCH_NEEDS_RECONCILIATION");
   if(decision.tool==="stop_case"&&["goal_met","synthetic_demo_completed"].includes(decision.outcome)&&!decision.evidence_refs.some(ref=>context.current_outcome_refs.includes(ref)))throw Error("CURRENT_OUTCOME_REQUIRED");

@@ -216,7 +216,7 @@ app.post("/cases/:id/sessions/:runId/approvals",async c=>{
 });
 app.get("/stack/status", (c) => c.json({
   naive: { configured: !!crewConfiguration(), enabledForUser: crewAllowed(c.get("userId")) },
-  outreach: { callProvider: voiceProvider(), callConfigured: outreachEnabled("call"), emailConfigured: outreachEnabled("email"), enabledForUser: crewAllowed(c.get("userId")) },
+  outreach: { restricted: process.env.OUTREACH_RESTRICT_TO_ALLOWLIST==="true", callProvider: voiceProvider(), callConfigured: outreachEnabled("call"), emailConfigured: outreachEnabled("email"), enabledForUser: crewAllowed(c.get("userId")) },
   voice: { enabled: false, reason: "Case-linked calls are not enabled. The standalone synthetic phone test is verified." },
 }));
 app.post("/cases/:id/crew", async (c) => {

@@ -4,7 +4,7 @@ import {randomUUID} from 'node:crypto';
 import {Pool} from 'pg';
 import {drizzle} from 'drizzle-orm/node-postgres';
 import {migrate} from 'drizzle-orm/node-postgres/migrator';
-import {extractOnboardingIntake,requestPhoneOnboarding,getPhoneOnboarding,stopPhoneOnboarding,phoneOnboardingRoutes} from '../backend/phone-onboarding';
+import {extractOnboardingIntake,requestPhoneOnboarding,getPhoneOnboarding,stopPhoneOnboarding,phoneOnboardingRoutes,reconcileNewCaseCalls} from '../backend/phone-onboarding';
 import {Hono} from 'hono';
 import {linkVerifiedPhone} from '../backend/phone-intake';
 import {createPhoneAuth} from '../backend/phone-auth';
@@ -34,6 +34,7 @@ if(database){
  after(async()=>{
   if(!setupReady){await pool.end();return;}
   await pool.query('DELETE FROM advocacy_phone_onboarding WHERE owner_id=ANY($1)',[owners]);
+  await pool.query('DELETE FROM advocacy_phone_call_cases WHERE owner_id=ANY($1)',[owners]);
   await pool.query('DELETE FROM advocacy_case_agent_setups WHERE case_id IN (SELECT id FROM advocacy_cases WHERE owner_id=ANY($1))',[owners]);
   await pool.query('DELETE FROM advocacy_case_authorities WHERE case_id IN (SELECT id FROM advocacy_cases WHERE owner_id=ANY($1))',[owners]);
   await pool.query('DELETE FROM advocacy_cases WHERE owner_id=ANY($1)',[owners]);
@@ -105,6 +106,25 @@ if(database){
   assert.equal(ignored.status,'needs_information');assert.equal(ignored.case_id,null);assert.equal(ignored.callback_number,'+14124482627');
   listed=[stranger,mine];await due(u.owner);const recovered=await getPhoneOnboarding(pool,u.owner,{request});
   assert.equal(recovered.status,'active');assert.ok(recovered.case_id);assert.equal(recovered.callback_number,null);assert.equal(dials,0);
+ });
+ test('later calls from the verified number each open one case; others do not',async()=>{
+  const u=await owner(),transport=provider(u.phone);await requestPhoneOnboarding(pool,u.owner,transport);
+  const first=await getPhoneOnboarding(pool,u.owner,transport);assert.equal(first.status,'active');
+  const at=()=>new Date(Date.now()+1000).toISOString();
+  const call=(id:string,fromNumber:string,transcripts:unknown[]=[{transcript:goodTurns[0].text,response:goodTurns[1].text},{transcript:'I want a new case. I burned my hand on the job at the plant and need help with the claim.',response:'Thanks.'}])=>({id,agentId:'agt_onboard_test',phoneNumberId:'num_onboard_test',fromNumber,toNumber:'+14124482627',direction:'inbound',status:'completed',startedAt:at(),transcripts});
+  const stranger=call('call_other','+15550009999'),opener=call('call_new',u.phone),existing=call('call_existing',u.phone,[{transcript:'Workplace injury.',response:'Go on.'},{transcript:'I am calling for an update about my existing case from the plant last month please.',response:'Check the website.'}]),vague=call('call_vague',u.phone,[{transcript:'Hello.',response:'What type of case?'}]);
+  let listed:unknown[]=[stranger],dials=0;
+  const request:typeof fetch=async(url,init)=>{if(init?.method==='POST')dials++;const path=String(url);if(path.includes('/calls?'))return Response.json({data:listed});const found=(listed as {id:string}[]).find(c=>path.endsWith(`/${c.id}`));if(found)return Response.json(found);throw Error(`unexpected ${path}`);};
+  const count=async()=>(await pool.query('SELECT count(*)::int AS n FROM advocacy_cases WHERE owner_id=$1',[u.owner])).rows[0].n;
+  await due(u.owner);await getPhoneOnboarding(pool,u.owner,{request});assert.equal(await count(),1);
+  listed=[stranger,opener];await due(u.owner);const opened=await getPhoneOnboarding(pool,u.owner,{request});assert.equal(await count(),2);assert.equal(opened.last_call?.state,'active');assert.ok(opened.last_call?.case_id);assert.notEqual(opened.last_call?.case_id,first.case_id);assert.equal(opened.case_id,first.case_id);
+  await due(u.owner);await reconcileNewCaseCalls(pool,(await pool.query('SELECT id FROM advocacy_phone_onboarding WHERE owner_id=$1',[u.owner])).rows[0].id,{request});assert.equal(await count(),2);
+  await pool.query('DELETE FROM advocacy_case_agent_setups WHERE case_id=$1',[opened.last_call!.case_id]);await pool.query('DELETE FROM advocacy_case_authorities WHERE case_id=$1',[opened.last_call!.case_id]);await pool.query('DELETE FROM advocacy_cases WHERE id=$1',[opened.last_call!.case_id]);
+  await due(u.owner);await getPhoneOnboarding(pool,u.owner,{request});assert.equal(await count(),1);
+  listed=[stranger,opener,existing];await due(u.owner);const update=await getPhoneOnboarding(pool,u.owner,{request});assert.equal(await count(),1);assert.match(update.last_call?.reason??'',/existing case/);
+  listed=[stranger,opener,existing,vague];await due(u.owner);const unclear=await getPhoneOnboarding(pool,u.owner,{request});assert.equal(await count(),1);assert.equal(unclear.last_call?.state,'needs_information');
+  await stopPhoneOnboarding(pool,u.owner);listed=[...listed,call('call_after_stop',u.phone)];await due(u.owner);await getPhoneOnboarding(pool,u.owner,{request});assert.equal(await count(),1);
+  assert.equal(dials,0);
  });
  test('completed call with delayed transcript remains pending, then activates without redial',async()=>{
   const u=await owner(),options={transcripts:[] as unknown[]},transport=provider(u.phone,options);await requestPhoneOnboarding(pool,u.owner,transport);assert.equal((await getPhoneOnboarding(pool,u.owner,transport)).status,'submitted');

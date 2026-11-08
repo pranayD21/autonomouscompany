@@ -389,3 +389,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .status-detail, .status-goal, .status-panel > form, .status-panel > p[role], .status-panel > .ask { margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .status-light { animation: none !important; } }
+
+/* Phone accounts open a new case by calling. */
+.new-case-call h2 { margin: 0 0 10px; font-size: 1.4rem; }
+.new-case-call p { max-width: 520px; line-height: 1.5; }
+.new-case-call .primary-link { display: inline-block; margin: 8px 0 4px; padding: 12px 20px; border-radius: 10px; color: #fff; background: var(--blue); font-weight: 600; text-decoration: none; }
