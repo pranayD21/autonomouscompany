@@ -93,3 +93,5 @@ Migration and test results are recorded in `docs/change-log.md`. The implementat
 Provider contracts checked against current official documentation: [outbound call request](https://docs.agentphone.ai/api-reference/calls/create-outbound-call-v-1-calls-post) and [call details/transcripts](https://docs.agentphone.ai/documentation/guides/calls). The provider supports a per-call hosted prompt and retains transcripts when audio recording is disabled.
 
 The deployment configuration now explicitly passes `PHONE_ONBOARDING_ENABLED` to cases and phone, and the Naïve activation/firm and AgentPhone selector flags to phone. No provider secret is exposed to the browser. Advocate prompts use website questions for phone owners and do not require email.
+
+UI placement (2026-11-08): the onboarding notice and its **Stop onboarding and case work** control render on the overview and other workspace views, but not on individual case pages (`src/Workspace.tsx`).

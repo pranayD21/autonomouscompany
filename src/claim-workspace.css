@@ -236,3 +236,46 @@ li[data-kind="wait"] > .activity-marker, li[data-kind="closed"] > .activity-mark
 .claim-chat-page .claim-composer { padding: 14px 14px 12px; }
 .claim-chat-page .claim-composer textarea { min-height: 48px; padding: 2px 6px; line-height: 22px; }
 .claim-chat-page .claim-composer-toolbar { margin-top: 10px; }
+
+/* Audit pass (2026-11-08) */
+/* Same page colour as the overview surface */
+.surface:has(.claim-chat-page), .claim-chat-page .case-chat, .claim-chat-page .case-chat-log, .claim-chat-page .case-chat-compose, .chat-sheet, .chat-sheet-head { background: var(--surface); }
+.claim-chat-page .case-chat-header { background: var(--surface); }
+
+/* Messages sit just above the composer when there are only a few */
+.claim-chat-page .case-chat-log { display: flex; flex-direction: column; }
+.claim-chat-page .case-chat-log > :first-child { margin-top: auto !important; }
+.claim-chat-page .case-chat-message { flex-shrink: 0; animation: none; }
+.claim-chat-page .case-chat-message--new { animation: chat-in .25s ease-out; }
+.claim-chat-page .case-chat-message--grouped { margin-bottom: 4px; }
+.claim-chat-page .case-chat-message--assistant.case-chat-message--grouped .case-chat-bubble { border-bottom-left-radius: 18px; }
+.claim-chat-page .case-chat-message--user.case-chat-message--grouped .case-chat-bubble { border-bottom-right-radius: 18px; }
+.case-chat-day { display: flex; align-items: center; gap: 12px; flex-shrink: 0; margin: 6px 0 18px; font-size: 10px !important; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--quiet) !important; }
+.case-chat-day::before, .case-chat-day::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
+
+/* Labelled Case info button */
+.surface .claim-chat-page .chat-round.chat-info { width: auto; display: inline-flex; gap: 7px; padding: 0 14px 0 11px; font-size: 13px; font-weight: 550; }
+.chat-info-label { line-height: 1; }
+
+/* Start banner: one row on wide screens */
+.chat-start { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; }
+.chat-start .chat-start-text { flex: 1 1 320px; }
+.surface .claim-chat-page .chat-start button { margin-top: 0; flex-shrink: 0; }
+.chat-start [role="alert"] { flex-basis: 100%; margin: 0; }
+
+/* Case info sheet tidy-up */
+.sheet-block .doc-row { padding: 12px 0 !important; }
+.sheet-block .doc-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.sheet-block .doc-head strong { flex: 1 1 calc(100% - 32px); min-width: 0; }
+.sheet-block .doc-head .doc-reading { margin-left: 30px; }
+.sheet-block .doc-head .doc-reading ~ .text-button:first-of-type { margin-left: auto; }
+.surface .sheet-controls .agent-context .status-head > button.text-button { padding: 7px 14px; border: 1px solid var(--rule); border-radius: 100px; background: #fff; color: var(--ink) !important; text-decoration: none; }
+.surface .sheet-controls .agent-context .status-head > button.text-button:hover:not(:disabled) { border-color: #e0b4ae; color: #a43732 !important; background: #fff; }
+.sheet-controls .quiet-button { margin-top: 14px; }
+
+@media (max-width: 640px) {
+  .surface .claim-chat-page .chat-round.chat-info { width: 40px; padding: 0; }
+  .chat-info-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+.chat-panel-details .facts { margin-bottom: 20px; }
+.surface .chat-panel-details h2, .surface .chat-panel-details h3:not(:first-child) { font-size: 13px; letter-spacing: -.1px; }

@@ -1,5 +1,22 @@
 # Change log
 
+## November 8, 2026 — Case page audit on the live site
+
+The user asked for the chat background to match the overview and for a general refinement pass. I audited the three live cases in Chrome and made these changes:
+
+- The page, header, composer area and sheet now use the overview's `--surface` colour.
+- Fixed a doubled period in the empty-state title.
+- The account-level onboarding notice is hidden on case pages. It stays on the overview, including its stop control.
+- Messages sit just above the composer.
+- Added day dividers and grouped timestamps, and only new messages fade in.
+- **Case info** is now a labelled pill on wider screens.
+- The start/restart banner is a single row on wide screens.
+- In the Case info sheet: tidier document rows, an outlined **Stop agent work** button, and spacing above the Gmail block.
+
+Files: `src/CaseChat.tsx`, `src/Workspace.tsx`, `src/claim-workspace.css`. See [frontend.md](frontend.md).
+
+Verification: `tsc --noEmit`, `npm run build` and 19 focused UI tests passed. The synthetic fixture was screenshotted at 1400×900 and 390×780, with no overflow. The live site was inspected in Chrome after deployment (see below). The live phone layout was not checked, because Chrome would not resize the window.
+
 ## November 8, 2026 — Fixes found on the live case page
 
 The user asked for checks against the live site rather than the local fixture. In Chrome on assurance.claims, a real case's progress step showed internal text ("Waiting on Authority, credential, ownership, or operator access is no longer active."). The composer placeholder also sat only 12px from the corner. Added `plainWaiting` (`src/progress.ts`), used by `deriveProgress` and the `Autonomy` status, so internal waiting reasons read "Waiting on something on our side". Gave the composer more padding. A test was added in `scripts/progress.test.ts`. The faded user bubbles in the first live screenshot were the message fade-in caught mid-animation; computed styles showed solid ink. The backend state behind that note (an active authority whose session says access is no longer active, shown as "Getting started") is unchanged and still needs a backend look. See [frontend.md](frontend.md).

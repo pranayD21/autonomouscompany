@@ -107,7 +107,7 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
         label={item.title}/>)}
     </Sidebar>
     <main id="workspace-content" className="surface">
-      {phoneSelected()&&<OnboardingCallNotice userId={userId}/>}
+      {phoneSelected()&&route.view!=="case"&&<OnboardingCallNotice userId={userId}/>}
       {!phoneSelected()&&route.view!=="case"&&<EmailLeads userId={userId} onOpen={id=>go(`#case/${id}`)}/>}
       {error && <p role="alert" className="error">Live updates stopped: {error.message}. Reload to reconnect.</p>}
       <AnimatePresence>{notice && <motion.p role="alert" className="error" initial={{opacity: 0, y: -6}} animate={{opacity: 1, y: 0}} exit={{opacity: 0}}>{notice}</motion.p>}</AnimatePresence>
@@ -171,11 +171,11 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
     <Autonomy key={item.id} caseId={item.id} userId={userId} enabled={crewEnabled} compact render={({status, activity, canStart, started, start, busy: starting, error}) => <section id="section-conversation" className="chat-card-wrap" aria-label="Conversation">
       <CaseChat key={`chat-${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision} title={item.title} pausedNote={!canStart}
         headerStart={<a className="chat-round back-link" href="#workspace" aria-label="All cases" title="All cases"><ArrowLeft size={16} aria-hidden="true"/></a>}
-        headerEnd={<motion.button ref={openRef} type="button" className="chat-round" onClick={() => setInfoOpen(true)} aria-label="Case info" title="Case info" aria-haspopup="dialog" aria-expanded={infoOpen} whileTap={{scale: 0.9}}>
-          <Info size={16} aria-hidden="true"/>{progress?.outcome && <span className="chat-round-dot" aria-hidden="true"/>}
+        headerEnd={<motion.button ref={openRef} type="button" className="chat-round chat-info" onClick={() => setInfoOpen(true)} aria-label="Case info" title="Case info" aria-haspopup="dialog" aria-expanded={infoOpen} whileTap={{scale: 0.9}}>
+          <Info size={16} aria-hidden="true"/><span className="chat-info-label">Case info</span>{progress?.outcome && <span className="chat-round-dot" aria-hidden="true"/>}
         </motion.button>}
         beforeCompose={<>{live}{canStart && <div className="chat-start">
-          <p>{started ? "Assurance is paused on this case. Your messages are saved, but nothing more happens until you start again." : "Assurance hasn’t started on this case yet. We’ll research it, contact the right people and follow up for you. You can stop anytime."}</p>
+          <p className="chat-start-text">{started ? "Assurance is paused on this case. Your messages are saved, but nothing more happens until you start again." : "Assurance hasn’t started on this case yet. We’ll research it, contact the right people and follow up for you. You can stop anytime."}</p>
           <button type="button" onClick={start} disabled={starting}>{starting ? "Starting…" : started ? "Start again" : "Start handling my case"}</button>
           {error && <p role="alert">{error}</p>}
         </div>}</>}>

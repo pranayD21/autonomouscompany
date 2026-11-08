@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useRef,useState,type FormEvent,type ReactNode} from 'react';
+import {Fragment,useCallback,useEffect,useRef,useState,type FormEvent,type ReactNode} from 'react';
 import {api} from './services';
 import {ClaimComposer} from './ui/ClaimComposer';
 import {CaseDocumentFeedback, CaseDocumentUpload} from './Documents';
@@ -6,12 +6,16 @@ import {Logo} from './Icons';
 export type CaseMessage={id:string;role:'user'|'assistant';text:string;created_at:string;kind?:string};
 export type CaseConversation={messages:CaseMessage[];state?:string;waiting_on?:string|null;can_send?:boolean};
 const statusText=(state?:string)=>state==='human_required'?'Waiting for your reply':state==='running'?'Working on your case':state==='queued'||state==='starting'?'Getting started':state==='stopped'||state==='revoked'?'Paused':state==='completed'?'Work finished':'Your case conversation';
+function clockTime(value:string){const date=new Date(value);return Number.isNaN(date.getTime())?'':date.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});}
+function dayLabel(value:string){const date=new Date(value);if(Number.isNaN(date.getTime()))return '';const today=new Date(),yesterday=new Date();yesterday.setDate(today.getDate()-1);if(date.toDateString()===today.toDateString())return 'Today';if(date.toDateString()===yesterday.toDateString())return 'Yesterday';return date.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',...(date.getFullYear()!==today.getFullYear()?{year:'numeric'}:{})});}
+const GROUP_MS=10*60*1000;
 function timestamp(value:string){const date=new Date(value);return Number.isNaN(date.getTime())?'':date.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
 /** The case conversation. The case page supplies the header pieces, a banner above the composer, and an overlay (children). */
 export function CaseChat({caseId,userId,revision,title,headerStart,headerEnd,beforeCompose,pausedNote=true,children}:{caseId:string;userId:string;revision:number;title?:string;headerStart?:ReactNode;headerEnd?:ReactNode;beforeCompose?:ReactNode;pausedNote?:boolean;children?:ReactNode}){
  const [conversation,setConversation]=useState<CaseConversation>({messages:[]}),[loaded,setLoaded]=useState(false),[draft,setDraft]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const pending=useRef<{id:string;text:string}|null>(null),list=useRef<HTMLDivElement>(null),follow=useRef(true),alive=useRef(true);
  const path=`/cases/${caseId}/messages`;
+ const seen=useRef<Set<string>|null>(null);
  const refresh=useCallback(async()=>{const data=await api<CaseConversation>(path,{},userId);if(alive.current){setConversation(data);setLoaded(true);if(pending.current&&data.messages.some(m=>m.id===pending.current!.id)){pending.current=null;setDraft('');setError('');setNotice('Message saved.');}}return data;},[path,userId]);
  useEffect(()=>{alive.current=true;const read=()=>void refresh().catch(e=>{if(alive.current)setError(e instanceof Error?e.message:'Could not load your conversation.');});read();const timer=setInterval(read,5000);const changed=(event:Event)=>{if((event as CustomEvent).detail===caseId)read();};window.addEventListener('assurance:case-changed',changed);return()=>{alive.current=false;clearInterval(timer);window.removeEventListener('assurance:case-changed',changed);};},[refresh,caseId]);
  useEffect(()=>{void refresh().catch(()=>{});},[revision,refresh]);
@@ -26,6 +30,7 @@ export function CaseChat({caseId,userId,revision,title,headerStart,headerEnd,bef
  function attach(){document.querySelector<HTMLInputElement>('#section-conversation input[type="file"]')?.click();}
  const stopped=['stopped','revoked'].includes(conversation.state??'');
  const working=['running','queued','starting'].includes(conversation.state??'');
+ if(loaded&&seen.current===null)seen.current=new Set(conversation.messages.map(m=>m.id));
  return <div className="case-chat" data-state={conversation.state}>
   <header className="case-chat-header">
    {headerStart}
@@ -36,10 +41,18 @@ export function CaseChat({caseId,userId,revision,title,headerStart,headerEnd,bef
    {!loaded&&<p className="case-chat-empty">Loading conversation…</p>}
    {loaded&&!conversation.messages.length&&<div className="chat-welcome">
     <span className="welcome-mark" aria-hidden="true"><Logo size={20}/></span>
-    <p className="chat-welcome-title">Let’s take it from here.</p>
+    <p className="chat-welcome-title">Let’s take it from here</p>
     <p className="chat-welcome-text">Tell us anything new, ask a question, or tap Add documents to share a letter or bill.</p>
    </div>}
-   {conversation.messages.map(message=><article key={message.id} className={`case-chat-message case-chat-message--${message.role}`} aria-label={`${message.role==='user'?'You':'Assurance'} message`}><div className="case-chat-bubble"><span className="case-chat-author">{message.role==='user'?'You':'Assurance'}</span><p>{message.text}</p>{message.kind?.startsWith('document_request')&&<button type="button" className="chat-bubble-action" onClick={attach}>Add the document</button>}</div><time dateTime={message.created_at}>{timestamp(message.created_at)}</time></article>)}
+   {conversation.messages.map((message,index,all)=>{
+    const prev=all[index-1],next=all[index+1],at=new Date(message.created_at).getTime();
+    const newDay=!prev||new Date(prev.created_at).toDateString()!==new Date(message.created_at).toDateString();
+    const groupedWithNext=!!next&&next.role===message.role&&new Date(next.created_at).toDateString()===new Date(message.created_at).toDateString()&&new Date(next.created_at).getTime()-at<GROUP_MS;
+    const fresh=!!seen.current&&!seen.current.has(message.id);
+    return <Fragment key={message.id}>
+     {newDay&&<p className="case-chat-day"><span>{dayLabel(message.created_at)}</span></p>}
+     <article className={`case-chat-message case-chat-message--${message.role}${groupedWithNext?' case-chat-message--grouped':''}${fresh?' case-chat-message--new':''}`} aria-label={`${message.role==='user'?'You':'Assurance'} message`}><div className="case-chat-bubble"><span className="case-chat-author">{message.role==='user'?'You':'Assurance'}</span><p>{message.text}</p>{message.kind?.startsWith('document_request')&&<button type="button" className="chat-bubble-action" onClick={attach}>Add the document</button>}</div>{!groupedWithNext&&<time dateTime={message.created_at} title={timestamp(message.created_at)}>{clockTime(message.created_at)}</time>}</article>
+    </Fragment>;})}
   </div>
   {stopped&&pausedNote&&<p className="case-chat-note">Assurance is paused on this case. Your messages are still saved, but they won’t restart the work.</p>}
   {beforeCompose}
