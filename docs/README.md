@@ -22,3 +22,5 @@ Every repository change must update the relevant documentation in the same chang
 - [Case email replies](replies.md): thread ingestion, sender checks, held messages, evidence revisions, and correspondence references.
 
 - [Scheduled reply monitoring](reply-monitoring.md): owner controls, Neon trigger, retries, leases, and verification.
+
+- [Hosted frontend](hosting.md): Vercel build, public configuration, exact origins, and verification.
