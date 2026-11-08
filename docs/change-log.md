@@ -420,3 +420,9 @@ Added a database-backed request lease and shared cooldown to the Naïve SDK tran
 
 - Published deployment `dpl_CtEPHTMqgKq2SCy59QXppS1mHTNC` and passed hosted E2E, including mocked permission payload/consent checks plus real Auth, database, Functions, Realtime, and isolation checks.
 - Revoked the temporary deployment token, verified access was rejected, and removed its local file. Token expiry does not affect site availability. No live grant, email, or call was created by the authorization UI check.
+
+### Terminal persistent-session handling
+
+- Checked current Naïve session and policy documentation while investigating `read_people` approvals. The API documents explicit per-tool session grants, but the reviewed docs did not explain a switch for the observed gate. No approval behavior or permissions were broadened.
+- Fixed the worker treating a terminal `completed` session like resumable `idle`. Completed, failed, and cancelled sessions now require review; queued events stay undelivered and no replacement session is created.
+- All 16 persistent-session database tests and the build passed. Deployed successfully to all six Neon Functions. No live session, spending cap, or approval grant was created or changed during this fix.

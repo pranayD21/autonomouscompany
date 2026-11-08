@@ -76,3 +76,9 @@ This proves live binding, scheduler start, event delivery, and updated evidence 
 The authority schema now permits research-only grants with zero contacts and zero outbound allowance. A positive outbound allowance still requires a contact. The action guard rejects contact attempts under a zero-outbound grant. Provisioning validates the complete authority schema before remote work.
 
 Cleanup completed: the remote session was cancelled, its vault credentials/vault and identity were deleted, and fixture rows were removed after confirming zero outbound records. The temporary admin key was revoked and its local secret file removed. Coordinator default version 23 was read back with zero MCP servers; general reviews remain pinned to verified version 21.
+
+## Terminal sessions and provider approvals
+
+Naïve's [session API](https://usenaive.ai/docs/api/sessions) distinguishes resumable `idle` from terminal `completed`, `failed`, and `cancelled`. The worker now records human-required status for terminal sessions and leaves queued evidence undelivered. It never sends another wake to a terminal session or creates a replacement budget. Provider completion alone does not establish a verified insurance outcome.
+
+The documented confirmation API supports `scope: "session"` to grant one tool name within one session. This is explicit per grant and does not change the agent or other sessions. It is a possible operator workflow for reducing repeated approvals, not proof that the observed `read_people` gate can be disabled. No automatic session-scoped grant has been added. The current live verification used two call-scoped confirmations; owner-facing approval and safe continuation remain open work.

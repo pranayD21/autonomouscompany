@@ -94,3 +94,15 @@ test("idle sessions do no Naïve work until new evidence or a due followup",asyn
  await db.update(caseAuthorities).set({next_wake_at:new Date(Date.now()-1000)}).where(eq(caseAuthorities.id,f.authority.id));
  await advanceCaseAgentSession(db,f.run.id,d);assert.equal(reads,2);
 });
+
+for(const status of ["completed","failed","cancelled"]){
+ test(`terminal ${status} session never receives a queued wake or replacement`,async()=>{
+  const f=await fixture();await advanceCaseAgentSession(db,f.run.id,deps);
+  const sessionId=(await get(f.run.id)).session_id;
+  await queueCaseAgentEvent(db,f.item.id,`terminal:${status}`,"reply_received",{});
+  await advanceCaseAgentSession(db,f.run.id,{...deps,read:async()=>({status,stop_reason:"end_turn",pending_actions:[]}),send:async()=>{throw Error("Terminal session must not receive input");},start:async()=>{throw Error("Must not replace terminal session");}});
+  const result=await get(f.run.id);assert.equal(result.state,"human_required");assert.equal(result.session_id,sessionId);assert.equal(result.next_check_at,null);
+  assert.match(result.reason!,new RegExp(`provider session is ${status}`));
+  const [event]=await db.select().from(caseAgentEvents).where(eq(caseAgentEvents.run_id,f.run.id));assert.equal(event.delivered_at,null);
+ });
+}

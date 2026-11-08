@@ -55,7 +55,10 @@ export async function advanceCaseAgentSession(db:NodePgDatabase,id:string,deps:C
  if(remote.status==="running"||remote.status==="queued"||remote.stop_reason==="awaiting_delegation"){
   await db.update(caseAgentSessions).set({state:"running",next_check_at:nextCheck()}).where(eq(caseAgentSessions.id,id));return;
  }
- if(remote.pending_actions.length||!["idle","completed"].includes(remote.status)||!["end_turn","awaiting_input"].includes(remote.stop_reason??"")){
+ if(["completed","failed","cancelled"].includes(remote.status)){
+  await db.update(caseAgentSessions).set({state:"human_required",reason:`The provider session is ${remote.status} and cannot resume. Review the case outcome before authorizing further work; no replacement session or budget was created.`,next_check_at:null}).where(eq(caseAgentSessions.id,id));return;
+ }
+ if(remote.pending_actions.length||remote.status!=="idle"||!["end_turn","awaiting_input"].includes(remote.stop_reason??"")){
   await db.update(caseAgentSessions).set({state:"human_required",reason:"The existing session needs review; its budget and identity will not be reset.",next_check_at:null}).where(eq(caseAgentSessions.id,id));return;
  }
  if(authority.next_wake_at&&authority.next_wake_at<=new Date()){
