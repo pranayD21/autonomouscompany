@@ -2,7 +2,13 @@
 
 Assurance has been run with a real user on production. This page separates that evidence from the automated tests, which check logic without contacting outside services.
 
-## Real-user run
+## Claire’s run: team confirmation and confidential records
+
+The team confirms that Claire, the Reddit user acquired through the Naïve GTM agent, actually used Assurance and that her run and call occurred. Call logs, recordings, transcripts, and private case details were intentionally excluded from the public repository because of privacy concerns. Missing public call artifacts must be read as a confidentiality decision, not as a statement that no call or run took place.
+
+This is the team’s direct confirmation of the real-user run. The confidential underlying records are not available here for independent inspection. No insurer decision, claim resolution, or financial savings are asserted by this confirmation. The timestamped production exchange below is a separately documented record; its events and outreach restriction should not be attributed to Claire without supporting records.
+
+## Separately documented restricted production run
 
 The team reports a successful end-to-end run with a real user through the live product on November 8, 2026. The [change log](change-log.md) records that the case came in through a real phone call, and records this production exchange:
 
@@ -19,7 +25,7 @@ Call transcripts and case contents stay out of this repository to protect the us
 
 ## First user
 
-The GTM agent works: a Naïve GTM agent found Assurance's first user on Reddit. Its messages are not stored in this repository. [Permanent company agents](firm-blueprint.md) describes the go-to-market workflow.
+The GTM agent works: a Naïve GTM agent found Assurance's first user, Claire, on Reddit. The team confirms that her subsequent run and call occurred, as described above. Its acquisition messages and her confidential call records are not stored in this repository. [Permanent company agents](firm-blueprint.md) describes the go-to-market workflow.
 
 ## GTM discovery
 
