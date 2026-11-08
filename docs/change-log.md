@@ -1,5 +1,11 @@
 # Change log
 
+## November 8, 2026 — Case page refinement from 21st.dev layouts
+
+The user asked to refine the `#case` page using 21st.dev. No 21st.dev MCP or install was used; three 21st.dev community components were reviewed in the browser for layout ideas and rebuilt in plain CSS on the existing tokens, with no code copied: "Order Tracking" (Javi) became a claim progress stepper (`src/ui/ClaimProgress.tsx`), "Activity Timeline" (Oliver) became the day-grouped activity rail with typed icon markers and an update count (`src/Autonomy.tsx`), and "System Status Block" (Preet Suthar) informed the status strip's tone pill. The header now names the insurer or employer and shows the `deriveProgress` next step, with a Needs you / Resolved badge. Added `Check`, `Mail`, `Phone`, `Inbox`, `Question` and `Clock` icons to `src/Icons.tsx`. No API, data, agent or provider behavior changed; the case page now also polls the same progress endpoints as the overview (every 30 seconds while visible). See [frontend.md](frontend.md).
+
+Verification: `tsc --noEmit` and `npm run build` passed with placeholder public service URLs, and the 18 focused composer, progress and activation tests passed. A temporary copy of `scripts/claim-page-fixture.ts` with synthetic decisions, a sent action and a reply was rendered in Playwright at 1400px and 390px, and the screenshots were inspected: stepper, day groups, markers, count and header line render with no page errors. The fixture loads only `src/style.css`, so fonts differ from production. Not checked on a real device; the frontend deploys from `main` through Vercel.
+
 ## November 8, 2026 — One-screen mobile landing hero
 
 On screens 820px and narrower, the landing header and hero now fill exactly one viewport, from the header down to “See how it works”, with the wordmark, headline and CTA spread evenly instead of bunched at the top. The steps below became spaced cards with number badges, and section/footer spacing increased. Only `src/mobile.css` changed (rules appended inside a `max-width: 820px` query); desktop is untouched. See [frontend.md](frontend.md).

@@ -5,6 +5,7 @@ import {api} from "./services";
 import {activationRequest, sessionNeedsProviderApproval, sessionStatus, type AgentSession} from "./activation-state";
 import type {caseDecisions, CaseReply, OutreachAction} from "../backend/schema";
 import {ClaimComposer} from "./ui/ClaimComposer";
+import {Check, Clock, Inbox, Mail, Phone, Question} from "./Icons";
 
 type Authority = {id: string; state: string; reason: string | null; policy: {version?: number}};
 type Decision = Pick<typeof caseDecisions.$inferSelect, "id" | "round" | "state" | "decision" | "result" | "created_at"> & {action_id?: string | null};
@@ -122,46 +123,78 @@ export function Autonomy({caseId, userId, enabled, between, compact = false}: {c
     </>}
   </section>
   {between}
-  {compact ? <details className="case-disclosure"><summary><span className="disclosure-icon" aria-hidden="true">↗</span><span>Activity log<small>Contacts, decisions, and received replies</small></span></summary><div className="disclosure-body"><Activity decisions={history.decisions} actions={actions} replies={replies}/></div></details> : <Activity decisions={history.decisions} actions={actions} replies={replies}/>}
+  {compact ? <details className="case-disclosure"><summary><span className="disclosure-icon" aria-hidden="true">↗</span><span>Activity log<small>Contacts, decisions, and received replies</small></span>{loaded && <span className="activity-count">{activityCount(history.decisions, replies)} {activityCount(history.decisions, replies) === 1 ? "update" : "updates"}</span>}</summary><div className="disclosure-body"><Activity decisions={history.decisions} actions={actions} replies={replies}/></div></details> : <Activity decisions={history.decisions} actions={actions} replies={replies}/>}
   </>;
 }
 
 const byNewest = (a: {created_at: string | Date}, b: {created_at: string | Date}) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
 const DELIVERY: Record<string, string> = {submitted: "Sent", draft: "Sending", dispatching: "Sending", unknown: "Delivery not confirmed. It will not be resent automatically.", failed: "Not sent"};
 
+const ACTIVITY_TOOLS = ["contact_insurer", "contact_customer", "request_human_help", "wait_for_reply", "stop_case"];
+const activityCount = (decisions: Decision[], replies: CaseReply[]) => decisions.filter(d => ACTIVITY_TOOLS.includes(d.decision?.tool ?? "")).length + replies.length;
+
+type Kind = "email" | "call" | "question" | "wait" | "closed" | "reply";
+const KIND_ICON: Record<Kind, ReactNode> = {email: <Mail/>, call: <Phone/>, question: <Question/>, wait: <Clock/>, closed: <Check size={13}/>, reply: <Inbox/>};
+
+const dayKey = (at: string | Date) => { const d = new Date(at); return Number.isNaN(d.getTime()) ? "" : d.toDateString(); };
+function dayLabel(at: string | Date) {
+  const d = new Date(at);
+  if (Number.isNaN(d.getTime())) return "Earlier";
+  const today = new Date(); const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return "Today";
+  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return d.toLocaleDateString(undefined, {month: "short", day: "numeric", ...(d.getFullYear() !== today.getFullYear() ? {year: "numeric"} : {})});
+}
+const iso = (at: string | Date) => { const d = new Date(at); return Number.isNaN(d.getTime()) ? undefined : d.toISOString(); };
+const clock = (at: string | Date) => { const d = new Date(at); return Number.isNaN(d.getTime()) ? null : d.toLocaleTimeString(undefined, {hour: "numeric", minute: "2-digit"}); };
+
+// Day-grouped feed on a rail with typed markers. Layout idea from the 21st.dev
+// "Activity Timeline" component by Oliver; rebuilt in plain CSS, no code copied.
 function Activity({decisions, actions, replies}: {decisions: Decision[]; actions: OutreachAction[]; replies: CaseReply[]}) {
-  type Item = {id: string; at: string | Date; title: string; children?: ReactNode};
+  type Item = {id: string; at: string | Date; kind: Kind; title: string; children?: ReactNode};
   const items: Item[] = [];
   for (const d of decisions) {
     const x = d.decision;
     if (!x) continue;
     if (x.tool === "contact_insurer" || x.tool === "contact_customer") {
       const action = actions.find(a => a.id === (d.action_id ?? d.id));
-      const verb = action?.kind === "call" ? "Called" : "Emailed";
+      const call = action?.kind === "call";
       const who = action?.destination ?? (x.tool === "contact_insurer" ? "the insurer" : "you");
-      items.push({id: d.id, at: d.created_at, title: `${verb} ${who}`, children: <>
+      items.push({id: d.id, at: d.created_at, kind: call ? "call" : "email", title: `${call ? "Called" : "Emailed"} ${who}`, children: <>
         <p className="activity-subject">{x.subject}</p>
-        {action && <p className="activity-meta">{DELIVERY[action.state] ?? action.state.replaceAll("_", " ")}</p>}
+        {action && <p className="activity-meta" data-delivery={action.state}>{DELIVERY[action.state] ?? action.state.replaceAll("_", " ")}</p>}
         <details><summary>Show message</summary><p className="message-body">{x.body}</p></details>
       </>});
-    } else if (x.tool === "request_human_help") items.push({id: d.id, at: d.created_at, title: "Asked you a question", children: <p>“{x.question}”</p>});
-    else if (x.tool === "wait_for_reply") items.push({id: d.id, at: d.created_at, title: "Waiting for a reply", children: <p className="activity-meta">{x.reason}</p>});
-    else if (x.tool === "stop_case") items.push({id: d.id, at: d.created_at, title: "Closed the case", children: <p>{x.summary}</p>});
+    } else if (x.tool === "request_human_help") items.push({id: d.id, at: d.created_at, kind: "question", title: "Asked you a question", children: <p>“{x.question}”</p>});
+    else if (x.tool === "wait_for_reply") items.push({id: d.id, at: d.created_at, kind: "wait", title: "Waiting for a reply", children: <p className="activity-meta">{x.reason}</p>});
+    else if (x.tool === "stop_case") items.push({id: d.id, at: d.created_at, kind: "closed", title: "Closed the case", children: <p>{x.summary}</p>});
   }
-  for (const r of replies) items.push({id: r.id, at: r.received_at, title: `Reply from ${r.sender}`, children: <>
+  for (const r of replies) items.push({id: r.id, at: r.received_at, kind: "reply", title: `Reply from ${r.sender}`, children: <>
     {r.subject && <p className="activity-subject">{r.subject}</p>}
-    {r.disposition !== "accepted" && <p className="activity-meta">Held for review. Assurance has not used this message.</p>}
+    {r.disposition !== "accepted" && <p className="activity-meta" data-delivery="held">Held for review. Assurance has not used this message.</p>}
     <details><summary>Show message</summary><p className="message-body">{r.body || "No readable text."}</p>{r.attachment_count > 0 && <p className="activity-meta">{r.attachment_count} attachment(s) were not opened.</p>}</details>
   </>});
   items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+  const groups: {key: string; label: string; items: Item[]}[] = [];
+  for (const item of items) {
+    const key = dayKey(item.at);
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.items.push(item); else groups.push({key, label: dayLabel(item.at), items: [item]});
+  }
 
   return <section id="section-activity" className="case-section activity" aria-label="Activity">
     <header className="case-section-head"><h3>Activity</h3></header>
     {items.length === 0
-      ? <p className="quiet-line">Messages Assurance sends and replies it receives will appear here.</p>
-      : <ol>{items.map(item => <li key={item.id} id={`activity-${item.id}`}>
-          <div className="activity-head"><strong>{item.title}</strong><time>{when(item.at)}</time></div>
-          {item.children}
-        </li>)}</ol>}
+      ? <div className="activity-empty"><span aria-hidden="true"><Clock size={16}/></span><p>Messages Assurance sends and replies it receives will appear here.</p></div>
+      : groups.map(group => <div className="activity-day" key={group.key || group.label}>
+          <h4 className="activity-day-label"><span>{group.label}</span></h4>
+          <ol>{group.items.map(item => <li key={item.id} id={`activity-${item.id}`} data-kind={item.kind}>
+            <span className="activity-marker" aria-hidden="true">{KIND_ICON[item.kind]}</span>
+            <div className="activity-body">
+              <div className="activity-head"><strong>{item.title}</strong><time dateTime={iso(item.at)} title={when(item.at) ?? undefined}>{clock(item.at)}</time></div>
+              {item.children}
+            </div>
+          </li>)}</ol>
+        </div>)}
   </section>;
 }

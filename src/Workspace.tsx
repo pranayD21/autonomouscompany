@@ -17,6 +17,8 @@ import {Outcomes} from "./Outcomes";
 import {ArrowLeft, Home, LogOut, Plus} from "./Icons";
 import {Sidebar, SidebarLink, SidebarSection, SidebarText} from "./ui/Sidebar";
 import {Overview} from "./Overview";
+import {ClaimProgress} from "./ui/ClaimProgress";
+import {OWNER_LABEL, useProgressMap} from "./progress";
 import "./claim-workspace.css";
 
 export {Overview};
@@ -154,12 +156,17 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
     ["Bill amount", item.bill_cents !== null ? money(item.bill_cents) : undefined],
     ["EOB responsibility", item.eob_cents !== null ? money(item.eob_cents) : undefined],
   ].filter((f): f is [string, string] => !!f[1]);
+  const progress = useProgressMap([item], userId, crewEnabled).get(item.id);
+  const counterpart = i?.insurer_name || i?.employer_name;
   return <CaseDocumentsProvider key={`${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision}><article className="case claim-workspace" data-case-id={item.id}>
     <div className="page-head">
       <div>
         <a className="back-link" href="#workspace"><ArrowLeft size={16} aria-hidden="true"/>All cases</a>
-        <p className="eyebrow">{caseKind(item)}{i?.claim_number ? ` · Claim ${i.claim_number}` : ""}</p>
+        <p className="eyebrow">{caseKind(item)}{counterpart ? ` · ${counterpart}` : ""}{i?.claim_number ? ` · Claim ${i.claim_number}` : ""}</p>
         <h1>{item.title}</h1>
+        <p className="case-next" aria-live="polite">{progress?.loaded
+          ? <>{progress.owner !== "waiting" && <span className="badge" data-owner={progress.owner}><span className="badge-dot"/>{OWNER_LABEL[progress.owner]}</span>}<span className="case-next-title">{progress.title}</span></>
+          : <span className="ov-skeleton"/>}</p>
       </div>
       <div className="actions">{live}</div>
     </div>
@@ -172,6 +179,7 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
       <Outcomes caseId={item.id} userId={userId} revision={item.revision}/>
       </div>
       <aside className="claim-context" aria-label="Claim transparency">
+        <ClaimProgress progress={progress}/>
         <div className="claim-context-heading"><span className="eyebrow">Behind your claim</span><p>Nothing hidden. Just out of your way.</p></div>
         <Documents/>
 

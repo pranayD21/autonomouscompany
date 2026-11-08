@@ -44,3 +44,27 @@ export function LogOut({size = 20, ...props}: IconProps) {
   return <svg {...base(size)} {...props}><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/></svg>;
 }
 
+
+export function Check({size = 14, ...props}: IconProps) {
+  return <svg {...base(size)} strokeWidth={2.4} {...props}><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>;
+}
+
+export function Mail({size = 14, ...props}: IconProps) {
+  return <svg {...base(size)} {...props}><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="m4.5 7.5 7.5 6 7.5-6"/></svg>;
+}
+
+export function Phone({size = 14, ...props}: IconProps) {
+  return <svg {...base(size)} {...props}><path d="M6.6 3.8h2.6l1.4 4-1.9 1.3a11 11 0 0 0 6.2 6.2l1.3-1.9 4 1.4v2.6a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.6 6a2 2 0 0 1 2-2.2Z"/></svg>;
+}
+
+export function Inbox({size = 14, ...props}: IconProps) {
+  return <svg {...base(size)} {...props}><path d="M3.5 13.5h5l1.5 2.5h4l1.5-2.5h5"/><path d="M5.8 5.5h12.4l2.3 8V18a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18v-4.5Z"/></svg>;
+}
+
+export function Question({size = 14, ...props}: IconProps) {
+  return <svg {...base(size)} {...props}><circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.5a2.4 2.4 0 1 1 3.3 2.2c-.6.3-1 .8-1 1.5v.3"/><path d="M12 16.6h.01"/></svg>;
+}
+
+export function Clock({size = 14, ...props}: IconProps) {
+  return <svg {...base(size)} {...props}><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>;
+}

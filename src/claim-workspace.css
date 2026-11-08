@@ -97,3 +97,72 @@
 @media (max-width: 640px) { .claim-workspace .page-head { gap: 8px; margin-bottom: 20px; } .claim-workspace .claim-context-label { display: none; } .claim-workspace .page-head h1 { font-size: 28px; } .claim-workspace .case-chat { border-radius: 20px; } .claim-workspace .case-chat-header { padding: 19px 15px; } .claim-workspace .case-chat-log { min-height: 300px; max-height: none; overflow: visible; padding: 24px 14px; } .claim-workspace .case-chat-bubble { max-width: 94%; padding: 14px; } .claim-workspace .case-chat-compose { padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); } .claim-workspace .claim-composer-hint { flex-wrap: wrap; } .claim-workspace .claim-composer .file-drop-label { max-width: 100px; } .claim-workspace .claim-composer-count { display: none; } .chat-welcome { margin-top: 14px; } .claim-workspace .case-chat-header strong { font-size: 13px; } .claim-workspace .outcome { padding: 18px; } }
 @media (prefers-reduced-motion: reduce) { .claim-workspace .case-chat-message { animation: none; } }
 .claim-workspace .agent-context .status-head:has(> form) { flex-wrap: wrap; }
+
+/* Case page refinement (2026-11-08). Layout ideas from 21st.dev: "Order Tracking" by Javi (stepper),
+   "Activity Timeline" by Oliver (day-grouped rail), "System Status Block" by Preet Suthar (status strip).
+   Rebuilt in plain CSS on the landing tokens; no 21st.dev code copied. */
+.claim-workspace .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Header: what is happening, in one line */
+.case-next { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 14px 0 0; min-height: 24px; font-size: 14px; color: var(--ink); }
+.case-next-title { font-weight: 550; letter-spacing: -.2px; }
+.claim-main .disclosure-body .activity > .case-section-head { display: none; }
+.claim-main .disclosure-body .activity { padding: 4px 0 0; border: 0; }
+
+/* Status strip: tone pill, one sentence, action */
+.claim-workspace .agent-context.status-panel { padding: 12px 12px 12px 14px; border-color: #e1e3da; border-radius: 16px; background: #fff; box-shadow: 0 1px 2px rgb(24 27 24 / .03); }
+.claim-workspace .agent-context .status-head h2 { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px 5px 9px; border-radius: 100px; background: color-mix(in srgb, var(--tone) 9%, #fff); color: var(--tone); font-size: 11px !important; font-weight: 650; white-space: nowrap; }
+.claim-workspace .agent-context .status-head h2::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.claim-workspace .agent-context[data-tone="running"] .status-head h2::before, .claim-workspace .agent-context[data-tone="queued"] .status-head h2::before, .claim-workspace .agent-context[data-tone="starting"] .status-head h2::before { animation: cp-pulse 1.8s ease-out infinite; }
+.claim-workspace .agent-context[data-tone="stopped"] .status-head h2, .claim-workspace .agent-context[data-tone="idle"] .status-head h2, .claim-workspace .agent-context[data-tone="cancelled"] .status-head h2 { background: var(--tint); }
+.claim-workspace .agent-context .status-head > form button { border-radius: 100px; padding: 9px 18px; }
+
+/* Progress stepper */
+.claim-progress { margin: 0 0 22px; padding: 18px 18px 6px; border: 1px solid #e1e3da; border-radius: 18px; background: #fff; box-shadow: 0 10px 30px -26px rgb(36 69 131 / .35); }
+.claim-progress header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+.claim-progress .eyebrow { margin: 0; }
+.cp-count { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; color: var(--blue); }
+.claim-progress ol { list-style: none; margin: 0; padding: 0; }
+.claim-progress li { position: relative; display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; padding-bottom: 16px; }
+.claim-progress li:not(:last-child)::after { content: ""; position: absolute; left: 10.5px; top: 25px; bottom: 3px; width: 1px; background: var(--rule); }
+.claim-progress li[data-state="done"]:not(:last-child)::after { background: var(--blue); }
+.cp-marker { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--rule); background: #fff; color: #fff; transition: background .3s var(--ease), border-color .3s var(--ease); }
+.cp-marker > span { width: 6px; height: 6px; border-radius: 50%; }
+li[data-state="done"] > .cp-marker { border-color: var(--blue); background: var(--blue); }
+li[data-state="current"] > .cp-marker { border-color: var(--blue); }
+li[data-state="current"] > .cp-marker > span { background: var(--blue); animation: cp-pulse 1.8s ease-out infinite; }
+li[data-state="current"][data-owner="you"] > .cp-marker { border-color: var(--warn); }
+li[data-state="current"][data-owner="you"] > .cp-marker > span { background: var(--warn); --pulse: rgb(162 85 28 / .45); }
+.claim-progress li strong { display: block; padding-top: 2px; font-size: 12px; font-weight: 600; letter-spacing: -.1px; }
+.claim-progress li small { display: block; margin-top: 3px; font-size: 11px; line-height: 1.5; color: var(--quiet); }
+.claim-progress li[data-state="todo"] strong { color: var(--quiet); font-weight: 500; }
+.claim-progress li[data-state="current"][data-owner="you"] small { color: var(--warn); }
+.cp-skeleton { width: 120px; margin-top: 5px; }
+@keyframes cp-pulse { 0% { box-shadow: 0 0 0 0 var(--pulse, rgb(36 101 239 / .45)); } 70%, 100% { box-shadow: 0 0 0 6px transparent; } }
+
+/* Activity log */
+.activity-count { margin-left: auto; margin-right: 18px; padding: 3px 9px; border-radius: 100px; background: var(--tint); color: var(--quiet); font-size: 10px; font-weight: 550; white-space: nowrap; }
+.claim-workspace .activity ol { margin: 0; }
+.activity-day + .activity-day { margin-top: 6px; }
+.claim-workspace .activity-day-label { display: flex; align-items: center; gap: 12px; margin: 4px 0 14px; font-size: 9px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; color: var(--quiet); }
+.activity-day-label::before, .activity-day-label::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
+.claim-workspace .activity li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding: 0 0 18px; }
+.claim-workspace .activity li::before { content: none; }
+.claim-workspace .activity li:not(:last-child)::after { left: 13.5px; top: 32px; bottom: 4px; }
+.activity-marker { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--claim-sky); color: var(--blue); box-shadow: 0 0 0 4px var(--surface); }
+li[data-kind="reply"] > .activity-marker { background: #e8f3ec; color: var(--ok); }
+li[data-kind="question"] > .activity-marker { background: #fdf3e7; color: var(--warn); }
+li[data-kind="wait"] > .activity-marker, li[data-kind="closed"] > .activity-marker { background: var(--tint); color: var(--quiet); }
+.activity-body { min-width: 0; padding-top: 4px; }
+.claim-workspace .activity-head { font-size: 13px; }
+.claim-workspace .activity-head strong { font-weight: 600; overflow-wrap: anywhere; }
+.claim-workspace .activity-head time { font-variant-numeric: tabular-nums; }
+.activity-meta[data-delivery="submitted"] { color: var(--ok) !important; }
+.activity-meta[data-delivery="unknown"], .activity-meta[data-delivery="failed"], .activity-meta[data-delivery="held"] { color: var(--warn) !important; }
+.activity-empty { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+.activity-empty > span { display: grid; place-items: center; flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; border: 1px dashed var(--rule); color: var(--quiet); }
+.activity-empty p { margin: 0; font-size: 12px; color: var(--quiet); line-height: 1.6; }
+
+@media (max-width: 1150px) { .claim-progress { margin-bottom: 14px; } }
+@media (max-width: 640px) { .case-next { font-size: 13px; margin-top: 10px; } .claim-progress { padding: 16px 14px 4px; } .activity-count { margin-right: 22px; } }
+@media (prefers-reduced-motion: reduce) { .claim-workspace .agent-context .status-head h2::before, li[data-state="current"] > .cp-marker > span { animation: none; } }
