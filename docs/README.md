@@ -6,6 +6,7 @@ Read [../agents.md](../agents.md) first. These Markdown files are the durable pr
 | --- | --- |
 | [product.md](product.md) | Understanding customers, scope, business model, and hackathon fit |
 | [architecture.md](architecture.md) | Locating code or designing agent and service boundaries |
+| [frontend.md](frontend.md) | Changing the workspace UI, next-step logic, routes, or copy rules |
 | [neon.md](neon.md) | Configuring backend services, credentials, deployment, and tooling |
 | [demo-and-research.md](demo-and-research.md) | Finding participants, recording interviews, or editing the demo |
 | [implementation-status.md](implementation-status.md) | Checking what actually exists, verification evidence, and unfinished work |

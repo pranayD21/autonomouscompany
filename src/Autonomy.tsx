@@ -29,7 +29,7 @@ export function Autonomy({caseId,userId,enabled}:{caseId:string;userId:string;en
  async function resume(id:string){setBusy(true);setError("");try{await api(`${path}/${id}/resume`,{method:"POST",body:JSON.stringify({confirm:true})},userId);await refresh();}catch(e){setError(e instanceof Error?e.message:"Could not continue the case. Refresh to check its current status.");}finally{setBusy(false);}}
  async function stop(id:string){setBusy(true);setError("");try{await api(`${path}/${id}/revoke`,{method:"POST"},userId);await refresh();}catch(e){setError(e instanceof Error?e.message:"Could not stop the case. Refresh to check its current status.");}finally{setBusy(false);}}
  return <section className="autonomy" aria-label="Case agent activation">
-  <p className="section-lede">Give Assurance permission to work on this case. The agent will set its goal, research next steps, follow up within your permission, and ask you for missing information.</p>
+  <p className="section-lede">Give permission once. The agent sets a goal, follows up for you, and asks when it needs something.</p>
   {!loaded&&!loadError&&<p>Loading case status…</p>}
   {loadError&&<div role="alert"><p>{loadError}</p><button type="button" disabled={busy} onClick={()=>void refresh()}>Refresh case status</button></div>}
   {loaded&&!current&&<p className="caveat"><strong>Case saved. No active authorization.</strong> Saving details or uploading a document does not start agent work.</p>}
@@ -52,14 +52,15 @@ export function Autonomy({caseId,userId,enabled}:{caseId:string;userId:string;en
    {["active","waiting","human_required"].includes(a.state)&&<div><button disabled={busy} onClick={()=>void stop(a.id)}>Stop agent work</button><p>A communication already being sent may finish. Stopping prevents new work after the stop is recorded.</p></div>}
   </div>)}
   {(data.setups??[]).map(setup=><div key={setup.id}><p>Case agent setup: {setup.state.replaceAll('_',' ')}</p>{setup.reason&&<p>{setup.reason}</p>}</div>)}
-  {(data.sessions??[]).map(session=>{const status=sessionStatus(session);return <article key={session.id} aria-label="Case agent status">
-   <h5>{status.label}</h5><p>{status.detail}</p><p>Engine: {engineLabel(session.engine)}</p>
-   {session.goal&&<><strong>Agent goal</strong><p>{session.goal}</p></>}
-   {session.finish_condition&&<><strong>Finish condition</strong><p>{session.finish_condition}</p></>}
-   {session.waiting_on&&<><strong>Waiting for</strong><p>{session.waiting_on}</p></>}
+  {(data.sessions??[]).map(session=>{const status=sessionStatus(session);return <article key={session.id} aria-label="Case agent status" className="agent-session" data-state={session.state}>
+   <div className="agent-session-head"><h5>{status.label}</h5><p>{status.detail}</p></div>
+   {(session.waiting_on||session.goal||session.finish_condition)&&<dl className="agent-facts">
+    {session.waiting_on&&<div><dt>Waiting for</dt><dd>{session.waiting_on}</dd></div>}
+    {session.goal&&<div><dt>Agent goal</dt><dd>{session.goal}</dd></div>}
+    {session.finish_condition&&<div><dt>Finish condition</dt><dd>{session.finish_condition}</dd></div>}
+   </dl>}
    {session.reason&&<p>{session.reason}</p>}
-   {dateLabel(session.last_activity_at)&&<p>Last activity: {dateLabel(session.last_activity_at)}</p>}
-   {dateLabel(session.next_check_at)&&<p>Next check: {dateLabel(session.next_check_at)}</p>}
+   <p className="agent-meta">Engine: {engineLabel(session.engine)}{dateLabel(session.last_activity_at)?` · Last activity: ${dateLabel(session.last_activity_at)}`:""}{dateLabel(session.next_check_at)?` · Next check: ${dateLabel(session.next_check_at)}`:""}</p>
    {session.state==="human_required"&&session.engine==="direct_openai"&&current?.id===session.authority_id&&<div><p>Continue after reviewing the request or adding the missing information. Your original permission stays unchanged.</p><button disabled={busy} onClick={()=>void resume(session.authority_id)}>Continue with updated information</button></div>}
    {sessionNeedsProviderApproval(session)&&<SessionApprovals caseId={caseId} runId={session.id} userId={userId}/>}
   </article>})}
