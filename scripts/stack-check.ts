@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import { createClient, ApiError } from "@usenaive-sdk/managed-agents";
 import { Pool } from "pg";
-import {voiceProvider,outreachEnabled} from "../backend/providers/outreach";
+import {voiceProvider} from "../backend/providers/outreach";
 config({ path: [".env.local", ".env"], quiet: true });
 let failures = 0;
 function report(service: string, state: string) { console.log(`${service}: ${state}`); }
@@ -32,7 +32,9 @@ await check("Naïve", ["NAIVE_API_KEY"], async () => { const client = createClie
 await check("ElevenLabs", ["ELEVENLABS_API_KEY"], async () => { await get("https://api.elevenlabs.io/v1/convai/agents", { "xi-api-key": process.env.ELEVENLABS_API_KEY! }); return "CONNECTED — agent list accessible (no call placed)"; });
 if(voiceProvider()==="agentphone") {
   await check("AgentPhone calling",["AGENTPHONE_API_KEY","AGENTPHONE_AGENT_ID","AGENTPHONE_NUMBER_ID"],async()=>{
-    return outreachEnabled("call")?"CONFIGURED — direct AgentPhone selected; current account access and live calling not verified":"NOT CONFIGURED";
+    const agent=await get(`https://api.agentphone.ai/v1/agents/${encodeURIComponent(process.env.AGENTPHONE_AGENT_ID!)}`,{Authorization:`Bearer ${process.env.AGENTPHONE_API_KEY}`});
+    if(agent.id!==process.env.AGENTPHONE_AGENT_ID||agent.voiceMode!=="hosted"||!agent.numbers?.some((n:{id:string;status:string})=>n.id===process.env.AGENTPHONE_NUMBER_ID&&n.status==="active"))throw new Error("Hosted agent or active number mismatch");
+    return "CONNECTED — hosted agent and configured active number verified; no call placed";
   });
 } else if(voiceProvider()==="elevenlabs") {
 await check("ElevenLabs/Twilio calling", ["ELEVENLABS_API_KEY", "ELEVENLABS_OUTREACH_AGENT_ID", "ELEVENLABS_PHONE_NUMBER_ID"], async () => {

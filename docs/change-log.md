@@ -257,3 +257,7 @@ The operator declined the Twilio number rental and directed that the next Twilio
 ## AgentPhone fallback prepared
 
 Added explicit OUTREACH_VOICE_PROVIDER selection, defaulting to existing ElevenLabs routing. AgentPhone mode restores direct calls without ElevenLabs or SIP; no automatic retry or cross-provider fallback occurs. Added provider-aware setup checks, neutral call-confirmation wording, scheduler/API env declarations, and five AgentPhone regressions. All 11 voice transport tests and the build passed. No deployment, live provider switch, purchase, or call occurred.
+
+## AgentPhone fallback account verified
+
+Verified the existing hosted agent and active number by authenticated readback, and $26.83 balance in refreshed billing. Upgraded the fallback diagnostic from credential-presence checking to hosted-agent/active-number verification. Build passed. Full diagnostics also exposed a Naïve rate limit and the existing disabled gateway models, so the overall check correctly exited 1. No call, purchase, deployment, or live routing switch occurred.
