@@ -4,6 +4,7 @@ import {claimEmailLead} from "./agentmail-webhook";
 import {verifiedOwnerEmail} from "./verified-email";
 import {readCaseMessages,sendCaseMessage,ownerMessageInput} from "./case-messages";
 import {submitCase,addOwnerUpdate} from "./intake-service";
+import {shortCaseTitle} from "./case-title";
 import {isNaiveCapacityError,naiveRetryAt} from "./naive-retry";
 import {requestIdentity} from "./request-identity";
 import {phoneRoutes} from "./phone-routes";
@@ -126,8 +127,9 @@ app.patch("/cases/:id",async c=>{
   const body=await c.req.json().catch(()=>null);
   const parsed=caseInput.safeParse(body);
   if(!parsed.success||!z.number().int().positive().safeParse(body?.revision).success)return c.json({error:"Provide complete valid case details and the current revision."},400);
+  const title=await shortCaseTitle(parsed.data.title,parsed.data.intake?.injury_description||parsed.data.notes);
   const updated=await db.transaction(async tx=>{
-    const [saved]=await tx.update(cases).set({...parsed.data,revision:sql`${cases.revision}+1`,analysis:null,status:"new"})
+    const [saved]=await tx.update(cases).set({...parsed.data,title,revision:sql`${cases.revision}+1`,analysis:null,status:"new"})
       .where(and(where,eq(cases.revision,body.revision))).returning({id:cases.id,revision:cases.revision,txid:sql<string>`pg_current_xact_id()::text`});
     if(saved)await queueCaseAgentEvent(tx,saved.id,`claimant-revision:${saved.revision}`,"claimant_updated_case",{revision:saved.revision});return saved;
   });

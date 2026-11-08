@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {shortCaseTitle} from "../backend/case-title";
+import {shortCaseTitle,descriptiveCaseTitle} from "../backend/case-title";
 const long="I was at the office and then I got a chemical burner while working at one of the wet labs.";
 const reply=(content:string)=>async()=>Response.json({choices:[{message:{content}}]});
 async function withKey(fn:()=>Promise<void>){const old=process.env.OPENAI_API_KEY;process.env.OPENAI_API_KEY="test-only";try{await fn();}finally{if(old===undefined)delete process.env.OPENAI_API_KEY;else process.env.OPENAI_API_KEY=old;}}
@@ -23,3 +23,15 @@ test("failures and unusable replies keep the original title",()=>withKey(async()
  assert.equal(await shortCaseTitle(long,long,reply("")),long);
  assert.equal(await shortCaseTitle(long,long,reply("one two three four five six seven eight nine ten")),long);
 }));
+test("a case with no typed title is named from its description, within the short limit",()=>withKey(async()=>{
+ let body:any;
+ assert.equal(await descriptiveCaseTitle(long,"Workplace injury",async(_u,init)=>{body=JSON.parse(String(init?.body));return reply("Chemical burn in wet lab")();}),"Chemical burn in wet lab");
+ assert.equal(body.messages[1].content,long);
+ assert.equal(await descriptiveCaseTitle(long,"Workplace injury",reply("A chemical burn sustained while working in the lab")),"Workplace injury");
+ assert.equal(await descriptiveCaseTitle(long,"Workplace injury",async()=>{throw Error("network");}),"Workplace injury");
+ assert.equal(await descriptiveCaseTitle("  ","Workplace injury",async()=>{throw Error("called");}),"Workplace injury");
+}));
+test("a generated description title does not trigger a second call in submitCase",()=>withKey(async()=>{
+ assert.equal(await shortCaseTitle("Chemical burn in wet lab",long,async()=>{throw Error("called");}),"Chemical burn in wet lab");
+}));
+
