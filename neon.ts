@@ -9,6 +9,14 @@ export default defineConfig({
   auth: true,
   aiGateway: true,
   functions: {
+    replypoll: {
+      name: "Assurance reply monitor",
+      source: "./backend/reply-worker.ts",
+      env: {
+        AGENTMAIL_API_KEY: { value: process.env.AGENTMAIL_API_KEY, required: true },
+        AGENTMAIL_INBOX_ID: { value: process.env.AGENTMAIL_INBOX_ID, required: true },
+      },
+    },
     hello: { name: "Hello World", source: "./hello.ts" },
     cases: {
       name: "Medical bill case API",
@@ -31,6 +39,9 @@ export default defineConfig({
         CREW_ALLOWED_USER_IDS: process.env.CREW_ALLOWED_USER_IDS ?? "",
       },
     },
+  },
+  triggers: {
+    "reply-monitor": { type: "schedule", function: "replypoll", functionPath: "/poll", cron: "*/5 * * * *" },
   },
   // Branch policy: per-branch tuning
   branch: (branch) => {

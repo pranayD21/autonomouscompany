@@ -45,7 +45,7 @@ Cases with outreach history cannot be deleted through the app. The database fore
 - [AgentMail send API](https://docs.agentmail.to/api-reference/inboxes/messages/send)
 - [AgentMail idempotency](https://docs.agentmail.to/idempotency)
 
-Case-linked reply ingestion and correspondence-aware reviews are now implemented; see [reply handling](replies.md). Scheduled polling, automatic reply dispatch, agent-accessible outreach tools, and ElevenLabs SIP routing remain separate work. This version requires the operator to authorize and check each action in the app.
+Case-linked reply ingestion and correspondence-aware reviews are now implemented; see [reply handling](replies.md). Owner-enabled scheduled polling is described in [reply monitoring](reply-monitoring.md). Automatic reply dispatch, agent-accessible outreach tools, and ElevenLabs SIP routing remain separate work. Outbound actions still require explicit authorization.
 
 ## Verification record
 

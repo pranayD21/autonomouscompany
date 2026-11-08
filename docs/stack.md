@@ -16,9 +16,9 @@ Run `node --env-file=.env.local node_modules/.bin/naive up --dry-run` before app
 
 ## Voice and email
 
-AgentPhone means **agentphone.ai**, not agentphone.app. Its native hosted voice and ElevenLabs over SIP are alternative call paths. SIP needs AgentPhone account enablement and a supported trunk configuration. Never attach one number to both call paths. Account setup is in progress; no number purchase or external call has happened.
+AgentPhone means **agentphone.ai**, not agentphone.app. Its native hosted voice and ElevenLabs over SIP are alternative call paths. SIP needs AgentPhone account enablement and a supported trunk configuration. Never attach one number to both call paths. Account setup and one authorized hosted-voice call are complete; see the verification records below.
 
-ElevenLabs and AgentMail accounts/credentials are pending. No messages have been sent. Use synthetic test cases until consent and production data handling are implemented.
+ElevenLabs and AgentMail accounts and credentials are configured. One authorized synthetic email and its inbound reply are verified. Use synthetic test cases until consent and production data handling are implemented.
 
 ## Setup checks
 
@@ -77,7 +77,7 @@ Final crew verification passed after allowing `wait_for_agents`: session `ses_ns
 
 The primary demo is now a workplace chemical-burn claim. All five Naïve prompts were updated for insurer/claims-administrator triage, coverage research questions, insurer correspondence, and distinct verified outcomes. Specialists were retargeted at version 4 and are now pinned to version 5 after progressive-intake corrections; budgets are unchanged. Claim-specific app intake, live review, progressive editing, and revision boundaries now pass. The subsequent version-5 content check asks three next questions and preserves unknown financial amounts; coverage suggestions remain unverified candidates. See insurance-workflows.md for the selected scope and implementation gaps.
 
-The first explicitly authorized case-linked AgentMail test email was sent once and confirmed in the operator's Gmail inbox. The saved action refreshes as `sent`; temporary operator and recipient permissions were restored. Case-linked calling, inbound replies, and scheduled follow-up remain unverified.
+The first explicitly authorized case-linked AgentMail test email was sent once and confirmed in the operator's Gmail inbox. The saved action refreshes as `sent`; temporary operator and recipient permissions were restored. Case-linked calling remains unverified. The authorized email later received a reply, which was imported and cited by a saved review; see replies.md. Scheduled reply monitoring is tracked in reply-monitoring.md.
 
 ### Assurance naming update
 
@@ -88,3 +88,7 @@ The product is now Assurance. App branding, source voice prompts, and new-call g
 The coordinator instructions now keep delegations under 6,000 characters and send relevant source text primarily to the investigator and verifier. This addresses the malformed/truncated handoff observed in the previous live test while retaining the same five agents, specialist versions, tool permissions, and approved caps. Official page retrieval happens in the case Function; no arbitrary browsing permission was added to agents.
 
 Following a rejected live quotation result, the coordinator was changed to `openai/gpt-5.4-mini`. Other specialists retain `qwen/qwen3.7-flash`. A one-time same-session correction uses the same GPT model and the existing task budget; no budget increase or subscription purchase was made. Exact-source validation remains mandatory.
+
+### Scheduled reply checks
+
+The dedicated `replypoll` Function uses the existing scoped AgentMail key and inbox. It receives no Naïve or telephony credentials. Owners opt into 30-day monitoring of an authorized thread; reads do not grant permission for follow-up sends or inference. See [scheduled reply monitoring](reply-monitoring.md) for deployment and verification. The latest read-only provider check reached Postgres, Auth, Naïve, ElevenLabs, AgentPhone, and AgentMail; Gateway still had no enabled models, and AgentPhone returned zero configured SIP trunks.

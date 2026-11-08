@@ -10,7 +10,8 @@ import { createRealtime, rawSql } from "@neon/realtime/server";
 import { neon } from "@neon/ai-sdk-provider";
 import { generateText } from "ai";
 import { z } from "zod";
-import { cases, crewRuns, outreachActions, caseReplies, documents, documentExtractions, type BillCase } from "./schema";
+import { cases, crewRuns, outreachActions, caseReplies, replyMonitors, documents, documentExtractions, type BillCase } from "./schema";
+import {setReplyMonitoring} from "./reply-monitor";
 
 import { crewConfiguration, naiveClient, startCrew, repairCrew } from "./providers/naive";
 import { completedCrewSnapshot } from "./providers/crew-result";
@@ -191,6 +192,18 @@ app.get("/cases/:id/replies",async c=>{
   const item=await ownedCase(c.req.param("id"),c.get("userId"));if(!item)return c.json({error:"Case not found."},404);
   const rows=await db.select().from(caseReplies).where(eq(caseReplies.case_id,item.id)).orderBy(desc(caseReplies.received_at)).limit(101);
   return c.json({replies:rows.slice(0,100),has_more:rows.length>100});
+});
+app.get("/cases/:id/reply-monitors",async c=>{
+  const item=await ownedCase(c.req.param("id"),c.get("userId"));if(!item)return c.json({error:"Case not found."},404);
+  const rows=await db.select({monitor:replyMonitors}).from(replyMonitors).innerJoin(outreachActions,eq(replyMonitors.action_id,outreachActions.id)).where(eq(outreachActions.case_id,item.id));
+  return c.json(rows.map(r=>r.monitor));
+});
+app.post("/cases/:id/actions/:actionId/reply-monitor",async c=>{
+  if(!z.uuid().safeParse(c.req.param("id")).success||!z.uuid().safeParse(c.req.param("actionId")).success)return c.json({error:"Action not found."},404);
+  const parsed=z.object({enabled:z.boolean()}).strict().safeParse(await c.req.json().catch(()=>null));
+  if(!parsed.success)return c.json({error:"Choose whether to monitor this email thread."},400);
+  try{return c.json(await setReplyMonitoring(db,c.req.param("id"),c.req.param("actionId"),c.get("userId"),parsed.data.enabled));}
+  catch(error){if(error instanceof Error&&error.message==="NOT_FOUND")return c.json({error:"Action not found."},404);if(error instanceof Error&&error.message==="NO_AUTHORIZED_THREAD")return c.json({error:"An authorized email with a thread receipt is required."},409);throw error;}
 });
 app.post("/cases/:id/actions/:actionId/replies/sync",async c=>{
   const item=await ownedCase(c.req.param("id"),c.get("userId"));

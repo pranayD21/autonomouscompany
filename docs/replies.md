@@ -19,7 +19,7 @@ If provider content changes after import, the original is retained, the reply is
 - `src/Outreach.tsx` shows communication history even when the current revision has no saved review. “Check replies” syncs a sent thread. Accepted/held status, reasons, plain text, and unread attachment counts are visible.
 - A new crew run captures up to the latest 20 accepted replies under the same case lock as other evidence. It records whether older replies were omitted. The model must cite exact reply UUIDs and hashes; invented or missing correspondence references fail completion validation. The UI links those references to saved replies.
 
-Replies do not automatically send a response, submit a claim, or claim an insurer decision occurred. Polling is currently initiated from the case UI; provider webhooks, scheduled checks, reply-in-thread sending, and automatic follow-up orchestration remain to be implemented.
+Replies do not automatically send a response, submit a claim, or claim an insurer decision occurred. Manual polling remains available. Owner-enabled scheduled checks are implemented in [reply monitoring](reply-monitoring.md), with live deployment verification recorded in the change log. Provider webhooks, reply-in-thread sending, and automatic follow-up orchestration remain to be implemented.
 
 ## Verification
 

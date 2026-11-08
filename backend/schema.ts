@@ -1,4 +1,4 @@
-import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import type { ClaimIntake } from "./claim-input";
 import type { CrewSnapshot } from "./providers/crew-result";
 
@@ -100,3 +100,18 @@ export const caseReplies = pgTable("advocacy_case_replies", {
  created_at:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),
 },t=>[uniqueIndex("advocacy_reply_provider_idx").on(t.inbox_id,t.message_id),index("advocacy_reply_case_idx").on(t.case_id)]);
 export type CaseReply=typeof caseReplies.$inferSelect;
+
+export const replyMonitors=pgTable("advocacy_reply_monitors",{
+ action_id:uuid("action_id").primaryKey().references(()=>outreachActions.id,{onDelete:"restrict"}),
+ enabled:boolean("enabled").notNull().default(false),
+ expires_at:timestamp("expires_at",{withTimezone:true}).notNull(),
+ next_check_at:timestamp("next_check_at",{withTimezone:true}).notNull().defaultNow(),
+ lease_id:uuid("lease_id"),
+ lease_until:timestamp("lease_until",{withTimezone:true}),
+ last_attempt_at:timestamp("last_attempt_at",{withTimezone:true}),
+ last_success_at:timestamp("last_success_at",{withTimezone:true}),
+ last_invocation_id:text("last_invocation_id"),
+ failures:integer("failures").notNull().default(0),
+ error_code:text("error_code"),
+},t=>[index("advocacy_reply_monitor_due_idx").on(t.enabled,t.next_check_at)]);
+export type ReplyMonitor=typeof replyMonitors.$inferSelect;

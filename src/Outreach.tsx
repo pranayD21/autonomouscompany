@@ -1,16 +1,17 @@
 import {useEffect,useState,type FormEvent} from "react";
 import {api} from "./services";
-import type {OutreachAction,CaseReply} from "../backend/schema";
+import type {OutreachAction,CaseReply,ReplyMonitor} from "../backend/schema";
 export function Outreach({caseId,userId,enabled,plan,revision,canDraft=true}:{caseId:string;userId:string;enabled:boolean;plan:string;revision:number;canDraft?:boolean}) {
  const [replyData,setReplyData]=useState<{replies:CaseReply[];has_more:boolean}>({replies:[],has_more:false});
  const [notice,setNotice]=useState("");
  const [actions,setActions]=useState<OutreachAction[]>([]);
+ const [monitors,setMonitors]=useState<ReplyMonitor[]>([]);
  const [kind,setKind]=useState<"call"|"email">("email");
  const [requestId,setRequestId]=useState(()=>crypto.randomUUID());
  const [busy,setBusy]=useState(false),[error,setError]=useState("");
  const path=`/cases/${caseId}/actions`;
- async function refresh(){const [actions,replies]=await Promise.all([api<OutreachAction[]>(path,{},userId),api<{replies:CaseReply[];has_more:boolean}>(`/cases/${caseId}/replies`,{},userId)]);setActions(actions);setReplyData(replies);}
- useEffect(()=>{void refresh().catch(e=>setError(e.message));},[caseId,userId]);
+ async function refresh(){const [actions,replies,monitors]=await Promise.all([api<OutreachAction[]>(path,{},userId),api<{replies:CaseReply[];has_more:boolean}>(`/cases/${caseId}/replies`,{},userId),api<ReplyMonitor[]>(`/cases/${caseId}/reply-monitors`,{},userId)]);setActions(actions);setReplyData(replies);setMonitors(monitors);}
+ useEffect(()=>{void refresh().catch(e=>setError(e.message));},[caseId,userId,revision]);
  async function create(event:FormEvent<HTMLFormElement>){
   event.preventDefault();const form=event.currentTarget;const f=new FormData(form);setBusy(true);setError("");
   try {await api(path,{method:"POST",body:JSON.stringify({id:requestId,kind,destination:f.get("destination"),subject:f.get("subject"),body:f.get("body"),synthetic:true})},userId);setRequestId(crypto.randomUUID());await refresh();}
@@ -24,6 +25,7 @@ export function Outreach({caseId,userId,enabled,plan,revision,canDraft=true}:{ca
   catch(e){setError(e instanceof Error?e.message:"Action unavailable");}finally{setBusy(false);}
  }
  async function sync(action:OutreachAction){setBusy(true);setError("");setNotice("");try{const result=await api<{imported:number;changed:number;held:number;partial:boolean}>(`${path}/${action.id}/replies/sync`,{method:"POST"},userId);setNotice(`${result.imported} new reply(s); ${result.held} held for review.${result.partial?" More thread history remains at the provider.":""} No email was sent.`);await refresh();}catch(e){setError(e instanceof Error?e.message:"Reply check failed");}finally{setBusy(false);}}
+ async function monitor(action:OutreachAction,enabled:boolean){setBusy(true);setError("");try{await api(`${path}/${action.id}/reply-monitor`,{method:"POST",body:JSON.stringify({enabled})},userId);setNotice(enabled?"Reply monitoring enabled for 30 days. Checks run about every 15 minutes. No messages or agent reviews are sent automatically.":"Reply monitoring paused. A check already in progress may finish.");await refresh();}catch(e){setError(e instanceof Error?e.message:"Monitoring could not be changed");}finally{setBusy(false);}}
  return <section className="analysis"><h4>Outreach</h4><p>Save a discussion plan or email, then review it before authorizing one action. Only approved test recipients can be contacted.</p>
  {!canDraft&&<p>Complete the current case review before preparing new outreach. Earlier communication history remains below.</p>}
  {canDraft&&<form onSubmit={create}>
@@ -43,7 +45,8 @@ export function Outreach({caseId,userId,enabled,plan,revision,canDraft=true}:{ca
   {action.error_code&&<p>Provider result: {action.error_code}</p>}
   <div className="actions">{action.state==="draft"&&<button disabled={busy||!enabled||action.case_revision!==revision} onClick={()=>void act(action,true)}>{action.kind==="call"?"Review and authorize call":"Review and authorize email"}</button>}
   {action.provider_id&&<button className="text-button" disabled={busy} onClick={()=>void act(action,false)}>Check provider status</button>}
-  {action.kind==="email"&&action.provider_thread_id&&action.approved_at&&<button className="text-button" disabled={busy} onClick={()=>void sync(action)}>Check replies</button>}</div>
+  {action.kind==="email"&&action.provider_thread_id&&action.approved_at&&<><button className="text-button" disabled={busy} onClick={()=>void sync(action)}>Check replies</button><button className="text-button" disabled={busy} onClick={()=>void monitor(action,!monitors.some(m=>m.action_id===action.id&&m.enabled&&new Date(m.expires_at)>new Date()))}>{monitors.some(m=>m.action_id===action.id&&m.enabled&&new Date(m.expires_at)>new Date())?"Pause reply monitoring":"Monitor replies"}</button></>}</div>
+  {monitors.filter(m=>m.action_id===action.id).map(m=><div key={m.action_id}><p>Automatic checks: {m.enabled&&new Date(m.expires_at)>new Date()?"On":"Paused or expired"}{m.last_success_at?` · Last successful check ${new Date(m.last_success_at).toLocaleString()}`:" · No scheduled check completed yet"}</p>{m.enabled&&new Date(m.expires_at)>new Date()&&<small>Next check due {new Date(m.next_check_at).toLocaleString()} · Monitoring ends {new Date(m.expires_at).toLocaleDateString()}</small>}{m.error_code&&<p>{m.error_code==="PARTIAL_HISTORY"?"Only part of the thread history was available.":"The last scheduled check failed. It will retry with a longer delay."}</p>}</div>)}
  </div>)}
  <h4>Received correspondence</h4><p>Included replies are reported information, not verified coverage or payment. Held replies are not sent to the claim agents.</p>{replyData.has_more&&<p>Showing the latest 100 replies.</p>}{replyData.replies.length===0&&<p>No replies imported yet.</p>}
  {replyData.replies.map(reply=><article key={reply.id} id={`reply-${reply.id}`}><h5>{reply.subject||"Reply without subject"}</h5><p>From: {reply.sender} · {new Date(reply.received_at).toLocaleString()}</p><p>{reply.disposition==="accepted"?"Included as reported information":"Held — not included in agent review"}</p><small>{reply.reason}</small><p className="outreach-body">{reply.body||"No supported plain-text body."}</p>{reply.attachment_count>0&&<p>{reply.attachment_count} attachment(s) not imported or read.</p>}</article>)}
