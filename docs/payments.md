@@ -1,6 +1,6 @@
 # Stripe test-only finance
 
-The latest firm plan adds Stripe as a test-mode finance tool. This supersedes the earlier decision to leave payment creation entirely hypothetical. Real fee collection, payment confirmation, settlement, and card collection remain outside the implemented path. An unconfirmed test PaymentIntent is not a payment or revenue.
+Stripe is a test-mode finance tool for the company Finance role. Real fee collection, payment confirmation, settlement, and card collection are neither implemented nor authorized. An unconfirmed test PaymentIntent is not a payment or revenue.
 
 `backend/firm-finance.ts` exposes `recordFirmTestFee(db, input, request?)` for the company Finance tool. Input names are `operation_id`, `case_id`, `outcome_id`, `fee_rate`, and `reason`. The tool derives the fee from the latest recorded outcome's responsibility reduction; it does not accept an agent-supplied savings amount. It checks current exact supporting quotes, rejects pending/unknown decisions or missing amounts, and verifies original responsibility minus final responsibility matches the reported reduction. This remains an agent-reported outcome, not independent verification of savings or received refunds.
 
@@ -12,13 +12,13 @@ Only `rk_test_` or `sk_test_` server keys are accepted. The adapter creates an u
 
 Created a temporary claimable Stripe sandbox through the official CLI, using pranay.dogra21@gmail.com and an isolated `assurance-hypothetical` profile. It expires November 15, 2026 unless claimed. No existing Stripe profile was overwritten. The claim URL and credentials are private in ignored `test-results/stripe-config.toml`; the creation receipt is also private and ignored. Do not copy these into documentation or logs.
 
-The restricted sandbox test key is stored as `STRIPE_TEST_SECRET_KEY` in ignored, mode-0600 `.env.local`. The key is server-only and must never be exposed to the browser. Deployment must explicitly configure it for the Finance runtime; local presence alone does not establish hosted readiness. `ASSURANCE_PAYMENT_MODE=hypothetical` was an earlier local scope note, not a runtime enforcement flag. The adapter enforces test mode from the key and provider receipt.
+The restricted sandbox test key is stored as `STRIPE_TEST_SECRET_KEY` in ignored, mode-0600 `.env.local`. The key is server-only and must never be exposed to the browser. `neon.ts` passes it to the `firm` Function only when it is set in the deployment environment; without it, the tool fails with `STRIPE_TEST_KEY_REQUIRED`. No code reads `ASSURANCE_PAYMENT_MODE`. The adapter enforces test mode from the key and provider receipt.
 
 Read-only verification succeeded with HTTP 200 on `/v1/products?limit=1` and `/v1/checkout/sessions?limit=1`, both empty lists. The restricted key cannot read the balance endpoint (HTTP 403); this is not evidence that checkout credentials are invalid. No checkout session, payment intent, charge, customer, or product was created by the verification.
 
 The first Python HTTPS check failed because its local certificate store was unavailable; Node's normal TLS-verified fetch was used instead. A first direct TOML regex did not parse the CLI's quoting; structured TOML parsing resolved it without printing the key. No TLS verification was disabled.
 
-## Demo treatment
+## Presenting fees
 
 Show any proposed Assurance fee as hypothetical and separate it from reported claim amounts and refunds. Do not invent a Stripe success screen, transaction receipt, checkout URL, or payment status. Outcome records remain agent-reported, with their supporting evidence and verification limits visible.
 

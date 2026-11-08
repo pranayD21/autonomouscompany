@@ -57,16 +57,16 @@ The reader does not enumerate conversations or copy the Messages database. Befor
 
 Successful inbound ingestion advances that recipient's cursor after the server acknowledges the event. Event IDs hash the service and Apple message GUID, so a lost acknowledgement can be retried without duplicate ingestion. Replies are untrusted observations; they do not themselves become new permission. The hosted service controls case association and STOP handling.
 
-This initial reader supports plain-text values in the Messages database. It does not decode Apple's attributed-only text archives or attachments. Encountering such a message stops the bridge for manual review without advancing the cursor or pretending the message was received. Sharing a personal Messages account with a business bridge still means new direct messages from a tracked recipient may belong to the same conversation; a dedicated sender account/device is preferable.
+The reader supports plain-text values in the Messages database. It does not decode Apple's attributed-only text archives or attachments. Encountering such a message stops the bridge for manual review without advancing the cursor or pretending the message was received. Sharing a personal Messages account with a business bridge still means new direct messages from a tracked recipient may belong to the same conversation; a dedicated sender account/device is preferable.
 
-## Verification and live limitations
+## Verification
 
 Nine local tests passed: send-once reservation, repeated claims, lost receipt retry, crash recovery, uncertain AppleScript outcome, conflicting notification attempts, malformed recipient rejection, private atomic journal writes, HTTPS/no-redirect API transport, and the scoped SQLite reader (several assertions share a test). TypeScript passed.
 
-Read-only inspection of this Mac found the installed Messages scripting dictionary includes SMS, iMessage, and RCS account types and a send command. The first AppleEvent query returned error -10000; a later `--check` succeeded and reported one SMS and one iMessage account. No account ID, sender address, recipient, or message contents were printed. The Messages database exists, but read-only open was denied. The final check reported `automation=true`, `database=false`, `selectedReady=false`, `configured=false`, and zero sends.
+Read-only inspection of this Mac found the installed Messages scripting dictionary includes SMS, iMessage, and RCS account types and a send command. The first AppleEvent query returned error -10000; a later `--check` succeeded and reported one SMS and one iMessage account. No account ID, sender address, recipient, or message contents were printed.
 
-The user subsequently selected the existing Mac sender. The single enabled SMS service was saved privately in `.env.bridge.local`; selectedReady and configured are now true. The user reported enabling Full Disk Access, but the running helper still reports database=false. Its process ancestry is CodexCLI (inside ChatGPT) under T3 Code (Beta); a permission grant to the responsible app and process restart may be required. No bridge service was installed and no live message was sent. These tests do not prove carrier forwarding, recipient delivery, or live reply ingestion. The operating-system access and explicit sender configuration must be completed before this machine can become a working delivery bridge.
+The user selected the existing Mac sender, and the single enabled SMS service was saved privately in `.env.bridge.local`. No bridge service was installed. These tests do not cover carrier forwarding, recipient delivery, or live reply ingestion.
 
-## Current live result
+## Live result
 
-After explicit approval, Full Disk Access was enabled for Terminal and T3 Code and T3 restarted. The current check reports all readiness booleans true. One authorized local send was accepted by AppleScript but did not reach the recipient; the scoped database row reported sent=0, delivered=0, error=4. No retry was attempted. The OS permission gate is resolved; carrier forwarding/delivery remains unproven. See [bridge status](mac-messages-bridge.md).
+After explicit approval, Full Disk Access was enabled for Terminal and T3 Code and T3 restarted. The check then reported all readiness booleans true. One authorized local send was accepted by AppleScript but did not reach the recipient; the scoped database row reported sent=0, delivered=0, error=4. No retry was attempted. See [bridge status](mac-messages-bridge.md).

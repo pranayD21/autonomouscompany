@@ -1,6 +1,6 @@
 # Website case conversation
 
-The case conversation replaces phone notifications for the current workflow. An authenticated owner can send a message, read the agent's questions and updates, and use the existing private document uploader. No SMS provider, carrier registration, Mac, or phone-notification permission is needed. Phone verification remains a separate sign-in option.
+The case conversation is how customers and advocates talk; it replaces phone notifications. An authenticated owner can send a message, read the agent's questions and updates, and use the existing private document uploader. No SMS provider, carrier registration, Mac, or phone-notification permission is needed. Phone verification is the separate sign-in step.
 
 ## Storage and API
 
@@ -30,4 +30,4 @@ Run `scripts/case-messages.test.ts`, `scripts/intake-service.test.ts`, and `scri
 
 Frontend behavior is documented in [website chat UI](web-chat-ui.md). Uploaded documents continue using the existing [document intake](documents.md) storage and evidence flow.
 
-Verification completed locally: 5 chat database tests, 2 intake-service regressions, and 7 Naïve activation regressions passed against the disposable branch. TypeScript and diff checks passed. These tests do not establish a hosted deployment or real agent chat response; production verification must be recorded separately.
+Local verification: 5 chat database tests, 2 intake-service regressions, and 7 Naïve activation regressions passed against the disposable branch. TypeScript and diff checks passed.

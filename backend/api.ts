@@ -143,16 +143,16 @@ app.delete("/cases/:id", async (c) => {
   const [authority]=await db.select({id:caseAuthorities.id}).from(caseAuthorities).innerJoin(cases,eq(cases.id,caseAuthorities.case_id)).where(owned(c.req.param("id"),c.get("userId"))).limit(1);
   if(authority)return c.json({error:"This case has retained standing authorization records and cannot be deleted."},409);
   const [document] = await db.select({id:documents.id}).from(documents).innerJoin(cases,eq(documents.case_id,cases.id)).where(owned(c.req.param("id"),c.get("userId"))).limit(1);
-  if(document)return c.json({error:"This case has retained documents. Document deletion is not yet supported."},409);
+  if(document)return c.json({error:"This case has retained documents and can't be deleted."},409);
   const [action] = await db.select({id:outreachActions.id}).from(outreachActions).innerJoin(cases,eq(outreachActions.case_id,cases.id)).where(owned(c.req.param("id"),c.get("userId"))).limit(1);
   if(action) return c.json({error:"This case has an outreach record and must be retained for reconciliation."},409);
   const [existingRun] = await db.select({ id: crewRuns.id }).from(crewRuns).innerJoin(cases, eq(crewRuns.case_id, cases.id)).where(owned(c.req.param("id"), c.get("userId")));
-  if (existingRun) return c.json({ error: "This case has an agent-run record. Retain it until the run is reconciled; deletion is not yet supported." }, 409);
+  if (existingRun) return c.json({ error: "This case has an agent-run record and must be retained for reconciliation." }, 409);
   const [removed] = await db.delete(cases).where(owned(c.req.param("id"), c.get("userId"))).returning({ id: cases.id, txid: sql<string>`pg_current_xact_id()::text` });
   return removed ? c.json(removed) : c.json({ error: "Case not found." }, 404);
 });
 
-// Access is limited to operator-listed test users until spending and patient authorization flows exist.
+// Operator-only surfaces: agent credentials, legacy grants, crew reviews and manual outreach authorization. Version-2 owner permission does not use this list.
 const crewAllowed = (userId: string) => (process.env.CREW_ALLOWED_USER_IDS ?? "").split(",").includes(userId);
 app.post("/cases/:id/agent-credentials",async c=>{
  if(!await ownedCase(c.req.param("id"),c.get("userId")))return c.json({error:"Case not found."},404);
@@ -181,7 +181,7 @@ app.post("/cases/:id/autonomy",async c=>{
  if(body.persistent!==undefined&&typeof body.persistent!=="boolean")return c.json({error:"Persistent setup selection must be true or false."},400);
  try{return c.json(await authorizeCase(db,c.req.param("id"),c.get("userId"),body.policy,undefined,body.persistent===true),201);}
  catch(error){const code=error instanceof Error?error.message:"INVALID_AUTHORITY";
-  return c.json({error:code==="DIRECT_ACTIVATION_UNAVAILABLE"?"Agent activation is not available yet. No permission was saved.":code==="PERSISTENT_SETUP_UNAVAILABLE"?"Persistent case setup is not configured. No authorization was created.":code==="AUTHORITY_ALREADY_EXISTS"?"Stop the existing authority before creating another.":code==="REVIEW_REQUIRED"?"Save a review for the current case details first.":code==="CONTACT_NOT_ALLOWED"?"Every contact must be an approved synthetic test recipient.":code==="EXISTING_ADVOCATE_REQUIRES_EXPLICIT_HANDOVER"?"Another advocate is still assigned to this case. Stop it before starting again.":body?.policy?.version!==2?"Provide a valid bounded authority expiring within 30 days.":error instanceof z.ZodError?"Provide your permission in your own words and select persistent activation.":(console.error("case activation failed",error),"Agent work could not start. Your case is saved; try again shortly.")},409);}
+  return c.json({error:code==="DIRECT_ACTIVATION_UNAVAILABLE"?"Agent activation is unavailable right now. No permission was saved.":code==="PERSISTENT_SETUP_UNAVAILABLE"?"Persistent case setup is not configured. No authorization was created.":code==="AUTHORITY_ALREADY_EXISTS"?"Stop the existing authority before creating another.":code==="REVIEW_REQUIRED"?"Save a review for the current case details first.":code==="CONTACT_NOT_ALLOWED"?"Every contact must be an approved synthetic test recipient.":code==="EXISTING_ADVOCATE_REQUIRES_EXPLICIT_HANDOVER"?"Another advocate is still assigned to this case. Stop it before starting again.":body?.policy?.version!==2?"Provide a valid bounded authority expiring within 30 days.":error instanceof z.ZodError?"Provide your permission in your own words and select persistent activation.":(console.error("case activation failed",error),"Agent work could not start. Your case is saved; try again shortly.")},409);}
 });
 app.post("/cases/:id/autonomy/:authorityId/resume",async c=>{
  if(!await ownedCase(c.req.param("id"),c.get("userId"))||!z.uuid().safeParse(c.req.param("authorityId")).success)return c.json({error:"Authority not found."},404);
@@ -221,7 +221,7 @@ app.post("/cases/:id/sessions/:runId/approvals",async c=>{
 app.get("/stack/status", (c) => c.json({
   naive: { configured: !!crewConfiguration(), enabledForUser: crewAllowed(c.get("userId")) },
   outreach: { restricted: process.env.OUTREACH_RESTRICT_TO_ALLOWLIST==="true", callProvider: voiceProvider(), callConfigured: outreachEnabled("call"), emailConfigured: outreachEnabled("email"), enabledForUser: crewAllowed(c.get("userId")) },
-  voice: { enabled: false, reason: "Case-linked calls are not enabled. The standalone synthetic phone test is verified." },
+  voice: { enabled: false, reason: "Advocates place case calls through the place_call tool; this status route does not start calls." },
 }));
 app.post("/cases/:id/crew", async (c) => {
   if (!z.uuid().safeParse(c.req.param("id")).success) return c.json({ error: "Invalid case ID." }, 400);

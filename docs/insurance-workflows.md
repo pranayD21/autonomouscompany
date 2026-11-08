@@ -1,44 +1,46 @@
 # Insurer-first product direction
 
-The user changed the core relationship to injured person/policyholder ↔ insurer/claims administrator. Hospital billing negotiation is no longer the main use case. Keep existing provider accounts, authorization records, durable case reviews, and outreach infrastructure; use them for the insurance workflow.
+The user changed the core relationship to injured person/policyholder ↔ insurer/claims administrator. Hospital billing negotiation is no longer the main use case. Existing provider accounts, authorization records, durable case reviews, and outreach infrastructure serve the insurance workflow.
 
 ## Workplace injury path
 
-Intake should identify the injured worker, employer, insurer or claims administrator, jurisdiction, incident date, claim stage, claim reference if assigned, supplied reports/forms, missing documents, and requested help. Do not assume a claim exists already or that every workplace injury uses the same jurisdictional process.
+Intake identifies the injured worker, employer, insurer or claims administrator, jurisdiction, incident date, claim stage, claim reference if assigned, supplied reports/forms, missing documents, and requested help. Do not assume a claim exists already or that every workplace injury uses the same jurisdictional process.
 
-The workflow should help prepare the relevant information, coordinate required employer involvement, confirm receipt, track requests, and explain documented decisions. In California, the official DWC filing guide describes employee and employer sections of the claim form and the employer forwarding it to the insurance company. This supports a multi-party workflow rather than pretending the injured person simply bypasses the employer. [California DWC filing guide](https://www.dir.ca.gov/DWC/FileAClaim.htm).
+The workflow prepares the relevant information, coordinates required employer involvement, confirms receipt, tracks requests, and explains documented decisions. In California, the official DWC filing guide describes employee and employer sections of the claim form and the employer forwarding it to the insurance company. This supports a multi-party workflow rather than pretending the injured person simply bypasses the employer. [California DWC filing guide](https://www.dir.ca.gov/DWC/FileAClaim.htm).
 
 The injured person is the beneficiary. Whether the employer pays for the product, assists filing, or is merely a case participant has not been decided. Do not grant employers access to an individual's case merely because they are named in it.
 
 ## Health-insurance dispute path
 
-Intake should collect insurer/plan, claim reference, service date, current status, the actual EOB or denial notice, the insurer's stated reason, relevant policy material, supporting records, and the person's desired outcome. A bill/EOB mismatch is a lead to investigate, not a proven denial or overcharge.
+Intake collects insurer/plan, claim reference, service date, current status, the actual EOB or denial notice, the insurer's stated reason, relevant policy material, supporting records, and the person's desired outcome. A bill/EOB mismatch is a lead to investigate, not a proven denial or overcharge.
 
-The workflow should explain the insurer's stated decision, request clarification or missing documents, prepare an evidence-backed dispute, confirm submission, and track the response. HealthCare.gov distinguishes internal appeals from external review; the actual notice, plan, and applicable process determine the right next step. Do not insert generic deadlines into a case. [HealthCare.gov appeal overview](https://www.healthcare.gov/using-marketplace-coverage/appealing-insurance-company-decisions/).
+The workflow explains the insurer's stated decision, requests clarification or missing documents, prepares an evidence-backed dispute, confirms submission, and tracks the response. HealthCare.gov distinguishes internal appeals from external review; the actual notice, plan, and applicable process determine the right next step. Do not insert generic deadlines into a case. [HealthCare.gov appeal overview](https://www.healthcare.gov/using-marketplace-coverage/appealing-insurance-company-decisions/).
 
 ## Shared system
 
-- Naïve coordinator: chooses the claim-specific workflow and next step.
-- Intake agent: builds a document-backed claim record and requests missing information.
-- Investigator: checks insurer reasoning against supplied evidence.
-- Advocate: prepares insurer communications and submissions for authorization.
-- Verifier: checks receipts and documented outcomes before reporting progress.
-- AgentPhone/ElevenLabs: insurer calls; existing native AgentPhone demo is verified, ElevenLabs SIP is not.
-- AgentMail: insurer correspondence and future reply-triggered follow-up. One authorized outbound email is verified.
+- Naïve case advocate: one isolated advocate per case chooses the claim-specific workflow, research, contacts, and next step.
+- Permanent company roles: CEO, Front Desk, Reviewer, Knowledge, Growth, and Finance handle budgets, staffing, review, playbooks, and test-mode finance. See [company runtime](firm-runtime.md).
+- Legacy review crew: intake, investigator, advocate, and verifier specialists produce plans for older review routes.
+- AgentPhone: insurer calls. New calls use AgentPhone only.
+- AgentMail: insurer correspondence. Signed webhooks route replies on dedicated case mailboxes back to the case. Advocates reach customers through the website conversation; `send_email` to a customer is refused.
 - Neon: cases, evidence references, authorization, review snapshots, communications, and status history.
 
 ## Implementation boundaries
 
-The database/UI now supports progressive workplace-injury and health-insurance intake. Private document upload, image/PDF-text extraction, and confirmed source-linked reviews are implemented. Policy interpretation, forms, a claim submission integration, and automatic reply/schedule processing remain incomplete. Existing synthetic tests prove infrastructure, not a workers' compensation claim or successful insurance appeal. Agent instructions are configured for insurer-facing triage while those intake paths are implemented. The user selected the workplace chemical-burn scenario as the first demo; health-insurance disputes remain a related path.
+The app supports progressive workplace-injury and health-insurance intake, private document upload, image/PDF-text extraction, and source-linked facts and citations. Advocates contact insurers with the `send_email` and `place_call` case tools and choose their own follow-up times with `schedule_followup`. Replies and completed calls wake the case. The team's manual end-to-end UI testing validated the customer workflow.
+
+Coverage and policy interpretation stay provisional: a matching quote does not establish authority, currency, jurisdiction, or coverage.
+
+The workplace chemical-burn scenario is the reference for workflow validation. Health-insurance disputes share the same system.
 
 
-## Selected demo: chemical burn at work
+## Reference scenario: chemical burn at work
 
 A person working in a pharmaceutical office suffers a workplace chemical burn and wants the care covered. This is the user-selected scenario, not a real participant or verified incident.
 
-The desired entry point is contact details, a short injury description, and an insurance card. That is the start of progressive intake, not proof that every necessary fact is present. Agents gather employer, incident date/location, treatment and bills, relevant coverage, claim status, supporting documents, and case authorization as needed. They must not invent missing facts or submit an attestation as if the claimant supplied it.
+The person starts with contact details, a short injury description, and an insurance card. That is the start of progressive intake, not proof that every necessary fact is present. Agents gather employer, incident date/location, treatment and bills, relevant coverage, claim status, supporting documents, and case authorization as needed. They must not invent missing facts or submit an attestation as if the claimant supplied it.
 
-The desired end-to-end operation is:
+The end-to-end operation is:
 
 1. Understand the incident and gather missing facts.
 2. Research potentially applicable coverage and benefits: employer workers' compensation, relevant personal health coverage, and other supplied applicable benefits. Establish responsibility and coordination rather than assuming duplicate payment is available.
@@ -49,22 +51,22 @@ The desired end-to-end operation is:
 7. Reconcile the eventual medical bills, EOBs, adjustments, and payments. Investigate unsupported charges and collect corrected documents where appropriate.
 8. Close only with a documented decision, benefits/payment outcome, and final patient responsibility, or a clearly explained unresolved issue requiring a person.
 
-The product target is autonomous routine administration after a scoped case authorization, not asking for approval at every trivial follow-up. Settlements, releases, attestations, financial commitments, contested legal positions, and unclear authority require human involvement. Current per-action synthetic test approval is an implementation stage, not the final product experience.
+Assurance runs routine administration autonomously under the owner's standard handling scope, without asking for approval at every follow-up. Settlements, releases, attestations, financial commitments, contested legal positions, and unclear authority require human involvement. Per-action synthetic approval applies only to the legacy manual outreach routes.
 
 Primary success measures: verified patient out-of-pocket responsibility, documented benefits paid/coverage obtained, claim progress, time to resolution, and human interventions. Do not promise a payout, a successful appeal, a globally lowest price, or a zero balance. Insurer payment to a provider, reimbursement to the claimant, income-replacement benefits, and bill reductions are different outcomes.
 
 ## Progressive intake implementation
 
-The app now starts with a workplace injury by default, with a separate health-insurance option. A workplace case needs a title, contact name, email or E.164 phone number, and incident description. Employer, jurisdiction, incident date, insurer, policy/member ID, claim reference/stage, desired outcome, and financial amounts can be added later. This remains synthetic-only. Insurance-card/document uploads, reading, and confirmation are implemented; see documents.md.
+The website form starts with a workplace injury by default, with a separate health-insurance option. A new case needs a description of what happened or an attached document; the form derives the title if none is given. Contact details, employer, jurisdiction, incident date, insurer, policy/member ID, claim reference/stage, desired outcome, and financial amounts can be added later. Insurance-card/document uploads, reading, and confirmation are implemented; see documents.md. Phone-first owners supply the same information through the [onboarding call](phone-onboarding.md).
 
 Unknown bill/EOB amounts are stored as null and shown as unknown. An explicit zero remains zero. Crew output accepts a null potential discrepancy and candidate coverage avenues; it must not convert missing amounts into a zero financial outcome.
 
-Updating details uses an expected revision to prevent lost edits. Each crew request belongs to one immutable case revision; earlier runs and saved reviews are preserved. The current case requires a fresh review after changes. Outreach drafts also belong to a revision and cannot dispatch against changed facts, including a revision check in the atomic database claim. Old receipts remain retained. Gateway analysis similarly cannot overwrite a newer revision.
+Updating details uses an expected revision to prevent lost edits. Each crew request belongs to one immutable case revision; earlier runs and saved reviews are preserved, and a saved review applies only to its revision. Outreach drafts also belong to a revision and cannot dispatch against changed facts, including a revision check in the atomic database claim. Old receipts remain retained. Gateway analysis similarly cannot overwrite a newer revision.
 
 Files: `backend/claim-input.ts` defines and validates intake; `backend/schema.ts` and migration 0004 add case type/intake/revisions and nullable amounts; `src/CaseForm.tsx` provides creation and editing; `backend/api.ts` handles owner-scoped PATCH, revision-scoped reviews, and sealed Realtime fields. `scripts/claim-input.test.ts` covers null/zero, required data, invalid values, and old billing input compatibility.
 
-The crew can return up to three `next_questions`, shown separately from the longer missing-evidence list. The prepared outreach text uses those next questions when present. This keeps a request for the next necessary facts separate from a comprehensive intake questionnaire. `scripts/injury-app-smoke.ts` tests a live synthetic injury case, review, progressive edit, stale-edit rejection, and stale-draft rejection. `scripts/injury-crew-smoke.ts` separately checks progressive-intake wording against a live capped provider run. Both retain local run IDs rather than restarting on observation timeout.
+The legacy review crew can return up to three `next_questions`, kept separate from the longer missing-evidence list. This cap applies only to that review schema; case advocates ask their own questions in the website conversation. `scripts/injury-app-smoke.ts` covers a synthetic injury case, review, progressive edit, stale-edit rejection, and stale-draft rejection. `scripts/injury-crew-smoke.ts` separately checks progressive-intake wording against a capped provider run. Both retain local run IDs rather than restarting on observation timeout.
 
 ## Source-backed guidance
 
-New reviews automatically retrieve a configured set of official sources before agent work. California workplace cases use DWC guidance; health-plan disputes use a general HealthCare.gov appeal overview. Missing and unsupported jurisdictions are explicit research gaps. Reviews retain source text, hashes, and retrieval times, and output exact-quote citations with applicability limitations. This is not nationwide coverage discovery or a policy eligibility determination. See [research implementation](research.md).
+Case advocates choose their own public sources with `read_public_source` and save exact quotes with `cite_source`. Legacy crew reviews retrieve a configured set of official sources before agent work: California workplace cases use DWC guidance, and health-plan disputes use a general HealthCare.gov appeal overview. In that legacy path, missing and unsupported jurisdictions are explicit research gaps. Reviews retain source text, hashes, and retrieval times, and output exact-quote citations with applicability limitations. None of this is a policy eligibility determination. See [research implementation](research.md).

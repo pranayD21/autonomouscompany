@@ -5,7 +5,7 @@ import {Hono} from 'hono';import {z} from 'zod';import type {Pool} from 'pg';
 import {verifiedPhone,claimPhoneIntake,linkVerifiedPhone} from './phone-intake';import {phoneLoginEnabled} from './phone-messaging';
 export function phoneRoutes(pool:Pool){
  const app=new Hono<{Variables:{userId:string}}>();
- app.use('*',async(c,next)=>{if(!phoneLoginEnabled())return c.json({error:'Phone accounts are not active yet.'},503);await next();});
+ app.use('*',async(c,next)=>{if(!phoneLoginEnabled())return c.json({error:'Phone accounts are unavailable right now.'},503);await next();});
  app.route('/onboarding',phoneOnboardingRoutes(pool));
  app.post('/link',async c=>{
   const owner=c.get('userId');const body=z.object({phone_token:z.string().min(20).max(10000)}).safeParse(await c.req.json().catch(()=>null));

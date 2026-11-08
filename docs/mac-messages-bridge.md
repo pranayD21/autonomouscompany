@@ -1,6 +1,6 @@
 # Mac Messages delivery bridge
 
-The optional bridge connects the existing phone-notification outbox to a selected Messages account on a Mac. AgentPhone remains the voice provider, and Twilio Verify continues to send login codes. Apple Messages acceptance is recorded as `submitted`, never as verified recipient delivery.
+The optional bridge connects the existing phone-notification outbox to a selected Messages account on a Mac. AgentPhone remains the voice provider, and Twilio Verify continues to send login codes. Apple Messages acceptance is recorded as `submitted`, never as verified recipient delivery. `PHONE_FLOW_ENABLED=false` keeps this path off; it is outside the customer journey.
 
 ## Hosted interface
 
@@ -31,8 +31,8 @@ An accepted reply advances case revision and queues a `phone_reply` event. `case
 
 The Mac process and its private configuration are described in [mac-messages-local.md](mac-messages-local.md); test coverage is in [mac-messages-tests.md](mac-messages-tests.md). Keep the Mac online and signed into Messages. Real SMS requires working iPhone forwarding; account detection alone is not delivery proof.
 
-The user selected the Mac's existing sender for this demo. Terminal and T3 Code now have user-approved Full Disk Access, and the bridge check passes automation, selected account, database, and configuration readiness. The bridge API remains enabled, but `PHONE_FLOW_ENABLED=false` keeps the hosted notification queue and inbound routing disabled.
+The user selected the Mac's existing sender for this bridge. Terminal and T3 Code have user-approved Full Disk Access, and the bridge check passes automation, selected account, database, and configuration readiness. The bridge API remains enabled, but `PHONE_FLOW_ENABLED=false` keeps the hosted notification queue and inbound routing disabled.
 
 One explicitly authorized local transport test used the bridge's durable send-once handler and selected SMS account. AppleScript returned `submitted`, but the user reported no delivery. The narrowly scoped Messages database status showed `is_sent=0`, `is_delivered=0`, and `error=4`. The meaning of that error has not been established. No automatic retry occurred. This test did not claim a hosted queue item or prove hosted reply ingestion. The private receipt and journal remain ignored under `test-results/mac-messages/`.
 
-Hosted readback previously verified the bridge selector, existing login readiness, anonymous401, and authenticated no-job result while delivery was disabled. macOS access is resolved; actual SMS forwarding/delivery remains unresolved.
+Hosted readback previously verified the bridge selector, existing login readiness, anonymous401, and authenticated no-job result while delivery was disabled.

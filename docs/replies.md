@@ -10,16 +10,16 @@ These checks establish a constrained correspondence link, not the sender's profe
 
 Migration 0008 adds `advocacy_case_replies`, with a globally unique inbox/message pair, case/action references, retained text, timestamp, SHA-256, attachment count, and accepted/held disposition. `backend/reply-service.ts` locks the case during import. Concurrent imports deduplicate and advance the case revision only once for new accepted evidence or a change in inclusion status. Historical reviews and outreach drafts become stale when the evidence changes.
 
-If provider content changes after import, the original is retained, the reply is held, and prior acceptance is revoked. A later retry cannot silently release that content-conflict hold. Provider screening/authentication can otherwise move an unchanged message between held and accepted. Held messages remain visible to the case owner but are excluded from agent input. Manual release of held replies is not implemented yet.
+If provider content changes after import, the original is retained, the reply is held, and prior acceptance is revoked. A later retry cannot silently release that content-conflict hold. Provider screening/authentication can otherwise move an unchanged message between held and accepted. Held messages remain visible to the case owner but are excluded from agent input.
 
 ## API and interface
 
 - GET `/cases/:id/replies` returns the latest 100 owned replies and an explicit `has_more` flag.
 - POST `/cases/:id/actions/:actionId/replies/sync` reads the authorized thread and imports replies. Case ownership and an authorized email receipt are required. It does not need a new send authorization because it performs no outbound communication or model inference.
-- `src/Outreach.tsx` shows communication history even when the current revision has no saved review. “Check replies” syncs a sent thread. Accepted/held status, reasons, plain text, and unread attachment counts are visible.
+- The case Activity feed (`src/Autonomy.tsx`) shows received replies with sender, subject, held status, message body, and unopened attachment counts. The workspace has no manual “Check replies” control; agent-sent emails enable monitoring automatically, and the API endpoints above remain available.
 - A new crew run captures up to the latest 20 accepted replies under the same case lock as other evidence. It records whether older replies were omitted. The model must cite exact reply UUIDs and hashes; invented or missing correspondence references fail completion validation. The UI links those references to saved replies.
 
-Replies do not automatically send a response, submit a claim, or claim an insurer decision occurred. Manual polling remains available. Owner-enabled scheduled checks are implemented in [reply monitoring](reply-monitoring.md), with live deployment verification recorded in the change log. Provider webhooks, reply-in-thread sending, and automatic follow-up orchestration remain to be implemented.
+Importing a reply does not send a response, submit a claim, or claim an insurer decision occurred. Scheduled checks are described in [reply monitoring](reply-monitoring.md), with live deployment verification recorded in the change log. Dedicated case mailboxes receive signed webhooks; see [AgentMail ingress](agentmail-ingress.md). The advocate's threaded follow-ups are described in [outreach](outreach.md).
 
 ## Verification
 
@@ -27,13 +27,10 @@ Replies do not automatically send a response, submit a claim, or claim an insure
 
 Provider contract: [AgentMail Get Thread](https://docs.agentmail.to/api-reference/inboxes/threads/get). The provider's structured `authentication_results` is used, never an unsigned Authentication-Results header.
 
-`scripts/replies-app-smoke.ts` uses the existing authorized test email and signed-in test owner to check the live AgentMail thread through the UI. It never sends or authorizes an email. It verifies reload persistence, repeat sync, missing authentication, and cross-user read/sync denial. An empty live thread is reported as pending inbound verification, not a successful receipt test.
+`scripts/replies-app-smoke.ts` uses the existing authorized test email and signed-in test owner to check the live AgentMail thread through the former “Check replies” control, which the workspace no longer mounts, so it does not run against the current UI. It never sends or authorizes an email. It verifies reload persistence, repeat sync, missing authentication, and cross-user read/sync denial. An empty live thread is reported as pending inbound verification, not a successful receipt test.
 
 `scripts/reply-review-smoke.ts` starts or resumes one review of the actual accepted test reply, checks that the immutable input contains its UUID/hash, and verifies a persisted UI reference. It uses the approved synthetic test operator and never authorizes follow-up email.
 
 The live test also exercises the distinction between correspondence and financial evidence: an acknowledgment does not change the bill/EOB arithmetic or prove payment. Review requests and corrections explicitly receive the server-computed potential difference; the existing validator still rejects any mismatched result.
 
 The real synthetic-thread reply was imported and cited by a saved review. The first review failed arithmetic validation; one correction in the same session passed. Acknowledgment remains distinct from a claim approval or payment. Content-conflict holds also persist when the message was already held before its body changed.
-
-
-UI update (2026-11-08): `src/Outreach.tsx` was removed. Received replies appear in the case Activity feed (`src/Autonomy.tsx`) with sender, subject, held/accepted state and the message body. The manual "Check replies" and monitoring toggle controls are no longer in the UI; agent-sent emails enable monitoring automatically, and the API endpoints are unchanged.
