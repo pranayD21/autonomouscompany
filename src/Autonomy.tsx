@@ -31,7 +31,7 @@ async function readFeed(caseId: string, userId: string): Promise<Feed> {
 }
 
 /** Agent status and anything it needs from you, then (after `between`) everything it has done. */
-export function Autonomy({caseId, userId, enabled, between}: {caseId: string; userId: string; enabled: boolean; between?: ReactNode}) {
+export function Autonomy({caseId, userId, enabled, between, compact = false}: {caseId: string; userId: string; enabled: boolean; between?: ReactNode; compact?: boolean}) {
   const [feed, setFeed] = useState<Feed>(empty), [loaded, setLoaded] = useState(false), [loadError, setLoadError] = useState("");
   const [answer, setAnswer] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState(""), [savedUpdate, setSavedUpdate] = useState(false);
   const updateId = useRef(crypto.randomUUID());
@@ -87,17 +87,17 @@ export function Autonomy({caseId, userId, enabled, between}: {caseId: string; us
   else { label = "Not started"; detail = "This saved case has not started yet."; tone = "idle"; }
   if (label === "Stopped" && session) detail = "Assurance is not working on this case. A message that was already sending may still finish.";
 
-  return <><section id="section-status" className="status-panel claim-conversation" data-tone={tone} aria-label="Case agent activation">
+  return <><section id="section-status" className={`status-panel claim-conversation${compact ? " agent-context" : ""}`} data-tone={tone} aria-label="Case agent activation">
     {!loaded && !loadError ? <p className="quiet-line">Loading…</p> : <>
       <div className="status-head">
-        <span className="claim-orb" data-working={working} aria-hidden="true"><span/></span>
+        {!compact && <span className="claim-orb" data-working={working} aria-hidden="true"><span/></span>}
         <h2>{label}</h2>
-        <p className="status-detail">{detail}</p>
+        {!compact && <p className="status-detail">{detail}</p>}
         {current && <button className="text-button quiet-button" disabled={busy} onClick={() => stop(current.id)}>Stop agent work</button>}
       </div>
-      {session?.goal && <p className="status-goal"><span>Goal</span><span className="status-goal-text">{session.goal}</span></p>}
+      {compact ? <details className="agent-scope"><summary>What Assurance is handling</summary><p className="status-detail">{detail}</p>{session?.goal && <p className="status-goal"><span>Goal</span><span className="status-goal-text">{session.goal}</span></p>}</details> : session?.goal && <p className="status-goal"><span>Goal</span><span className="status-goal-text">{session.goal}</span></p>}
 
-      {needsYou && <div className="ask">
+      {needsYou && (!compact || current?.policy.version !== 2) && <div className="ask">
         {question && "question" in question && <div className="claim-agent-message"><span className="claim-message-label">Assurance needs a little more information</span><p className="ask-question">{question.question}</p></div>}
         {current?.id === session.authority_id && current.policy.version === 2 && <a className="text-link" href="#section-conversation">Reply in the conversation</a>}
         {sessionNeedsProviderApproval(session) && history.authorities.find(a => a.id === session.authority_id)?.policy.version !== 2 && <SessionApprovals caseId={caseId} runId={session.id} userId={userId}/>}
@@ -120,7 +120,7 @@ export function Autonomy({caseId, userId, enabled, between}: {caseId: string; us
     </>}
   </section>
   {between}
-  <Activity decisions={history.decisions} actions={actions} replies={replies}/>
+  {compact ? <details className="case-disclosure"><summary><span className="disclosure-icon" aria-hidden="true">↗</span><span>Activity log<small>Contacts, decisions, and received replies</small></span></summary><div className="disclosure-body"><Activity decisions={history.decisions} actions={actions} replies={replies}/></div></details> : <Activity decisions={history.decisions} actions={actions} replies={replies}/>}
   </>;
 }
 

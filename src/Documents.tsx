@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {createContext, useContext, useEffect, useRef, useState, type ReactNode} from "react";
 import {api, auth} from "./services";
 import type {DocumentExtraction} from "../backend/providers/document-reader";
 import type {CaseDocument} from "../backend/schema";
@@ -19,14 +19,31 @@ function readingLabel(doc: DocumentView) {
   return "Not read yet";
 }
 
-export function Documents({caseId, userId, revision}: {caseId: string; userId: string; revision: number}) {
+const DocumentContext = createContext<ReturnType<typeof useDocumentManager> | null>(null);
+
+export function CaseDocumentsProvider({caseId, userId, revision, children}: {caseId: string; userId: string; revision: number; children: ReactNode}) {
+  const manager = useDocumentManager(caseId, userId, revision);
+  return <DocumentContext.Provider value={manager}>{children}</DocumentContext.Provider>;
+}
+
+function useDocuments() {
+  const manager = useContext(DocumentContext);
+  if (!manager) throw new Error("Case documents must be inside their case provider.");
+  return manager;
+}
+
+function useDocumentManager(caseId: string, userId: string, revision: number) {
   const [docs, setDocs] = useState<DocumentView[]>([]), [error, setError] = useState(""), [busy, setBusy] = useState(false), [uploading, setUploading] = useState<string | null>(null);
+  const [uploadNotice, setUploadNotice] = useState("");
+  const inFlight = useRef(false);
   const path = `/cases/${caseId}/documents`;
   async function refresh() { setDocs(await api(path, {}, userId)); }
   useEffect(() => { void refresh().catch(e => setError(e.message)); }, [caseId, userId, revision]);
 
   async function upload(files: File[]) {
-    setBusy(true); setError("");
+    if (inFlight.current || !files.length) return;
+    inFlight.current = true;
+    setBusy(true); setError(""); setUploadNotice("");
     try {
       for (const [n, file] of files.entries()) {
         if (file.size > 5 * 1024 * 1024) throw new Error(`${file.name} is larger than 5 MB.`);
@@ -36,8 +53,9 @@ export function Documents({caseId, userId, revision}: {caseId: string; userId: s
         await api(path, {method: "POST", body}, userId);
         await api(`${path}/${id}/extraction`, {method: "POST"}, userId);
       }
+      setUploadNotice(`${files.length === 1 ? files[0].name : `${files.length} files`} added. Document reading requested.`);
     } catch (e) { setError(e instanceof Error ? e.message : "Upload failed. Try the same file again."); }
-    finally { await refresh().catch(() => {}); setUploading(null); setBusy(false); }
+    finally { await refresh().catch(() => {}); setUploading(null); setBusy(false); inFlight.current = false; }
   }
   async function download(doc: DocumentView) {
     setError("");
@@ -57,10 +75,25 @@ export function Documents({caseId, userId, revision}: {caseId: string; userId: s
     finally { setBusy(false); }
   }
 
-  return <section id="section-documents" className="case-section documents" aria-label="Documents">
-    <header className="case-section-head"><h3>Documents</h3><FileDrop label="Add documents" accept={ACCEPT} disabled={busy} busy={uploading} onFiles={files => void upload(files)}/></header>
-    {docs.length === 0 && <p className="quiet-line">No documents yet. Drop insurance cards, claim letters, bills or EOBs on the button above (PDF or image, up to 5 MB).</p>}
-    {error && <p role="alert">{error}</p>}
+  return {docs, error, busy, uploading, uploadNotice, upload, download, extract};
+}
+
+export function CaseDocumentUpload() {
+  const {busy, uploading, upload} = useDocuments();
+  return <FileDrop label="Add files" accept={ACCEPT} disabled={busy} busy={uploading} onFiles={files => void upload(files)}/>;
+}
+
+export function CaseDocumentFeedback() {
+  const {error, uploading, uploadNotice} = useDocuments();
+  return <>{(uploading || uploadNotice) && <p className="case-chat-feedback" role="status">{uploading ?? uploadNotice}</p>}{error && <p className="case-chat-feedback" role="alert">{error}</p>}</>;
+}
+
+export function Documents() {
+  const {docs, busy, download, extract} = useDocuments();
+  return <details id="section-documents" className="case-disclosure documents">
+    <summary><span className="disclosure-icon"><FileIcon size={17} aria-hidden="true"/></span><span>Case documents<small>Original files and what we read</small></span><span className="disclosure-count">{docs.length}</span></summary>
+    <section className="disclosure-body" aria-label="Documents">
+    {docs.length === 0 && <p className="quiet-line">No documents yet. Use Add files in the conversation for PDFs or images, up to 5 MB each.</p>}
     <ul className="doc-list"><AnimatePresence initial={false}>{docs.map(doc => {
       const result = doc.extraction_result;
       const canRead = doc.state === "ready" && (!doc.extraction_state || ["source_ready", "direct_failed"].includes(doc.extraction_state));
@@ -81,5 +114,6 @@ export function Documents({caseId, userId, revision}: {caseId: string; userId: s
         </details>}
       </motion.li>;
     })}</AnimatePresence></ul>
-  </section>;
+    </section>
+  </details>;
 }

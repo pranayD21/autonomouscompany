@@ -2,7 +2,7 @@
 // shrunk to a pill. A real, labelled <input type="file"> stays inside so keyboard users
 // and tests keep working. Picking or dropping files hands them to onFiles at once.
 import {useRef, useState, type DragEvent} from "react";
-import {AnimatePresence, motion} from "motion/react";
+import {AnimatePresence, motion, useReducedMotion} from "motion/react";
 import {Upload} from "../Icons";
 
 const spring = {type: "spring", stiffness: 420, damping: 12} as const;
@@ -10,6 +10,7 @@ const spring = {type: "spring", stiffness: 420, damping: 12} as const;
 export function FileDrop({label, accept, disabled, busy, onFiles}: {label: string; accept: string; disabled?: boolean; busy?: string | null; onFiles: (files: File[]) => void}) {
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const reducedMotion = useReducedMotion();
   const off = disabled || !!busy;
   function take(list: FileList | null) {
     const files = Array.from(list ?? []);
@@ -18,7 +19,7 @@ export function FileDrop({label, accept, disabled, busy, onFiles}: {label: strin
   }
   function drop(e: DragEvent) { e.preventDefault(); setDragging(false); take(e.dataTransfer.files); }
   return <motion.label className="file-drop" data-dragging={dragging} data-disabled={off} title="Drop files here or click to choose"
-    whileHover={off ? undefined : "lift"} whileTap={off ? undefined : "press"} initial="rest" animate={dragging ? "lift" : busy ? "busy" : "rest"}
+    whileHover={off || reducedMotion ? undefined : "lift"} whileTap={off || reducedMotion ? undefined : "press"} initial="rest" animate={reducedMotion ? "rest" : dragging ? "lift" : busy ? "busy" : "rest"}
     onDragOver={e => { e.preventDefault(); if (!off) setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}>
     <span className="file-drop-stage" aria-hidden="true">
       <motion.span className="file-drop-outline" variants={{rest: {opacity: 0, scale: .8}, lift: {opacity: 1, scale: 1}, press: {opacity: 1, scale: 1}, busy: {opacity: 0}}} transition={{duration: .15}}/>
@@ -29,7 +30,7 @@ export function FileDrop({label, accept, disabled, busy, onFiles}: {label: strin
     </span>
     <span className="file-drop-label">
       <AnimatePresence mode="wait" initial={false}>
-        <motion.span key={busy ?? (dragging ? "drop" : "idle")} initial={{opacity: 0, y: 4}} animate={{opacity: 1, y: 0}} exit={{opacity: 0, y: -4}} transition={{duration: .15}}>
+        <motion.span key={busy ?? (dragging ? "drop" : "idle")} initial={reducedMotion ? false : {opacity: 0, y: 4}} animate={{opacity: 1, y: 0}} exit={reducedMotion ? undefined : {opacity: 0, y: -4}} transition={{duration: reducedMotion ? 0 : .15}}>
           {busy ?? (dragging ? "Drop to upload" : label)}
         </motion.span>
       </AnimatePresence>

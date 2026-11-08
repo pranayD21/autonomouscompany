@@ -10,13 +10,14 @@ import type {BillCase} from "../backend/schema";
 import type {CaseInput} from "../backend/claim-input";
 import {api, sealCases} from "./services";
 import {CaseForm} from "./CaseForm";
-import {Documents} from "./Documents";
+import {CaseDocumentsProvider, Documents} from "./Documents";
 import {CaseChat} from "./CaseChat";
 import {Autonomy} from "./Autonomy";
 import {Outcomes} from "./Outcomes";
 import {ArrowLeft, Home, LogOut, Plus} from "./Icons";
 import {Sidebar, SidebarLink, SidebarSection, SidebarText} from "./ui/Sidebar";
 import {Overview} from "./Overview";
+import "./claim-workspace.css";
 
 export {Overview};
 
@@ -144,7 +145,6 @@ function Intake({hasCases, disabled, userId, onCancel, onSave, live}: {hasCases:
 }
 
 export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}: {item: BillCase; userId: string; crewEnabled: boolean; busy: string | null; live: ReactNode; onSave: (d: CaseInput) => Promise<void>; onAct: (action: "delete") => Promise<boolean>}) {
-  const diff = item.bill_cents !== null && item.eob_cents !== null ? Math.max(0, item.bill_cents - item.eob_cents) : null;
   const [editing, setEditing] = useState(false);
   const i = item.intake;
   const facts = [
@@ -154,37 +154,30 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
     ["Bill amount", item.bill_cents !== null ? money(item.bill_cents) : undefined],
     ["EOB responsibility", item.eob_cents !== null ? money(item.eob_cents) : undefined],
   ].filter((f): f is [string, string] => !!f[1]);
-  return <article className="case" data-case-id={item.id}>
+  return <CaseDocumentsProvider key={`${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision}><article className="case claim-workspace" data-case-id={item.id}>
     <div className="page-head">
       <div>
         <a className="back-link" href="#workspace"><ArrowLeft size={16} aria-hidden="true"/>All cases</a>
         <p className="eyebrow">{caseKind(item)}{i?.claim_number ? ` · Claim ${i.claim_number}` : ""}</p>
         <h1>{item.title}</h1>
       </div>
-      <div className="actions">
-        {live}
-        <button className="text-button quiet-button" disabled={busy !== null} onClick={() => { if (window.confirm("Delete this case?")) void onAct("delete"); }}>Delete</button>
-      </div>
+      <div className="actions">{live}</div>
     </div>
 
-    {phoneSelected() && <dl className="case-key-numbers" aria-label="Key amounts">
-      {([["Bill", item.bill_cents], ["EOB", item.eob_cents], ["Possible discrepancy", diff]] as const).map(([label, cents]) =>
-        <div key={label}><dt>{label}</dt><dd>{cents === null ? "—" : money(cents)}</dd></div>)}
-    </dl>}
-
-    <Autonomy key={item.id} caseId={item.id} userId={userId} enabled={crewEnabled} between={<>
-      <section id="section-conversation" className="case-section" aria-label="Conversation">
-        <header className="case-section-head"><h3>Conversation</h3></header>
+    <div className="claim-layout">
+      <div className="claim-main">
+      <Autonomy key={item.id} caseId={item.id} userId={userId} enabled={crewEnabled} compact between={<section id="section-conversation" aria-label="Conversation">
         <CaseChat key={`chat-${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision}/>
-      </section>
+      </section>}/>
       <Outcomes caseId={item.id} userId={userId} revision={item.revision}/>
-    </>}/>
+      </div>
+      <aside className="claim-context" aria-label="Claim transparency">
+        <div className="claim-context-heading"><span className="eyebrow">Behind your claim</span><p>Nothing hidden. Just out of your way.</p></div>
+        <Documents/>
 
-    {!phoneSelected() && <GmailConnection key={`gmail-${item.id}`} caseId={item.id} userId={userId}/>}
-
-    <Documents key={`documents-${item.id}`} caseId={item.id} userId={userId} revision={item.revision}/>
-
-    <section id="section-details" className="case-section" aria-label="Case details">
+    <details id="section-details" className="case-disclosure">
+      <summary><span className="disclosure-icon" aria-hidden="true">≡</span><span>Case details<small>Your information and handling settings</small></span></summary>
+    <section className="disclosure-body" aria-label="Case details">
       <header className="case-section-head"><h3>Details</h3><button className="text-button" onClick={() => setEditing(e => !e)} aria-expanded={editing}>{editing ? "Cancel" : "Edit details"}</button></header>
       <AnimatePresence initial={false}>
         {editing && <motion.div className="edit-panel" initial={{height: 0, opacity: 0}} animate={{height: "auto", opacity: 1}} exit={{height: 0, opacity: 0}} transition={{duration: 0.3, ease: [0.16, 1, 0.3, 1]}}>
@@ -194,6 +187,11 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
       {i?.injury_description ? <p className="story-text">{i.injury_description}</p> : <p className="quiet-line">No description yet.</p>}
       {facts.length > 0 && <dl className="facts">{facts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
       {item.notes && <p className="notes">{item.notes}</p>}
+      {!phoneSelected() && <GmailConnection key={`gmail-${item.id}`} caseId={item.id} userId={userId}/>}
+      <button className="text-button quiet-button" disabled={busy !== null} onClick={() => { if (window.confirm("Delete this case?")) void onAct("delete"); }}>Delete case</button>
     </section>
-  </article>;
+    </details>
+      </aside>
+    </div>
+  </article></CaseDocumentsProvider>;
 }

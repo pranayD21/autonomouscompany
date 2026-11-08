@@ -1,5 +1,7 @@
 # Project documentation
 
+See [claim-chat-design.md](claim-chat-design.md) for the chat-first claim workspace, design-jury decisions, composer uploads, and transparency disclosures.
+
 Read [../agents.md](../agents.md) first. These Markdown files are the durable product and engineering context; they replace the need to reconstruct earlier conversations.
 
 | Document | Read when |
