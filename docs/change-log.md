@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-08 — Backdrop follows scroll; larger CTA text
+
+At the user's request the photo backdrop now fills the page only while the visitor is at the top, with the divider lines under the header and above "How it works" hidden. After scrolling it returns to the earlier hero-only look: paper over the header, faded hero edges, and the divider lines back. The "Open a case" label is larger (23px desktop, 21px tablet, 20px phone, up from 19/17/17). See frontend.md.
+
+Verification: `tsc --noEmit` and `vite build` (placeholder `VITE_*` URLs) passed. Headless Chromium screenshots at 1440px (top, scrolled 300px, back at top) and 390px showed the expected states and readable text. Live production was not checked.
+
 ## 2026-11-08 — Backdrop photos fill the whole landing page
 
 At the user's request the photo backdrop is no longer confined to the hero with faded top and bottom edges. It is now a fixed, full-viewport layer behind the entire landing page, including the header, "How it works" steps and footer. `HeroBackdrop` moved from `MinimalHero` into `Landing.tsx`. The workspace and sign-in pages are unaffected.

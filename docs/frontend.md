@@ -41,7 +41,14 @@ The landing hero (`src/components/strikethrough-replace.tsx`, styles in `src/lan
 
 ## Hero photo backdrop
 
-Behind the whole landing page, `src/components/hero-backdrop.tsx` (rendered first inside `<main className="landing-page">` in `src/Landing.tsx`, `position: fixed` and full-viewport, so it sits behind the header, hero, steps and footer and stays put while the page scrolls) shows nine documentary photos of real people recovering from injuries: people on crutches, hand and leg therapy, a patient in a hospital lift, someone being helped into a wheelchair or down steps. One photo fills the hero at a time; every 5 seconds a 0.45s crossfade switches to the next, and the cycle repeats. It pauses while the tab is hidden, and with reduced motion only the first photo shows. Each photo has an `objectPosition` so the cover crop keeps the person in view. Styles in `src/landing.css` (`.hero-backdrop*`) keep a little colour (`saturate(.35)`) at 42% opacity, have no top or bottom fade, and wash the edges toward the paper colour so the wordmark and copy stay readable. The strip is `aria-hidden`.
+The backdrop component is `src/components/hero-backdrop.tsx`, rendered first inside `<main className="landing-page">` in `src/Landing.tsx`. It shows nine documentary photos of real people recovering from injuries: people on crutches, hand and leg therapy, a patient in a hospital lift, someone being helped into a wheelchair or down steps. One photo shows at a time; every 5 seconds a 0.45s crossfade switches to the next. It pauses while the tab is hidden, and with reduced motion only the first photo shows. Each photo has an `objectPosition` so the cover crop keeps the person in view. The layer is `aria-hidden`.
+
+Its size depends on scroll position (`useBackdropLayout` in `Landing.tsx`, which measures the header and hero with a `ResizeObserver` into `--header-h` and `--hero-end`, and adds `is-at-top` to `<main>` while `scrollY < 8`):
+
+- At the top of the page the photos cover at least the full viewport, behind the header, hero and anything else in view, with no top or bottom fade. The divider lines under the header and above "How it works" are hidden.
+- Once the visitor scrolls, the layer shrinks to the header + hero area over 0.5s and `.hero-backdrop-fade` fades in: solid paper over the header, a fade in at the top of the hero, and a fade out over its bottom 30%. The divider lines come back.
+
+Styles in `src/landing.css` (`.hero-backdrop*`) keep a little colour (`saturate(.35)`) at 42% opacity and wash the edges toward the paper colour so the wordmark and copy stay readable.
 
 Files are `public/hero/01-*.webp` to `09-*.webp` (about 820 KB together, up to 1600px). Staged stock photos were replaced with real people on 2026-11-08 at the user's request. Sources:
 

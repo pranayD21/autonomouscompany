@@ -16,7 +16,7 @@
 .hero-message h2 span{color:var(--quiet)}.step-row h3{margin:0}.step-row{align-items:baseline}
 /* Hero CTA: larger button with a rotating gradient ring, soft glow pulse and shimmer sweep */
 @property --cta-angle{syntax:"<angle>";initial-value:0deg;inherits:false}
-.hero-action .primary-button{--cta-fill:var(--ink);position:relative;isolation:isolate;background:transparent;gap:48px;padding:11px 11px 11px 34px;min-height:78px;font-size:19px;font-weight:600;letter-spacing:-.3px;overflow:visible;box-shadow:0 14px 34px -14px rgba(36,101,239,.55)}
+.hero-action .primary-button{--cta-fill:var(--ink);position:relative;isolation:isolate;background:transparent;gap:48px;padding:11px 11px 11px 34px;min-height:78px;font-size:23px;font-weight:600;letter-spacing:-.3px;overflow:visible;box-shadow:0 14px 34px -14px rgba(36,101,239,.55)}
 .hero-action .primary-button::before{content:"";position:absolute;inset:-3px;border:3px solid transparent;border-radius:inherit;z-index:-1;background:linear-gradient(var(--cta-fill),var(--cta-fill)) padding-box,conic-gradient(from var(--cta-angle),var(--blue),#7c5cff,#5fb8ff,var(--blue)) border-box;animation:cta-spin 3.2s linear infinite;transition:background-color .2s}
 .hero-action .primary-button::after{content:"";position:absolute;inset:-3px;border-radius:inherit;z-index:-2;background:conic-gradient(from var(--cta-angle),var(--blue),#7c5cff,#5fb8ff,var(--blue));filter:blur(18px);opacity:.55;animation:cta-spin 3.2s linear infinite,cta-glow 2.6s ease-in-out infinite}
 .hero-action .button-label{position:relative;background:linear-gradient(100deg,var(--paper) 40%,#9fc0ff 50%,var(--paper) 60%) 0 0/250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:cta-shimmer 3.5s ease-in-out infinite}
@@ -27,12 +27,18 @@
 @keyframes cta-glow{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:.75;transform:scale(1.04)}}
 @keyframes cta-shimmer{0%,30%{background-position:100% 0}70%,100%{background-position:0 0}}
 @keyframes cta-ping{0%{box-shadow:0 0 0 0 rgba(36,101,239,.6)}70%,100%{box-shadow:0 0 0 14px rgba(36,101,239,0)}}
-@media(max-width:900px){.hero-action .primary-button{gap:30px;font-size:17px;padding-left:26px;min-height:68px}.hero-action .button-arrow{height:48px;width:48px}}
-@media(max-width:640px){.hero-action{margin-top:40px}.hero-action .primary-button{font-size:17px;padding:9px 9px 9px 24px;gap:28px;min-height:64px}.hero-action .button-arrow{height:46px;width:46px}}
+@media(max-width:900px){.hero-action .primary-button{gap:30px;font-size:21px;padding-left:26px;min-height:68px}.hero-action .button-arrow{height:48px;width:48px}}
+@media(max-width:640px){.hero-action{margin-top:40px}.hero-action .primary-button{font-size:20px;padding:9px 9px 9px 24px;gap:28px;min-height:64px}.hero-action .button-arrow{height:46px;width:46px}}
 @media(prefers-reduced-motion:reduce){.hero-action .button-label{color:var(--paper);background:none}}
 /* Page backdrop: faded photos of real people recovering from injuries fill the whole landing page (fixed behind header, hero, steps and footer), one at a time for 5s with a quick crossfade */
 .landing-page{position:relative;isolation:isolate}
-.hero-backdrop{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.hero-backdrop{position:absolute;top:0;left:0;right:0;height:var(--hero-end,100svh);z-index:-1;overflow:hidden;pointer-events:none;transition:height .5s cubic-bezier(.65,0,.25,1)}
+.is-at-top .hero-backdrop{height:max(100svh,var(--hero-end,100svh))}
+/* Scrolled state: paper over the header, fade in at the top of the hero and out at its bottom (the earlier hero-only look) */
+.hero-backdrop-fade{--hero-h:calc(var(--hero-end,100svh) - var(--header-h,104px));position:absolute;left:0;right:0;top:0;height:var(--hero-end,100svh);z-index:1;background:linear-gradient(to bottom,var(--paper) 0,var(--paper) var(--header-h,104px),rgb(245 244 239/0) calc(var(--header-h,104px) + var(--hero-h)*.1),rgb(245 244 239/0) calc(var(--header-h,104px) + var(--hero-h)*.7),var(--paper) calc(var(--header-h,104px) + var(--hero-h)*.98));transition:opacity .5s ease}
+.is-at-top .hero-backdrop-fade{opacity:0}
+.site-header,.how-section{transition:border-color .4s ease}
+.is-at-top .site-header{border-bottom-color:transparent}.is-at-top .how-section{border-top-color:transparent}
 .hero-backdrop::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgb(245 244 239/.7) 0%,rgb(245 244 239/.25) 40%,rgb(245 244 239/.25) 75%,rgb(245 244 239/.6) 100%)}
 .hero-backdrop img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.35) contrast(.95) brightness(1.03);opacity:0;transition:opacity .45s ease-in-out;user-select:none}
 .hero-backdrop img.is-active{opacity:.42}

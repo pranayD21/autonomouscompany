@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ArrowUpRight, Logo } from "./Icons";
 import { HeroBackdrop } from "./components/hero-backdrop";
 import { MinimalHero } from "./components/minimal-hero";
@@ -11,9 +12,45 @@ const steps = [
   { number: "03", title: "We handle the rest." },
 ];
 
+// At the very top the backdrop photos fill the page and the divider lines hide;
+// once the visitor scrolls, the photos shrink back to the header + hero area with faded edges.
+function useBackdropLayout() {
+  const pageRef = useRef<HTMLElement | null>(null);
+  const [atTop, setAtTop] = useState(true);
+  const [size, setSize] = useState({ header: 104, heroEnd: 0 });
+
+  useEffect(() => {
+    const page = pageRef.current;
+    const header = page?.querySelector<HTMLElement>(".site-header");
+    const hero = page?.querySelector<HTMLElement>(".minimal-root");
+    if (!page || !header || !hero) return;
+    const measure = () => setSize({ header: header.offsetHeight, heroEnd: hero.offsetTop + hero.offsetHeight });
+    let frame = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => setAtTop(window.scrollY < 8));
+    };
+    measure();
+    onScroll();
+    const observer = new ResizeObserver(measure);
+    observer.observe(header);
+    observer.observe(hero);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  const style = { "--header-h": `${size.header}px`, ...(size.heroEnd ? { "--hero-end": `${size.heroEnd}px` } : {}) } as CSSProperties;
+  return { pageRef, atTop, style };
+}
+
 export function Landing() {
+  const backdrop = useBackdropLayout();
   return (
-    <main className="landing-page">
+    <main ref={backdrop.pageRef} className={`landing-page${backdrop.atTop ? " is-at-top" : ""}`} style={backdrop.style}>
       <HeroBackdrop />
       <a className="skip-link" href="#main-content">Skip to content</a>
       <header className="site-header">

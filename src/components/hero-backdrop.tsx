@@ -42,6 +42,7 @@ export function HeroBackdrop() {
           draggable={false}
         />
       ))}
+      <div className="hero-backdrop-fade" />
     </div>
   );
 }
