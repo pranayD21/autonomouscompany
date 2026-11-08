@@ -979,3 +979,7 @@ Merged the 20 redesign commits from `main` into the `phone-first-snapshot` branc
 - Reported savings shows "Not yet known" until an insurer decision is recorded, rather than $0.
 
 This merge changes frontend and documentation only. At the user's request it was fast-forwarded to `main`, and Vercel's push-triggered build published commit `57cdeb0` to assurance.claims. The Vercel commit status reported success and the live page loaded with phone entry. Backend functions, migrations, and feature flags were not changed by this release, so onboarding calls remain unavailable. Verification results are in the merge commit message. Live phone-to-advocate continuation remains unverified.
+
+## 2026-11-08 — Onboarding callback
+
+A real onboarding call reached voicemail, and the user asked to be able to call back. Added callback recovery for failed or incomplete attempts, a callback number on the dashboard notice, and a replacement default script for the hosted agent. See [phone onboarding](phone-onboarding.md). Verification and limits are recorded in that release's commit message.

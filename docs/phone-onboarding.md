@@ -22,6 +22,16 @@ When intake is sufficient, the backend automatically calls the existing `submitC
 
 `POST /phone/onboarding/stop` stops pending setup and revokes an already-created case authority. It shares a database row lock with case creation. An in-flight call may still connect; the endpoint does not claim to remotely hang up a provider call. A late receipt is retained without restarting work.
 
+## Calling back
+
+The user asked that a person who misses the call can call back. The onboarding line is `ONBOARDING_CALLBACK_NUMBER` in `backend/phone-onboarding.ts`. `GET /phone/onboarding` returns it as `callback_number` while the attempt is `needs_information` or `failed`, and the dashboard notice shows it. This remains one outbound call per owner; a callback never dials.
+
+Reconciliation lists completed inbound calls with AgentPhone's `search` filter, then requires the same hosted agent, number, inbound direction, and a `fromNumber` equal to the verified phone, started after the original request. The newest match replaces the transcript and uses the normal intake and case path. An insufficient callback stays `needs_information` and the person can call again. Cancelled attempts and existing cases are never reopened. The scheduler checks recoverable attempts for 24 hours; the dashboard also checks while it is open.
+
+Inbound hosted calls cannot take a per-call prompt, so `scripts/configure-agentphone-callback.ts` sets `CALLBACK_GREETING` and `CALLBACK_PROMPT` as the agent defaults. Run `npx tsx scripts/configure-agentphone-callback.ts` after changing them. Outbound onboarding and case-outreach calls supply their own prompts. The per-call `disableRecording` option is not available for inbound calls, so the callback script makes no claim about audio recording.
+
+Limitations: phone caller ID can be spoofed, so a spoofed callback could add a false account to an attempt awaiting information. The legacy `PHONE_FLOW_ENABLED` inbound path stays off and is unrelated.
+
 ## Persistence and configuration
 
 `backend/phone-schema.ts` defines `advocacy_phone_onboarding`; migration `0030_phone_onboarding.sql` adds it. The row binds owner, verified phone, exact consent, routing IDs, provider receipt, transcript/hash, intended case ID, created case ID, status, reason, and polling lease. No credentials or recordings are stored in the row. Statuses are `not_started` (response only), `dispatching`, `submitted`, `unknown`, `failed`, `needs_information`, `ready`, `activating`, `active`, and `cancelled`.

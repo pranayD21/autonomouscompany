@@ -89,6 +89,18 @@ if(database){
   const result=await getPhoneOnboarding(pool,u.owner,transport);await stopPhoneOnboarding(pool,u.owner);assert.equal((await pool.query('SELECT state FROM advocacy_case_authorities WHERE case_id=$1',[result.case_id])).rows[0].state,'revoked');
   assert.equal((await requestPhoneOnboarding(pool,u.owner,transport)).status,'cancelled');assert.equal(transport.count(),1);
  });
+ test('callback from the verified number recovers a failed call without dialing; other callers are ignored',async()=>{
+  const u=await owner(),outbound=provider(u.phone,{transcripts:[{transcript:'The person you are trying to reach is not available.',response:'Sorry I missed you.'}]});
+  await requestPhoneOnboarding(pool,u.owner,outbound);
+  assert.equal((await getPhoneOnboarding(pool,u.owner,outbound)).status,'needs_information');
+  const inbound=(id:string,fromNumber:string)=>({id,agentId:'agt_onboard_test',phoneNumberId:'num_onboard_test',fromNumber,toNumber:'+14124482627',direction:'inbound',status:'completed',startedAt:new Date(Date.now()+1000).toISOString(),transcripts:[{transcript:goodTurns[0].text,response:goodTurns[1].text},{transcript:goodTurns[2].text,response:'Thanks.'}]});
+  const stranger=inbound('call_stranger','+15550009999'),mine=inbound('call_mine',u.phone);let listed=[stranger],dials=0;
+  const request:typeof fetch=async(url,init)=>{if(init?.method==='POST')dials++;const path=String(url);if(path.includes('/calls?'))return Response.json({data:listed});if(path.endsWith('/call_mine'))return Response.json(mine);throw Error(`unexpected ${path}`);};
+  await due(u.owner);const ignored=await getPhoneOnboarding(pool,u.owner,{request});
+  assert.equal(ignored.status,'needs_information');assert.equal(ignored.case_id,null);assert.equal(ignored.callback_number,'+14124482627');
+  listed=[stranger,mine];await due(u.owner);const recovered=await getPhoneOnboarding(pool,u.owner,{request});
+  assert.equal(recovered.status,'active');assert.ok(recovered.case_id);assert.equal(recovered.callback_number,null);assert.equal(dials,0);
+ });
  test('completed call with delayed transcript remains pending, then activates without redial',async()=>{
   const u=await owner(),options={transcripts:[] as unknown[]},transport=provider(u.phone,options);await requestPhoneOnboarding(pool,u.owner,transport);assert.equal((await getPhoneOnboarding(pool,u.owner,transport)).status,'submitted');
   options.transcripts=[{transcript:goodTurns[0].text,response:goodTurns[1].text},{transcript:goodTurns[2].text}];await due(u.owner);assert.equal((await getPhoneOnboarding(pool,u.owner,transport)).status,'active');assert.equal(transport.count(),1);

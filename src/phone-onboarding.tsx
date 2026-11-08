@@ -2,7 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 import {api} from './services';
 import {phoneSession} from './phone-session';
 
-type OnboardingStatus={enabled?:boolean;phone?:string;status:string;case_id?:string|null;reason?:string|null;transcript?:Array<{role:'user'|'agent';text:string;time?:string}>};
+type OnboardingStatus={enabled?:boolean;phone?:string;status:string;case_id?:string|null;reason?:string|null;callback_number?:string|null;transcript?:Array<{role:'user'|'agent';text:string;time?:string}>};
 type CallNotice={ownerId:string;state:'requesting'|'requested'|'unconfirmed';message:string};
 const key='assurance-onboarding-call';
 function read():CallNotice|null{try{return JSON.parse(sessionStorage.getItem(key)??'null');}catch{return null;}}
@@ -65,6 +65,7 @@ export function OnboardingCallNotice({userId}:{userId:string}){
  return <aside className="onboarding-call-notice" aria-label="Onboarding call">
   <p role="status">{status&&status.status!=='not_started'?callStatus(status.status):local?.message??callStatus('not_started')}</p>
   {status?.reason&&<p>{status.reason}</p>}
+  {status?.callback_number&&<p>Call us back from this phone at <a className="text-link" href={`tel:${status.callback_number}`}>{status.callback_number.replace(/^\+1(\d{3})(\d{3})(\d{4})$/,'($1) $2-$3')}</a>. Say “workplace injury” or “health insurance,” then tell us what happened. Your case opens here after the call.</p>}
   {error&&<p role="alert">{error}</p>}
   {status&&status.status!=='not_started'&&status.status!=='cancelled'&&<button type="button" className="text-button" disabled={stopping} onClick={()=>void stop()}>{stopping?'Stopping onboarding…':'Stop onboarding and case work'}</button>}
   {status?.case_id&&<a className="text-link" href={`#case/${status.case_id}`}>Open your case</a>}

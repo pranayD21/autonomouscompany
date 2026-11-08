@@ -33,7 +33,7 @@ The user says the team has a working product. The local scaffold described in th
 
 The latest user override starts with a phone number and an explicit “Verify and call me” request. Twilio Verify sends the sign-in code. After verification, AgentPhone places one durably reserved onboarding call; reloads never redial. The call collects the account and standard handling scope, then sufficient owner-bound transcript intake automatically creates the case and queues its isolated Naïve advocate. Customers use website chat and uploads without an email requirement. Preserve older email accounts and cases. AgentMail remains the third-party email provider.
 
-Keep `PHONE_FLOW_ENABLED=false`; the separate `PHONE_ONBOARDING_ENABLED` gate enables only the requested outbound path. Do not enable inbound routing, case SMS, Mac Messages, or resubmit registration. Finish the connected hosted journey before native Naïve browser verification. Use built-in browser tools and a fictional portal, with case isolation and submission receipts; do not build another browser framework. See [phone onboarding](docs/phone-onboarding.md).
+Keep `PHONE_FLOW_ENABLED=false`; the separate `PHONE_ONBOARDING_ENABLED` gate enables the requested outbound path. The user also asked to allow a callback: a completed inbound call from the verified number to the onboarding line can retry a failed or incomplete attempt. Do not enable other inbound routing, case SMS, Mac Messages, or resubmit registration. Finish the connected hosted journey before native Naïve browser verification. Use built-in browser tools and a fictional portal, with case isolation and submission receipts; do not build another browser framework. See [phone onboarding](docs/phone-onboarding.md).
 
 ## Hackathon context
 
