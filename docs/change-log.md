@@ -245,3 +245,11 @@ The operator reported filled details failing to submit. Inspected one UI retry: 
 ## Twilio identity approved and payment prepared
 
 Verified the operator-completed Individual compliance profile is Approved. Submitted the supplied account/tax details and reached Payment with a displayed $20 total and auto-recharge disabled. Asked the operator to complete the new charge directly; no payment, number purchase, or call occurred. Separately verified Neon Free has zero gateway credits and its $250 offer requires a paid-plan change; left the plan unchanged. Updated voice setup, readiness, and stack documentation without retaining address or payment details.
+
+## Existing Twilio funding reconciled
+
+Confirmed the operator’s $20 funding receipt against the refreshed console: account Active, available balance $20.00. Left the stale upgrade flow without another payment. Prepared a local incoming/outgoing voice number costing $1.15 immediately and monthly thereafter, plus usage; requested approval for that recurring rental before purchase. Corrected the readiness documentation.
+
+## Voice preference updated
+
+The operator declined the Twilio number rental and directed that the next Twilio issue should trigger a switch to AgentPhone without ElevenLabs. Recorded this in agents.md and voice/readiness docs, superseding the earlier avoid-AgentPhone direction. No number purchase, provider switch, call, or deployment occurred. AgentPhone direct-call readiness must be checked before use; ambiguous calls must not be retried on another provider.

@@ -1,8 +1,10 @@
 # ElevenLabs voice with native Twilio telephony
 
+Current instruction: do not purchase a Twilio number. If Twilio encounters another issue, switch to AgentPhone directly without ElevenLabs, using its existing balance. This preference supersedes the earlier request to avoid AgentPhone. The deployed adapter has not been changed to implement that conditional fallback. Verify direct AgentPhone calling access before use, preserve case authorization and limits, and never retry an ambiguous Twilio call through another provider.
+
 ## Selected replacement
 
-The user requested replacing AgentPhone on November 7, 2026 because its SIP enablement cannot be obtained during the hackathon. New case calls use ElevenLabs’ native Twilio integration. This preserves ElevenLabs voice and case authorization without AgentPhone SIP. A Twilio trial account exists, but the full-access account/tax details and funding are unfinished. The replacement adapter is deployed but disabled; number provisioning and live call verification are pending.
+The user requested replacing AgentPhone on November 7, 2026 because its SIP enablement cannot be obtained during the hackathon. New case calls use ElevenLabs’ native Twilio integration. This preserves ElevenLabs voice and case authorization without AgentPhone SIP. Twilio is now Active with approved identity and a confirmed $20 balance. The replacement adapter is deployed but disabled; number provisioning and live call verification are pending.
 
 ## Account setup
 
@@ -47,3 +49,7 @@ Six transport checks and `npm run build` passed. The native adapter is deployed 
 The operator filled the individual account and tax-address form, but submission failed with a generic UI message. A single retry exposed the underlying Trust Hub response: primary compliance profile not approved; complete KYC in Trust Hub. The address itself was present. Navigated to Trust Hub → Individual Profile → Profile details, where Persona requires identity-verification consent. Left that step for the operator; no biometric consent, identity document, payment, or number purchase was submitted by the agent. After approval, resume the saved upgrade and inspect the Balance quote before funding. Do not store the operator’s address or identity documents in this repository.
 
 The operator completed Persona verification; Trust Hub now shows the Individual primary profile as Approved. Re-entered the previously supplied account/tax details, selected the matching address suggestion, and submitted successfully after a transient initial rejection. Prepared the displayed $20 starting balance with auto-recharge disabled. Payment step shows a $20 total and secure payment/address fields. Handed payment to the operator; no purchase has been made by the agent. Number provisioning and a newly authorized call still remain.
+
+## Funded account confirmed
+
+The operator supplied a funding receipt. After leaving the stale upgrade wizard and reloading the console, Twilio showed Active with $20.00 available. Do not request another upgrade deposit. Prepared a Bay Area local voice-capable number at the purchase review: $1.15 immediately, then $1.15/month plus usage. The operator declined number rental; no number was purchased. The prior payment screen was stale and did not reflect the funded account.
