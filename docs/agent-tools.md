@@ -57,7 +57,7 @@ A successful `schedule_followup` schedules reconsideration, not a preapproved fu
 Verification: nine protocol/configuration tests, five native-action database tests, and eleven existing autonomy-runner tests pass. The initial native retry tests exposed JSONB key ordering in operation comparisons; parsing both decisions through the same schema fixed it. Build passes and all six Functions deployed. `scripts/case-actions-live-smoke.ts` verified deployed tool discovery, a human-help transition, identical-operation retry, and rejected sending after authority stopped; zero outbound records were created and the fixture was removed. That smoke test initiated no live email or call. The Naïve MCP session verification is recorded below.
 
 
-`record_outcome` saves agent-reported amounts and decisions with exact quotes from ready, owner-confirmed document transcriptions or accepted replies. It checks quote presence in those records, not amount arithmetic or whether the quote supports the interpretation. `case_get` includes those reports and current evidence status. This does not establish verified completion or authorize charges. See [outcomes](outcomes.md).
+`record_outcome` saves agent-reported amounts and decisions with exact evidence quotes. `case_get` includes those reports and current evidence status. This does not establish verified completion or authorize charges. See [outcomes](outcomes.md).
 
 ## Managed Agents credential and connector verification — November 7, 2026
 

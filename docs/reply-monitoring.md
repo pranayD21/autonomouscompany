@@ -1,12 +1,12 @@
 # Scheduled reply monitoring
 
-A successful agent-sent email enables monitoring on its thread automatically, and a case owner can pause or renew it through the API below. Legacy monitoring lasts 30 days; enabled monitors linked to eligible version-2 authorities remain eligible beyond that date as described under [persistent permission](#persistent-permission). It reads only the saved AgentMail thread. Enabling it does not authorize another email, a call, or model inference. A check already in progress may finish after monitoring is paused.
+A successful agent-sent email enables monitoring on its thread automatically, and a case owner can pause or renew it through the API below. Monitoring lasts 30 days. It reads only the saved AgentMail thread. Enabling it does not authorize another email, a call, or model inference. A check already in progress may finish after monitoring is paused.
 
 `backend/reply-monitor.ts` manages owner-checked settings and scheduled work. Migration 0009 adds `advocacy_reply_monitors`, keyed by the original action, with expiry, next check, last attempt/success, retry count, error code, invocation ID, and a ten-minute processing lease. A database claim uses `FOR UPDATE SKIP LOCKED` so overlapping workers do not ordinarily read the same thread. An interrupted worker can be retried after its lease expires; the existing reply importer deduplicates messages and revisions.
 
 The `replypoll` Neon Function in `backend/reply-worker.ts` accepts only scheduler deliveries named `reply-monitor`. It uses Neon's trigger parser and trusted proxy header; public client-supplied `x-neon-*` headers are stripped by the deployed proxy. It has database access and the scoped AgentMail credentials, with no Naïve or telephony credentials. Its logs contain counts and invocation IDs, not message text, recipients, or provider error bodies.
 
-The trigger runs every five minutes. Each delivery handles at most five due threads and stops taking work after four minutes. Successful checks schedule the next attempt 15 minutes later. Failures retry after 30 minutes, doubling up to six hours. Partial thread history remains visible. Disabled monitors and monitors outside both their expiry window and persistent-permission eligibility are skipped. Dedicated case-mailbox mappings are handled outside this scheduled claim path; see [AgentMail ingress](agentmail-ingress.md).
+The trigger runs every five minutes. Each delivery handles at most five due threads and stops taking work after four minutes. Successful checks schedule the next attempt 15 minutes later. Failures retry after 30 minutes, doubling up to six hours. Partial thread history remains visible. Disabled and expired monitors are skipped.
 
 ## API and interface
 

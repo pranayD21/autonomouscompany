@@ -38,7 +38,7 @@ The reusable `scripts/autonomy-ui-check.ts` export remains compatible with the e
 
 ## Hosted API implementation
 
-`backend/autonomy-service.ts` creates a v2 authority atomically with the selected engine's activation records: queued setup and optional firm staffing for Naïve, or a non-expiring authority-bound tool credential and queued run for the direct engine. The owner's case row is locked to serialize competing activation requests. Existing active, waiting, or human-required permission prevents a second grant. Naïve activation requires `NAIVE_CASE_PROVISIONING_ENABLED=true`; the direct path requires `ASSURANCE_DIRECT_ACTIVATION_ENABLED=true` on the cases Function. These are engine-specific readiness gates. Legacy activation retains its review, operator, recipient, and expiry checks.
+`backend/autonomy-service.ts` creates a v2 authority, a non-expiring authority-bound tool credential, and a queued direct-model run in one database transaction. The owner’s case row is locked to serialize competing activation requests. Existing active, waiting, or human-required permission prevents a second grant. The direct path needs `ASSURANCE_DIRECT_ACTIVATION_ENABLED=true` on the cases Function; this is an explicit deployment readiness setting, not an inference that a server has model credentials. The cases Function does not need the OpenAI key. Legacy activation retains its review, operator, recipient, and expiry checks.
 
 History projects direct runs without exposing their credential bindings, pending tool arguments, or full model conversation. Owner resume requires a v2 human-required run, a valid unchanged authority and credential, no live runner lease, and no unresolved dispatch. It queues an owner-resume event without resetting counters, changing the goal, or creating new permission. Unstarted pending calls are closed with explicit not-executed tool messages so fresh reasoning can read the owner’s updates; started calls are never cleared by resume. V2 bearer credentials retain owner and active-authority checks without the legacy operator allowlist. Revocation invalidates authority-bound credentials and fences the direct runner by clearing its lease; an already-dispatched communication may still complete.
 
@@ -46,7 +46,7 @@ History projects direct runs without exposing their credential bindings, pending
 
 The case page opens with agent status, and the “Review with AI” control is gone from the workspace. Case edits carry no saved-review prerequisite; active agents read new evidence on a later turn. Document reading is independent of legacy crew access and is authorized by the document API.
 
-Version-2 actions may reference ready document extractions before owner confirmation; these remain labeled `machine_extracted_unverified`. Legacy action evidence requires confirmed extraction. Upload alone does not establish extracted text. Outcome reports retain their separate confirmed-document or accepted-reply evidence requirements; see [outcomes](outcomes.md).
+Action evidence includes document references only after the extraction is ready and the owner has confirmed it. Merely uploading a file does not establish the text used to support an action.
 
 ## Hosted smoke commands
 

@@ -1,12 +1,12 @@
 # Case outreach
 
-New persistent cases use the owner's version-2 permission. The agent chooses insurer or customer destinations, message content, and follow-up timing within that permission. `send_email` with role `customer` is normally refused; restricted mode permits it to an allowlisted destination. Website conversation remains the normal owner communication channel. `backend/open-case-actions.ts` implements this path; `backend/case-action-service.ts` selects it only for a version-2 authority. Earlier grants keep their original review, recipient, count, and expiry restrictions.
+New persistent cases use the owner's version-2 permission. The agent chooses insurer or customer destinations, message content, and follow-up timing within that permission. `send_email` with role `customer` is refused; the case owner hears from the advocate in the website conversation. `backend/open-case-actions.ts` implements this path; `backend/case-action-service.ts` selects it only for a version-2 authority. Earlier grants keep their original review, recipient, count, and expiry restrictions.
 
 New voice calls use AgentPhone only. Historical ElevenLabs receipts remain readable. See [AgentPhone voice](voice-agentphone.md) for configuration. Email uses AgentMail. A provider receipt establishes acceptance, not delivery, insurer approval, or money received.
 
 ## Persistent action processing
 
-The service locks the owned authority and case, checks permission state and evidence references, and reserves an immutable decision and outreach record. Destinations must be one email address or an E.164 phone number. Version-2 permission does not impose the legacy recipient list or case message-count cap, but the active owner restriction takes precedence: when `OUTREACH_RESTRICT_TO_ALLOWLIST=true`, email and call destinations must be in `OUTREACH_ALLOWED_EMAILS` or `OUTREACH_ALLOWED_PHONES`. The current recorded real-case scope allows only the owner's designated inbox. The model must follow both the owner's permission and active restrictions; choosing a provider does not create consent. See [phone onboarding restrictions](phone-onboarding.md#outreach-restriction).
+The service locks the owned authority and case, checks permission state and evidence references, and reserves an immutable decision and outreach record. Destinations must be one email address or an E.164 phone number. The new path has no repository recipient list or case message-count cap. The model must follow the owner's permission; choosing a provider does not create consent.
 
 Each operation has a caller-generated UUID and a fingerprint of its decision, channel, and destination. An exact retry reads the saved operation. Changed content under the same UUID fails. A pending communication blocks another contact or completion until its result is known. Human-help requests remain available.
 
@@ -22,7 +22,7 @@ The agent can wait for a chosen time, request human help, or stop. Successful co
 
 Server-only `AGENTMAIL_API_KEY` and `AGENTMAIL_INBOX_ID` enable email. `OUTREACH_VOICE_PROVIDER=agentphone`, `AGENTPHONE_API_KEY`, `AGENTPHONE_AGENT_ID`, and `AGENTPHONE_NUMBER_ID` enable calls. No provider secret enters the browser.
 
-The legacy manual API remains under `/cases/:id/actions`: list/create drafts, authorize a concrete action, and refresh its receipt. Its operator and approved-destination checks still apply. `CREW_ALLOWED_USER_IDS` remains a legacy operator control. The destination allowlists also apply to persistent outreach when `OUTREACH_RESTRICT_TO_ALLOWLIST=true`; they do not expand an earlier grant. Restricted mode refuses portal actions and emailed-lead invitations. Requested onboarding calls and email-address verification use separate paths, as documented in [phone onboarding](phone-onboarding.md#outreach-restriction).
+The legacy manual API remains under `/cases/:id/actions`: list/create drafts, authorize a concrete action, and refresh its receipt. Its operator and approved-destination checks still apply. `OUTREACH_ALLOWED_EMAILS`, `OUTREACH_ALLOWED_PHONES`, and `CREW_ALLOWED_USER_IDS` remain legacy controls and do not extend an old grant to the persistent path.
 
 `advocacy_outreach_actions` stores request content, dispatch state, approver, provider receipt, and thread context. Cases with outreach history cannot be deleted through the app. `backend/call-evidence-service.ts` imports completed-call transcripts as unverified reported speech; it never treats a completed call as proof of coverage or savings.
 
