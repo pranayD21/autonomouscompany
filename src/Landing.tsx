@@ -7,7 +7,7 @@ const workspaceUrl = "#workspace";
 const steps = [
   { number: "01", title: "Tell us what happened." },
   { number: "02", title: "Add your bills and EOBs." },
-  { number: "03", title: "Approve the next step." },
+  { number: "03", title: "We handle the rest." },
 ];
 
 export function Landing() {
