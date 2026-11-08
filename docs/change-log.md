@@ -1356,3 +1356,7 @@ Verification: reviewed the Markdown diff against the owner’s confirmation, che
 ## 2026-11-08 — Shorten the Claire privacy clarification
 
 Replaced the README clarification with two sentences in our first-person voice: the run and call took place, and the records were deliberately withheld for privacy. Removed reviewer-directed language and shortened the corresponding verification and showcase copy. Verification: reviewed the Markdown diff and passed `git diff --check`; no application tests were needed for these text edits.
+
+## 2026-11-08 — Note consented Claire clips in the demo video
+
+Updated the two-sentence README clarification and corresponding verification and showcase copy to reflect that our demo video includes short call clips with Claire’s permission, while full records remain withheld for privacy. Verification: reviewed the Markdown diff and passed `git diff --check`; no application tests were run for this documentation-only change.

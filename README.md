@@ -14,7 +14,7 @@ Read the [product showcase](docs/product-showcase.md) for the pitch, mobile expe
 4. The customer continues in website chat and uploads documents there.
 5. The advocate researches the claim, contacts the insurer or claims administrator, follows up, and reports back on the website.
 
-We ran Assurance with Claire, our first user acquired through Reddit by our Naïve GTM agent, and the call took place. We deliberately kept her call logs, recordings, transcripts, and private case details out of this public repository to protect her privacy.
+We ran Assurance with Claire, our first user acquired through Reddit by our Naïve GTM agent, and included short clips of the call in our demo video with her permission. We deliberately withheld the full call logs, recordings, transcripts, and private case details from this public repository to protect her privacy.
 
 Start with [agents.md](agents.md) and the [documentation index](docs/README.md). Every repository change must update the relevant Markdown in `docs/`.
 
