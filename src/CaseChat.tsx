@@ -1,5 +1,6 @@
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 import {api} from './services';
+import {ClaimComposer} from './ui/ClaimComposer';
 export type CaseMessage={id:string;role:'user'|'assistant';text:string;created_at:string;kind?:string};
 export type CaseConversation={messages:CaseMessage[];state?:string;waiting_on?:string|null;can_send?:boolean};
 const statusText=(state?:string)=>state==='human_required'?'Waiting for your reply':state==='running'?'Working on your case':state==='queued'||state==='starting'?'Getting started':state==='stopped'||state==='revoked'?'Agent work is stopped':state==='completed'?'Work finished':'Your case conversation';
@@ -22,18 +23,14 @@ export function CaseChat({caseId,userId,revision}:{caseId:string;userId:string;r
  function attach(){const target=document.getElementById('section-documents');target?.scrollIntoView({behavior:'smooth',block:'start'});target?.querySelector<HTMLInputElement>('input[type="file"]')?.focus({preventScroll:true});}
  const stopped=['stopped','revoked'].includes(conversation.state??'');
  return <div className="case-chat">
-  <header className="case-chat-header"><span className="case-chat-avatar" aria-hidden="true">A</span><div><strong>Assurance</strong><p>{statusText(conversation.state)}</p></div><button type="button" className="text-button" onClick={()=>{setError('');void refresh().catch(e=>setError(e instanceof Error?e.message:'Could not refresh conversation.'));}}>Refresh messages</button></header>
+  <header className="case-chat-header"><span className="claim-orb" data-working={['running','queued','starting'].includes(conversation.state??'')} aria-hidden="true"><span/></span><div><strong>Assurance</strong><p>{statusText(conversation.state)}</p></div><button type="button" className="text-button" onClick={()=>{setError('');void refresh().catch(e=>setError(e instanceof Error?e.message:'Could not refresh conversation.'));}}>Refresh messages</button></header>
   <div ref={list} className="case-chat-log" role="log" aria-label="Messages with Assurance" aria-live="polite" aria-relevant="additions" onScroll={()=>{const el=list.current;if(el)follow.current=el.scrollHeight-el.scrollTop-el.clientHeight<80;}}>
    {!loaded&&<p className="case-chat-empty">Loading conversation…</p>}
    {loaded&&!conversation.messages.length&&<p className="case-chat-empty">Share an update or add a document. Assurance’s questions and case updates will appear here.</p>}
    {conversation.messages.map(message=><article key={message.id} className={`case-chat-message case-chat-message--${message.role}`} aria-label={`${message.role==='user'?'You':'Assurance'} message`}><div className="case-chat-bubble"><span className="case-chat-author">{message.role==='user'?'You':'Assurance'}</span><p>{message.text}</p>{message.kind?.startsWith('document_request')&&<button type="button" className="text-button" onClick={attach}>Add requested document</button>}</div><time dateTime={message.created_at}>{timestamp(message.created_at)}</time></article>)}
   </div>
   {stopped&&<p className="case-chat-note">You can keep adding information. Sending a message will not restart stopped agent work.</p>}
-  <form className="case-chat-compose" aria-label="Message Assurance" onSubmit={send}>
-   <label htmlFor={`message-${caseId}`} className="visually-hidden">Message Assurance</label>
-   <textarea id={`message-${caseId}`} rows={2} maxLength={4000} value={draft} disabled={busy||conversation.can_send===false||pending.current!==null} onChange={e=>{setDraft(e.target.value);setNotice('');}} placeholder="Message Assurance…"/>
-   <div className="case-chat-compose-actions"><button type="button" className="text-button" onClick={attach}>Attach document</button><button type="submit" disabled={busy||!draft.trim()||conversation.can_send===false}>{busy?'Sending…':pending.current?'Retry message':'Send message'}</button></div>
-  </form>
+  <div className="case-chat-compose"><ClaimComposer value={draft} onChange={value=>{setDraft(value);setNotice('');}} onSubmit={send} busy={busy} disabled={conversation.can_send===false} readOnly={pending.current!==null} needsAnswer={conversation.state==='human_required'} sendLabel={pending.current?'Retry message':'Send message'}/></div>
   {notice&&<p className="case-chat-feedback" role="status">{notice}</p>}
   {error&&<p className="case-chat-feedback" role="alert">{error}</p>}
  </div>;

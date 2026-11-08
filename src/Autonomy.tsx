@@ -4,6 +4,7 @@ import {useEffect, useRef, useState, type FormEvent, type ReactNode} from "react
 import {api} from "./services";
 import {activationRequest, sessionNeedsProviderApproval, sessionStatus, type AgentSession} from "./activation-state";
 import type {caseDecisions, CaseReply, OutreachAction} from "../backend/schema";
+import {ClaimComposer} from "./ui/ClaimComposer";
 
 type Authority = {id: string; state: string; reason: string | null; policy: {version?: number}};
 type Decision = Pick<typeof caseDecisions.$inferSelect, "id" | "round" | "state" | "decision" | "result" | "created_at"> & {action_id?: string | null};
@@ -34,6 +35,7 @@ export function Autonomy({caseId, userId, enabled, between}: {caseId: string; us
   const [feed, setFeed] = useState<Feed>(empty), [loaded, setLoaded] = useState(false), [loadError, setLoadError] = useState("");
   const [answer, setAnswer] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState(""), [savedUpdate, setSavedUpdate] = useState(false);
   const updateId = useRef(crypto.randomUUID());
+  const [sentAnswer, setSentAnswer] = useState("");
   const path = `/cases/${caseId}/autonomy`;
 
   async function refresh() {
@@ -42,7 +44,7 @@ export function Autonomy({caseId, userId, enabled, between}: {caseId: string; us
   }
   useEffect(() => {
     let live = true;
-    setLoaded(false); setFeed(empty); setLoadError(""); setError(""); setAnswer(""); setSavedUpdate(false); updateId.current = crypto.randomUUID();
+    setLoaded(false); setFeed(empty); setLoadError(""); setError(""); setAnswer(""); setSentAnswer(""); setSavedUpdate(false); updateId.current = crypto.randomUUID();
     const read = () => readFeed(caseId, userId)
       .then(next => { if (live) { setFeed(next); setLoaded(true); setLoadError(""); } })
       .catch(() => { if (live) setLoadError("Could not refresh this case. What you see may be out of date."); });
@@ -63,8 +65,9 @@ export function Autonomy({caseId, userId, enabled, between}: {caseId: string; us
   async function reply(e: FormEvent) {
     e.preventDefault();
     if (busy || !answer.trim()) return;
-    const ok = await run(() => api(`/cases/${caseId}/updates`, {method: "POST", body: JSON.stringify({id: updateId.current, text: answer.trim()})}, userId), "Could not save your response.");
-    if (ok) { setAnswer(""); updateId.current = crypto.randomUUID(); setSavedUpdate(true); }
+    const text = answer.trim();
+    const ok = await run(() => api(`/cases/${caseId}/updates`, {method: "POST", body: JSON.stringify({id: updateId.current, text})}, userId), "Could not save your response.");
+    if (ok) { setSentAnswer(text); setAnswer(""); updateId.current = crypto.randomUUID(); setSavedUpdate(true); }
   }
 
   const {history, actions, replies} = feed;
@@ -74,6 +77,8 @@ export function Autonomy({caseId, userId, enabled, between}: {caseId: string; us
   const session = (current && sessions.find(s => s.authority_id === current.id)) ?? (current ? undefined : sessions[0]);
   const question = [...history.decisions].sort(byNewest).find(d => d.decision?.tool === "request_human_help")?.decision;
   const needsYou = session && ["human_required", "needs_input"].includes(session.state);
+  const canMessage = session?.engine === "direct_openai" && current?.id === session.authority_id && current.policy.version !== 2;
+  const working = !!current && ["running", "queued", "starting", "direct_running"].includes(session?.state ?? "queued");
 
   let label: string, detail: ReactNode, tone: string;
   if (session) { const s = sessionStatus(session); label = s.label; detail = session.waiting_on && ["idle", "waiting"].includes(session.state) ? `Waiting on ${session.waiting_on.replace(/^waiting (on|for) /i, "")}` : s.detail; tone = session.state; }
@@ -82,29 +87,26 @@ export function Autonomy({caseId, userId, enabled, between}: {caseId: string; us
   else { label = "Not started"; detail = "This saved case has not started yet."; tone = "idle"; }
   if (label === "Stopped" && session) detail = "Assurance is not working on this case. A message that was already sending may still finish.";
 
-  return <><section id="section-status" className="status-panel" data-tone={tone} aria-label="Case agent activation">
+  return <><section id="section-status" className="status-panel claim-conversation" data-tone={tone} aria-label="Case agent activation">
     {!loaded && !loadError ? <p className="quiet-line">Loading…</p> : <>
       <div className="status-head">
-        <span className="status-light" aria-hidden="true"/>
-        <h2>{label}</h2>
+        <span className="claim-orb" data-working={working} aria-hidden="true"><span/></span>
+        <div className="claim-agent-heading"><p className="eyebrow">Assurance · Your claim advocate</p><h2>{label}</h2></div>
         {current && <button className="text-button quiet-button" disabled={busy} onClick={() => stop(current.id)}>Stop agent work</button>}
       </div>
       <p className="status-detail">{detail}</p>
       {session?.goal && <p className="status-goal"><span>Goal</span><span className="status-goal-text">{session.goal}</span></p>}
 
       {needsYou && <div className="ask">
-        {question && "question" in question && <p className="ask-question">{question.question}</p>}
+        {question && "question" in question && <div className="claim-agent-message"><span className="claim-message-label">Assurance needs a little more information</span><p className="ask-question">{question.question}</p></div>}
         {current?.id === session.authority_id && current.policy.version === 2 && <a className="text-link" href="#section-conversation">Reply in the conversation</a>}
-        {session.engine === "direct_openai" && current?.id === session.authority_id && current.policy.version !== 2 && <>
-          <form onSubmit={reply}>
-            <label>Your response<textarea value={answer} onChange={e => setAnswer(e.target.value)} required maxLength={4000} rows={3} placeholder="Answer here and Assurance will continue."/></label>
-            <div className="actions">
-              <button disabled={busy || !answer.trim()}>Send response</button>
-              <button type="button" className="text-button" disabled={busy} onClick={() => resume(session.authority_id)}>Continue with updated information</button>
-            </div>
-          </form>
-        </>}
         {sessionNeedsProviderApproval(session) && history.authorities.find(a => a.id === session.authority_id)?.policy.version !== 2 && <SessionApprovals caseId={caseId} runId={session.id} userId={userId}/>}
+      </div>}
+
+      {sentAnswer && <div className="claim-owner-message"><span className="claim-message-label">You · Update saved</span><p>{sentAnswer}</p></div>}
+      {canMessage && <div className="claim-chat-input">
+        <ClaimComposer value={answer} onChange={value => { setAnswer(value); setSavedUpdate(false); }} onSubmit={reply} busy={busy} needsAnswer={!!needsYou}/>
+        {needsYou && <button type="button" className="text-button claim-resume" disabled={busy} onClick={() => resume(session.authority_id)}>Continue with updated information</button>}
       </div>}
 
       {!current && available && session?.state !== "completed" && <form onSubmit={start} aria-label="Start case agent">

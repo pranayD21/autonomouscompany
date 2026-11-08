@@ -195,7 +195,7 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
 
     {phoneSelected() && <dl className="case-key-numbers" aria-label="Key amounts"><div><dt>Bill amount</dt><dd>{item.bill_cents === null ? "Not yet known" : money(item.bill_cents)}</dd></div><div><dt>EOB responsibility</dt><dd>{item.eob_cents === null ? "Not yet known" : money(item.eob_cents)}</dd></div><div><dt>Estimated discrepancy</dt><dd>{diff === null ? "Not yet known" : money(diff)}</dd><small>To investigate · not verified savings</small></div></dl>}
 
-    <Autonomy caseId={item.id} userId={userId} enabled={crewEnabled} between={<>
+    <Autonomy key={item.id} caseId={item.id} userId={userId} enabled={crewEnabled} between={<>
       <section id="section-conversation" className="case-section" aria-label="Conversation">
         <header className="case-section-head"><h3>Conversation</h3></header>
         <CaseChat key={`chat-${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision}/>
