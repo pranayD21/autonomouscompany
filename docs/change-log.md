@@ -1,5 +1,11 @@
 # Change log
 
+## November 8, 2026 — Case chat matches the site theme; Add documents pill fixed
+
+The user said the **Add documents** pill did not fit: its square left corner and floating tile clashed with the rounded right side. They also asked for the chat to match the website. The pill is now fully rounded with a round blue tile, on paper with a rule border. The case chat now uses the landing tokens: paper page, header and composer area, rule lines, white bordered Assurance bubbles, ink owner bubbles, white round buttons that turn blue on hover, and a blue-period empty-state title. The composer is a white card with a soft blue focus ring, and Send is the landing page's blue arrow circle. The changes are CSS overrides appended to `src/claim-workspace.css`. See [frontend.md](frontend.md).
+
+Verification: `npm run build` and the 18 focused UI tests passed. Playwright screenshots of the synthetic claim-page fixture at 1400×900 and 390×780 were inspected, plus a 2× close-up of the pill and its hover state. There was no page overflow. Not checked on a real device.
+
 ## November 8, 2026 — Full-page case chat and Add documents button
 
 The user asked for the animated upload pill back in place of the round "+", labelled so people know what it does, and for the chat to be the whole page instead of a card on the page. The composer again uses `CaseDocumentUpload` (`src/ui/FileDrop.tsx`), now labelled **Add documents**. The unused `CaseDocumentPlus` was removed. When a case is open, `.surface` drops its margin, border, radius and padding and becomes a white, full-height page. Content sits in a centred 760px column, and the header rule spans the full width. The empty-state hint now points to **Add documents**. CSS changes are in `src/claim-workspace.css`. See [frontend.md](frontend.md).
