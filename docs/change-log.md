@@ -1,5 +1,11 @@
 # Change log
 
+## November 8, 2026 — One-screen mobile landing hero
+
+On screens 820px and narrower, the landing header and hero now fill exactly one viewport, from the header down to “See how it works”, with the wordmark, headline and CTA spread evenly instead of bunched at the top. The steps below became spaced cards with number badges, and section/footer spacing increased. Only `src/mobile.css` changed (rules appended inside a `max-width: 820px` query); desktop is untouched. See [frontend.md](frontend.md).
+
+Verification: Playwright screenshots of `#home` (Vite dev server, placeholder public service URLs) at 400×736 and 375×667: “See how it works” ends at 718px and 649px, inside each viewport, with no horizontal overflow. At 1280×800 the desktop element positions match the earlier layout. No real-device checks or deployment.
+
 ## November 8, 2026 — Restart after stop, quieter onboarding notice, slimmer status row
 
 **Problem:** Starting a stopped case failed with the misleading "Provide your permission in your own words…" error. The real cause was `requestFirmStaffing` refusing to rebind a case whose staffing row still pointed at the revoked authority, plus a `budget-needed:<case>` event key that would have deduplicated the new budget request away. The phone onboarding banner showed "Your phone account is ready" forever, because the `not_started` status fell back to that default message. The compact status card was a large box that repeated the chat header.
