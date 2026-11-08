@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-08 — Stop divider lines flashing on landing load
+
+On page load, the "Loading your session…" shell (with its `.app-header` bottom border and `.app-footer` top border) showed for a moment while the auth check ran, before the landing page replaced it. `src/main.tsx` now renders the landing page immediately for `#home` and renders nothing during the check for other non-workspace URLs. Workspace routes keep the loading shell.
+
+Verification: `tsc --noEmit` and `vite build` (placeholder `VITE_*` URLs) passed. In headless Chromium with the session request delayed 1.5s and the DOM sampled every 20ms, `/` and `#home` went from blank to the landing page without the loading shell; `#workspace` still showed it. Live production was not checked.
+
 ## 2026-11-08 — Backdrop follows scroll; larger CTA text
 
 At the user's request the photo backdrop now fills the page only while the visitor is at the top, with the divider lines under the header and above "How it works" hidden. After scrolling it returns to the earlier hero-only look: paper over the header, faded hero edges, and the divider lines back. The "Open a case" label is larger (23px desktop, 21px tablet, 20px phone, up from 19/17/17). See frontend.md.

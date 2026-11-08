@@ -4,7 +4,7 @@ The browser app is a React/Vite single page (`src/`). Signed-out visitors see th
 
 ## Routes
 
-Hash routes keep the open view across reloads: `#home` (landing), `#workspace` (overview), `#new` (intake form), `#case/<id>` (one case).
+Hash routes keep the open view across reloads: `#home` (landing), `#workspace` (overview), `#new` (intake form), `#case/<id>` (one case). While the session check is pending, `#home` renders the landing page immediately and other non-workspace URLs render nothing (plain paper); only `#workspace` and `#case/...` show the "Loading your session…" shell. This stops the shell's header and footer divider lines flashing before the landing page.
 
 ## Workspace layout (simplified 2026-11-08)
 
