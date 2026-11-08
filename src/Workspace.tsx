@@ -10,10 +10,11 @@ import {CaseForm} from "./CaseForm";
 import {Documents} from "./Documents";
 import {Autonomy} from "./Autonomy";
 import {Outcomes} from "./Outcomes";
-import {ArrowLeft, ArrowUpRight, Home, LogOut, Plus} from "./Icons";
+import {ArrowLeft, Home, LogOut, Plus} from "./Icons";
 import {Sidebar, SidebarLink, SidebarSection, SidebarText} from "./ui/Sidebar";
-import {OWNER_LABEL, useProgressMap} from "./progress";
-import {NumberTicker} from "./ui/motion";
+import {Overview} from "./Overview";
+
+export {Overview};
 
 const message = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Please try again.";
 const money = (cents: number) => new Intl.NumberFormat("en-US", {style: "currency", currency: "USD"}).format(cents / 100);
@@ -106,52 +107,6 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
       </AnimatePresence>
     </main>
   </div>;
-}
-
-function Greeting({name}: {name: string}) {
-  const hour = new Date().getHours();
-  return <>{hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"}, {name.split(" ")[0]}</>;
-}
-
-const ease = [0.16, 1, 0.3, 1] as const;
-
-export function Overview({cases, userId, userName, crewEnabled, live}: {cases: readonly BillCase[]; userId: string; userName: string; crewEnabled: boolean; live: ReactNode}) {
-  const progress = useProgressMap(cases, userId, crewEnabled);
-  const [hovered, setHovered] = useState<string | null>(null);
-  const all = cases.map(c => progress.get(c.id));
-  const needYou = all.filter(p => p?.loaded && p.owner === "you").length;
-  const saved = all.reduce((sum, p) => sum + (p?.outcome?.reduction_cents ?? 0), 0);
-  return <>
-    <div className="page-head">
-      <div><p className="eyebrow"><Greeting name={userName}/></p><h1>Your cases</h1></div>
-      {live}
-    </div>
-    <PhoneIntakes userId={userId}/>
-    <motion.div className="overview-stats" initial={{opacity: 0, y: 6}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, ease}}>
-      <div><span>Open cases</span><strong>{cases.length}</strong></div>
-      <div data-alert={needYou > 0}><span>Need you</span><strong>{needYou}</strong></div>
-      <div className="overview-savings"><span>Reported savings</span><strong><NumberTicker value={saved} format={n => money(Math.round(n))}/></strong><small>{saved ? "From recorded insurer decisions. Not a verified payout." : "Shows up once an insurer decision is recorded."}</small></div>
-    </motion.div>
-    <div className="case-grid" onMouseLeave={() => setHovered(null)}>
-      {cases.map((item, i) => {
-        const p = progress.get(item.id);
-        return <motion.a key={item.id} href={`#case/${item.id}`} className="case-tile" onMouseEnter={() => setHovered(item.id)} onFocus={() => setHovered(item.id)}
-          initial={{opacity: 0, y: 12}} animate={{opacity: 1, y: 0}} transition={{duration: 0.45, delay: 0.06 * i, ease}}>
-          <AnimatePresence>{hovered === item.id && <motion.span className="case-tile-hover" layoutId="case-hover" initial={{opacity: 0}} animate={{opacity: 1, transition: {duration: 0.15}}} exit={{opacity: 0, transition: {duration: 0.15, delay: 0.1}}}/>}</AnimatePresence>
-          <span className="case-tile-inner" data-owner={p?.loaded ? p.owner : undefined}>
-            <span className="case-tile-top"><span className="case-tile-kind">{caseKind(item)}</span>{p?.loaded && <span className="badge" data-owner={p.owner}><span className="badge-dot"/>{OWNER_LABEL[p.owner]}</span>}</span>
-            <strong className="case-tile-title">{item.title}</strong>
-            <span className="case-tile-foot"><span className="case-tile-desc">{p?.loaded ? p.title : " "}</span><ArrowUpRight size={16} aria-hidden="true"/></span>
-          </span>
-        </motion.a>;
-      })}
-      <motion.a href="#new" className="case-tile case-tile--new" onMouseEnter={() => setHovered("new")}
-        initial={{opacity: 0, y: 12}} animate={{opacity: 1, y: 0}} transition={{duration: 0.45, delay: 0.06 * cases.length, ease}}>
-        <AnimatePresence>{hovered === "new" && <motion.span className="case-tile-hover" layoutId="case-hover" initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}}/>}</AnimatePresence>
-        <span className="case-tile-inner"><span className="new-plus" aria-hidden="true"><Plus size={20}/></span><strong>Open a new case</strong></span>
-      </motion.a>
-    </div>
-  </>;
 }
 
 function Intake({hasCases, disabled, onCancel, onSave, live}: {hasCases: boolean; disabled: boolean; onCancel: () => void; onSave: (d: CaseInput,files?:File[]) => Promise<void>; live: ReactNode}) {

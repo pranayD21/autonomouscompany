@@ -1,5 +1,17 @@
 # Change log
 
+## 2026-11-08 — Workspace overview redesign
+
+At the user's request the signed-in overview (`#workspace`) was rebuilt in the landing page's style, using 21st.dev dashboard components as inspiration: a dark hatched savings card, a linked "Needs you" card, a case-mix meter, and numbered case rows with a filter pill. It moved to `src/Overview.tsx` and `src/overview.css`; the old stat strip and case-tile CSS was removed from `src/style.css`. Data, copy rules and the "not a verified payout" caveat are unchanged. See [frontend.md](frontend.md).
+
+Verification: `npm run build` (placeholder `VITE_*` URLs) and `npx tsx --test scripts/progress.test.ts scripts/activation-state.test.ts` (10 pass) passed. A local Playwright fixture with three fictional mocked cases (needs you, waiting, resolved with an outcome) was screenshotted at 1440px and 390px. Production was not checked; the live overview with real cases was not viewed.
+
+## 2026-11-08 — Sidebar active tab no longer clipped
+
+In the collapsed rail the selected case's white highlight ran past the rail's right edge and was cut off square. The `.sidebar-scroll` grid used an implicit auto column, so long no-wrap labels widened every link beyond the 48px rail. `src/style.css` now gives that grid a `minmax(0, 1fr)` column and links `min-width: 0`, so the highlight is a full rounded tile around the icon. Its border ring is now an inset shadow so the rail's `overflow-x: hidden` can't shave its edges.
+
+Verification: CSS-only change; not checked in a browser or on production.
+
 ## November 8, 2026 — Landing-themed claim conversation
 
 Refined the claim's agent panel in `src/Autonomy.tsx` and `src/style.css` using the supplied rounded prompt-box reference while keeping Assurance's paper, ink, DM Sans and blue landing-page theme. Added `src/ui/ClaimComposer.tsx` with an autosizing response field, accessible circular send action, real saving state, character count, keyboard submission and a shortcut to the existing document uploader. Active direct-model cases can receive owner updates while working or waiting, not just when a question is pending. Questions and the latest successfully saved local update now have distinct message treatments. The subtle orb animates only during active work and respects reduced motion. Case-keyed mounting resets local drafts/receipts across claims. Existing stop/resume controls, Naïve approval boundaries and update idempotency remain intact. No fake voice/search/reasoning controls, new dependencies, or provider changes were added. See [frontend.md](frontend.md).
