@@ -26,6 +26,7 @@ export function phoneRoutes(pool:Pool){
   const body=z.object({sms_consent:z.boolean()}).safeParse(await c.req.json().catch(()=>null));const phone=await verifiedPhone(pool,c.get('userId'));if(!body.success||!phone)return c.json({error:'A verified phone account is required.'},400);
   await pool.query('INSERT INTO advocacy_phone_preferences(owner_id,phone,sms_consent) VALUES($1,$2,$3) ON CONFLICT(owner_id) DO UPDATE SET sms_consent=$3,updated_at=now()',[c.get('userId'),phone,body.data.sms_consent]);return c.json({sms_consent:body.data.sms_consent});
  });
+ app.get('/messages',async c=>{const {rows}=await pool.query("SELECT m.event_id,m.case_id,m.body,m.received_at,m.disposition FROM advocacy_mac_bridge_inbound m JOIN advocacy_cases c ON c.id=m.case_id WHERE c.owner_id=$1 ORDER BY m.received_at DESC LIMIT 30",[c.get('userId')]);return c.json(rows);});
  app.get('/notifications',async c=>{const {rows}=await pool.query('SELECT id,case_id,kind,state,reason,created_at FROM advocacy_phone_notifications WHERE owner_id=$1 ORDER BY created_at DESC LIMIT 30',[c.get('userId')]);return c.json(rows);});
  return app;
 }

@@ -1,13 +1,14 @@
+import {macMessagesRoutes,macBridgeReady} from "./mac-messages-bridge";
 import {parseTriggerDelivery} from "@neon/functions/triggers";
 import {Hono} from 'hono';import {cors} from 'hono/cors';import {bodyLimit} from 'hono/body-limit';
 import {Pool} from 'pg';import {attachDatabasePool} from '@neon/functions';
 import {createPhoneAuth} from './phone-auth';import {validPhoneWebhook,signInSmsReady,deliverPhoneNotifications,phoneLoginEnabled,phoneTestNumbers,phoneTestCode} from './phone-messaging';import {handlePhoneEvent} from './phone-intake';
 const pool=new Pool({connectionString:process.env.DATABASE_URL?.replace('sslmode=require','sslmode=verify-full'),max:3});attachDatabasePool(pool);
-const app=new Hono();app.use('*',bodyLimit({maxSize:65536}));
+const app=new Hono();app.use('*',bodyLimit({maxSize:65536}));app.route('/mac-bridge',macMessagesRoutes(pool));
 app.use('/auth/*',cors({origin:o=>['https://assurance.claims','https://assurance-claims.vercel.app','http://localhost:5173','http://localhost:4173'].includes(o)?o:undefined,allowHeaders:['Content-Type','Authorization'],allowMethods:['GET','POST','OPTIONS'],credentials:true}));
 app.use('/status',cors({origin:o=>['https://assurance.claims','https://assurance-claims.vercel.app','http://localhost:5173','http://localhost:4173'].includes(o)?o:undefined}));
 let auth:ReturnType<typeof createPhoneAuth>|undefined;
-app.get('/status',async c=>{c.header('Cache-Control','no-store');return c.json({enabled:phoneLoginEnabled(),smsReady:await signInSmsReady().catch(()=>false),testNumbers:phoneLoginEnabled()?phoneTestNumbers():[],testCode:phoneLoginEnabled()?phoneTestCode():null});});
+app.get('/status',async c=>{c.header('Cache-Control','no-store');return c.json({notificationProvider:process.env.PHONE_NOTIFICATION_PROVIDER??'agentphone',notificationReady:process.env.PHONE_FLOW_ENABLED==='true'&&(process.env.PHONE_NOTIFICATION_PROVIDER==='mac_messages'?await macBridgeReady(pool):false),enabled:phoneLoginEnabled(),smsReady:await signInSmsReady().catch(()=>false),testNumbers:phoneLoginEnabled()?phoneTestNumbers():[],testCode:phoneLoginEnabled()?phoneTestCode():null});});
 app.all('/auth/*',async c=>{
  if(!phoneLoginEnabled()||!process.env.PHONE_AUTH_SECRET||!process.env.PHONE_AUTH_BASE_URL)return c.json({error:'Phone sign-in is not active yet.'},503);
  const route=c.req.path.slice('/auth'.length);const allowed:Record<string,string>={'/phone-number/send-otp':'POST','/phone-number/verify':'POST','/get-session':'GET','/token':'GET','/jwks':'GET','/sign-out':'POST'};

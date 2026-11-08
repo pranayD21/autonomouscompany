@@ -12,6 +12,11 @@ export default defineConfig({
   aiGateway: true,
   functions: {
     phone: {name:"Assurance phone intake and sign-in",source:"./backend/phone-worker.ts",env:{
+      PHONE_NOTIFICATION_PROVIDER:process.env.PHONE_NOTIFICATION_PROVIDER??"agentphone",
+      MAC_MESSAGES_BRIDGE_ENABLED:process.env.MAC_MESSAGES_BRIDGE_ENABLED??"false",
+      MAC_MESSAGES_TRANSPORT:process.env.MAC_MESSAGES_TRANSPORT??"sms",
+      MAC_MESSAGES_SENDER_LABEL:process.env.MAC_MESSAGES_SENDER_LABEL??"",
+      MAC_MESSAGES_BRIDGE_TOKEN:{value:process.env.MAC_MESSAGES_BRIDGE_TOKEN,required:false,onUndefined:"skip"},
       PHONE_LOGIN_ENABLED:process.env.PHONE_LOGIN_ENABLED??"false",
       PHONE_TEST_NUMBERS:process.env.PHONE_TEST_NUMBERS??"",
       PHONE_TEST_CODE:process.env.PHONE_TEST_CODE??"123456",
@@ -95,6 +100,7 @@ export default defineConfig({
         OPENAI_API_KEY: {value:process.env.OPENAI_API_KEY,required:true},
         ASSURANCE_DOCUMENT_READER: "direct_openai",
         ASSURANCE_DIRECT_MODEL: process.env.ASSURANCE_DIRECT_MODEL??"gpt-5.4-mini",
+        PHONE_NOTIFICATION_PROVIDER:process.env.PHONE_NOTIFICATION_PROVIDER??"agentphone",
         PHONE_FLOW_ENABLED:process.env.PHONE_FLOW_ENABLED??"false",
         PHONE_AUTH_BASE_URL:process.env.PHONE_AUTH_BASE_URL??"",
         PHONE_ALLOWED_NUMBERS:process.env.PHONE_ALLOWED_NUMBERS??"",

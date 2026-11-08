@@ -65,3 +65,7 @@ Every repository change must update the relevant documentation in the same chang
 - [Twilio Verify setup](twilio-verify-setup.md): read-only planning and explicit service creation for phone login, separate from AgentPhone voice.
 
 - [Upload artifacts](demo-upload-artifacts.md): coherent fictional incident, insurance card, visit, employer acknowledgment, and pending claim-review files.
+
+- [Mac Messages bridge](mac-messages-bridge.md): hosted notification queue, authenticated local bridge, receipt and reply handling.
+- [Local Mac runner](mac-messages-local.md): sender setup, macOS permissions, private journal, and read-only checks.
+- [Mac bridge verification](mac-messages-tests.md): isolated database tests and covered failure paths.

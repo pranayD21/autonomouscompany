@@ -34,6 +34,7 @@ async function agentPhoneSmsReady(send:typeof fetch=fetch){
  return r.ok&&(await r.json()).outboundSms==='enabled';
 }
 export async function smsReady(send:typeof fetch=fetch){
+ if(process.env.PHONE_NOTIFICATION_PROVIDER==='mac_messages')return false;
  return process.env.PHONE_FLOW_ENABLED==='true'&&await agentPhoneSmsReady(send);
 }
 export async function signInSmsReady(send:typeof fetch=fetch){
@@ -61,6 +62,8 @@ export async function enqueueDocumentNotice(pool:Pool,caseId:string,documentId:s
  await deliverPhoneNotifications(pool);
 }
 export async function deliverPhoneNotifications(pool:Pool,sender=sendPhoneText){
+ // Mac pulls its queue through the authenticated bridge; never also send with AgentPhone.
+ if(process.env.PHONE_NOTIFICATION_PROVIDER==='mac_messages')return;
  const found=await pool.query(`SELECT n.id FROM advocacy_phone_notifications n WHERE n.state='queued' ORDER BY n.created_at LIMIT 10`);
  for(const {id} of found.rows){
   const c=await pool.connect();let to:string|undefined,body:string|undefined;

@@ -38,3 +38,7 @@ Five public fixed-code accounts are shared fictional identities, not proof of re
 Payments remain hypothetical. No real payout, patient outcome, or healthcare-compliance certification is claimed. General public-source retrieval/navigation works; no general search-engine integration was added. Scanned PDFs without a text layer require page images. The optional legacy AI Gateway review remains unavailable and its broken entry button is removed. The JavaScript bundle still produces the size warning.
 
 The old revoked Naïve rotation session, vault credentials/vault/identity, and local fixture rows were cleaned successfully with zero outbound rows.
+
+## Mac messaging implementation
+
+The computer-based bridge is implemented with private send-once journaling, a hosted notification queue, receipts, scoped replies, and STOP handling. Migration0025 is applied (26 total migrations). The user selected the existing Mac SMS sender; local automation/account checks pass, but the running helper still lacks Messages database access after a reported Full Disk Access change. The bridge API is configured, while PHONE_FLOW_ENABLED stays false. No real Mac send or reply has been verified and inbound routing remains unchanged. See mac-messages-bridge.md and mac-messages-local.md.
