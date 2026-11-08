@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-07 — Completed-call transcript ingestion
+
+Added bounded AgentPhone/ElevenLabs transcript readers, immutable hash-addressed evidence snapshots, owner/case/receipt checks, and idempotent imports. New speech evidence advances the case revision once and wakes existing live authority without resetting limits or restoring stopped authority. Manual refresh and the existing five-minute scheduler collect completed transcripts; bounded decisions and MCP case reads receive them as untrusted reported speech. Migration 0014 adds the evidence table. The scheduler now receives its operator allowlist.
+
+Verification: 15 parser/transport tests and 14 sequential database/autonomy tests pass; build passes with the existing bundle-size warning. An initial concurrent database-suite run failed because the scheduler consumed the other suite’s fixture; those fixtures were removed and sequential rerun passed. Production migration 0014 applied successfully and all six Neon Functions deployed. No live case calls exist to import, so provider transcript retrieval and user-visible transcript display remain unverified/unimplemented respectively. No call or message was sent by this work. Details and polling limits are in outreach.md.
+
 ## 2026-11-07 — Verify dashboard setup-key compatibility
 
 Used the user-requested Dia dashboard to create a temporary setup key. The existing Managed Agents API rejected it with HTTP 401, so it was revoked and its private local file deleted. Confirmed REVOKED in the dashboard. No existing keys, app credentials, budgets, or agents changed. See agent-tools.md for the remaining organization/scope requirement.

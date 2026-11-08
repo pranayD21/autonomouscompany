@@ -16,6 +16,7 @@ export default defineConfig({
       name: "Assurance autonomous case worker",
       source: "./backend/autonomy-worker.ts",
       env: {
+        CREW_ALLOWED_USER_IDS: process.env.CREW_ALLOWED_USER_IDS ?? "",
         NAIVE_API_KEY: { value: process.env.NAIVE_API_KEY, required: true },
         NAIVE_COORDINATOR_ID: { value: process.env.NAIVE_COORDINATOR_ID, required: true },
         NAIVE_RUN_BUDGET_MICRO_USD: { value: process.env.NAIVE_RUN_BUDGET_MICRO_USD, required: true },

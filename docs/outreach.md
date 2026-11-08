@@ -10,7 +10,7 @@ The case workspace supports reviewed synthetic calls through ElevenLabs with nat
 4. The server records the approver and timestamp before making one provider request. The action then shows the provider receipt or an uncertain/rejected outcome.
 5. Check provider status to refresh call completion/duration or email labels. Accepted email is not proof of delivery; completed call is not proof of savings.
 
-New calls disable Twilio audio recording and require an ElevenLabs agent with voice recording disabled; ElevenLabs still processes and retains a transcript. The confirmation tells the operator this. The app stores provider status and duration, not transcripts or email bodies returned by status checks. The operator-supplied draft remains in Postgres. This is a synthetic test workflow, not authorization to process real patient information.
+New calls disable Twilio audio recording and require an ElevenLabs agent with voice recording disabled; ElevenLabs still processes and retains a transcript. The confirmation tells the operator this. The app stores provider status and duration. Completed-call transcripts are now imported as unverified reported speech; email status checks still do not import message bodies. The operator-supplied draft remains in Postgres. This is a synthetic test workflow, not authorization to process real patient information.
 
 ## Configuration
 
@@ -65,3 +65,15 @@ New case calls use the [ElevenLabs/Twilio path](voice-twilio.md). AgentPhone SIP
 Migration 0012 adds nullable `reply_to_message_id` and `reply_thread_id` to outreach records. The autonomous runner selects the latest submitted email for the same case and authorized destination before reserving the follow-up. It records that message/thread and keeps its subject. The model cannot choose arbitrary reply IDs or recipients. Manual new drafts continue using the existing send endpoint.
 
 The provider uses AgentMail's [Reply To Message endpoint](https://docs.agentmail.to/api-reference/inboxes/messages/reply) for records with a reply context. It explicitly sets the authorized `to` address, disables reply-all and tracking, and clears CC/BCC. Missing half of the reply context is rejected before HTTP dispatch. A response on a different thread is an uncertain outcome, never an automatic retry. All 27 combined autonomy, outreach, and ElevenLabs transport tests passed on the isolated branch, and the build passes. Migration 0012 is applied to production. Live same-thread delivery is not yet verified.
+
+## Completed-call evidence
+
+`backend/providers/call-evidence.ts` reads the original receipt’s provider, independently of the currently selected voice transport. It accepts only completed calls, checks the receipt, preserves user/agent speech and provider timestamps, and hashes normalized transcript content. Missing or unfinished transcripts stay unknown. Responses are capped at 1 MB and normalized transcripts at 100 KB; audio URLs and recordings are not fetched. Sources: [AgentPhone call lookup](https://agentphone.ai/docs/documentation/guides/calls) and [ElevenLabs conversation details](https://elevenlabs.io/docs/api-reference/conversations/get).
+
+Migration 0014 adds immutable `advocacy_call_evidence` snapshots. `backend/call-evidence-service.ts` checks owner, case, and action identity before reading or saving. Concurrent imports of the same action/hash produce one record and one case revision change. New content clears stale analysis and wakes only existing active/waiting authority; it never resets counts or restores revoked/stopped authority. A completed transcript proves reported speech, not speaker authority, coverage, payment, or a resolution.
+
+Manual action refresh imports completed transcripts. The existing five-minute autonomy scheduler also checks up to five submitted calls for listed operators, within 48 hours of creation and at least five minutes since the last check, until evidence is saved. Repeated reads are harmless; dispatch is never retried. Automatic polling stops after the first saved transcript; manual refresh can capture a later provider correction as another immutable snapshot. Cases older than the polling window require manual refresh.
+
+Both bounded decision inputs and MCP `case_get` include saved transcripts and `call:<id>:<sha256>` references. The case workspace’s action UI still displays status/duration; a transcript viewer is not yet implemented. The coordinator treats transcripts as untrusted reported information and cannot use them to add contacts or expand authority.
+
+Run database suites sequentially on a shared disposable branch: `npx tsx --test --test-concurrency=1 scripts/call-evidence-service.test.ts scripts/autonomy-runner.test.ts`. The autonomy scheduler intentionally scans all due authority rows, so running fixture-producing suites concurrently lets it consume another suite’s fixtures. These tests never contact a live provider. Parser and transport tests can run concurrently.

@@ -10,7 +10,7 @@ The expanded autonomy proposal is in [autonomy-plan.md](autonomy-plan.md). This 
 
 Available tools:
 
-- `case_get`: returns the case, document IDs/hashes, accepted correspondence, outreach history, recorded statements, and valid source references.
+- `case_get`: returns the case, document IDs/hashes, accepted correspondence, outreach history, recorded statements, completed-call transcript snapshots, and valid source references.
 - `case_record_fact`: records a statement and an existing case evidence reference. It does not independently verify the statement. A case-scoped operation UUID makes retries idempotent; a retry with changed data fails. A successful new record advances the case revision once.
 
 `backend/case-tool-service.ts` implements database operations. Migration 0013 adds credential and sourced-statement tables. No sending, calling, checkout, outcome, or scheduling tools are exposed yet. The existing bounded own-inbox autonomy grant is unchanged.

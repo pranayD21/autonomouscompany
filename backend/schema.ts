@@ -176,3 +176,15 @@ export const caseAgentFacts=pgTable("advocacy_case_agent_facts",{
  source_ref:text("source_ref").notNull(),
  created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
 },t=>[uniqueIndex("advocacy_fact_operation_idx").on(t.case_id,t.operation_id)]);
+
+// Immutable completed-call transcript snapshots; provider speech is reported information.
+export const callEvidence=pgTable("advocacy_call_evidence",{
+ id:uuid("id").primaryKey().defaultRandom(),
+ case_id:uuid("case_id").notNull().references(()=>cases.id,{onDelete:"restrict"}),
+ action_id:uuid("action_id").notNull().references(()=>outreachActions.id,{onDelete:"restrict"}),
+ provider:text("provider").$type<"agentphone"|"elevenlabs">().notNull(),
+ provider_id:text("provider_id").notNull(),
+ turns:jsonb("turns").$type<import("./providers/call-evidence").CallTurn[]>().notNull(),
+ sha256:text("sha256").notNull(),
+ received_at:timestamp("received_at",{withTimezone:true}).defaultNow().notNull(),
+},t=>[uniqueIndex("advocacy_call_evidence_receipt_hash_idx").on(t.action_id,t.sha256),index("advocacy_call_evidence_case_idx").on(t.case_id)]);

@@ -1,3 +1,4 @@
+import {callEvidence} from "./schema";
 import {and,eq,sql} from "drizzle-orm";
 import type {NodePgDatabase} from "drizzle-orm/node-postgres";
 import {caseAgentFacts,cases,documents,caseReplies,outreachActions} from "./schema";
@@ -11,7 +12,8 @@ export function caseToolServices(db:NodePgDatabase):CaseToolDependencies{
   const replies=await db.select().from(caseReplies).where(and(eq(caseReplies.case_id,item.id),eq(caseReplies.disposition,"accepted")));
   const actions=await db.select().from(outreachActions).where(eq(outreachActions.case_id,item.id));
   const facts=await db.select().from(caseAgentFacts).where(eq(caseAgentFacts.case_id,item.id));
-  return {case:item,documents:files,replies,actions,facts,evidence_refs:[`case:${item.revision}`,...files.map(d=>`document:${d.id}:${d.sha256}`),...replies.map(r=>`reply:${r.id}:${r.sha256}`),...actions.map(a=>`action:${a.id}`)]};
+  const calls=await db.select().from(callEvidence).where(eq(callEvidence.case_id,item.id));
+  return {case:item,call_evidence:calls.map(c=>({...c,trust:"untrusted_reported_speech"})),documents:files,replies,actions,facts,evidence_refs:[...calls.map(c=>`call:${c.id}:${c.sha256}`),`case:${item.revision}`,...files.map(d=>`document:${d.id}:${d.sha256}`),...replies.map(r=>`reply:${r.id}:${r.sha256}`),...actions.map(a=>`action:${a.id}`)]};
  }
  return {authenticate:token=>resolveCaseToolCredential(db,token),getCase,recordFact:async(identity,input)=>db.transaction(async tx=>{
   const [item]=await tx.select().from(cases).where(and(eq(cases.id,identity.case_id),eq(cases.owner_id,identity.owner_id))).for("update");

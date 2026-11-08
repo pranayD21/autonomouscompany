@@ -1,3 +1,4 @@
+import {importCallEvidence} from "./call-evidence-service";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { bodyLimit } from "hono/body-limit";
@@ -272,6 +273,7 @@ app.post("/cases/:id/actions/:actionId/refresh",async c=>{
   if(!action.provider_id)return c.json({error:"No provider receipt is available. Do not retry an uncertain dispatch; reconcile it with the provider."},409);
   try {
     const result=await readOutreach(action);
+    if(action.kind==="call" && result.provider_status==="completed")await importCallEvidence(db,item.id,action.id,c.get("userId"));
     const [saved]=await db.update(outreachActions).set({...result,checked_at:new Date()}).where(eq(outreachActions.id,action.id)).returning();
     return c.json(saved);
   }catch{return c.json({error:"Provider status is unavailable. The saved action and receipt are unchanged."},502);}
