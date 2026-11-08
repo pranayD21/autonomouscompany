@@ -38,8 +38,8 @@ try {
   console.log("PASS one-step creation; auto-start authority immediately revoked under explicit no-outreach fixture instructions");
   const card = page.locator("article").filter({hasText:title});
   await expect(card).toBeVisible({timeout:20000});
-  await expect(card.getByText("$800.00", {exact:true})).toBeVisible();
-  console.log("PASS Postgres write and live query delivery; discrepancy is $800");
+  await expect(card.getByText("$1,200.00", {exact:true})).toBeVisible();
+  console.log("PASS Postgres write and live query delivery; bill amount shown in case details");
   await page.reload();
   await expect(card).toBeVisible({timeout:20000});
   console.log("PASS persisted case survives reload");
@@ -53,15 +53,14 @@ try {
     await page.reload();
     await expect(card.getByText("Needs your attention",{exact:true})).toBeVisible();
     await expect(card.getByText("Confirm the fictional claim number.",{exact:true})).toBeVisible();
-    await expect(card.getByText("Recorded requests for human help: 1",{exact:true})).toBeVisible();
     const results=card.getByRole("region",{name:"Case outcomes"});
     await expect(results.getByText("Synthetic UI outcome fixture")).toBeVisible();
     await expect(results.getByText("Not established",{exact:true})).toBeVisible();
     await expect(results.getByRole("alert")).toContainText("no longer current");
-    await results.getByText("Supporting quotes",{exact:true}).click();
+    await results.getByText("How this was worked out",{exact:true}).click();
     await expect(results.getByText("Fictional statement supporting the calculation.",{exact:true})).toBeVisible();
     await page.unroute(outcomePath);await page.unroute(autonomyPath);await page.reload();
-    await expect(card.getByText("No outcome has been recorded.",{exact:true})).toBeVisible();
+    await expect(card.getByRole("region",{name:"Case outcomes"})).toHaveCount(0);
     console.log("PASS outcome UI fixture: reported values, unknown refund, stale-evidence warning, quotes, and empty state (mocked outcome response)");
   }
   const stackStatus=await fetch(`${apiBase}/stack/status`,{headers:{Authorization:authorization}});

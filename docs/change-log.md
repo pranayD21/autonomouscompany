@@ -1,5 +1,65 @@
 # Change log
 
+## 2026-11-08 — Stop divider lines flashing on landing load
+
+On page load, the "Loading your session…" shell (with its `.app-header` bottom border and `.app-footer` top border) showed for a moment while the auth check ran, before the landing page replaced it. `src/main.tsx` now renders the landing page immediately for `#home` and renders nothing during the check for other non-workspace URLs. Workspace routes keep the loading shell.
+
+Verification: `tsc --noEmit` and `vite build` (placeholder `VITE_*` URLs) passed. In headless Chromium with the session request delayed 1.5s and the DOM sampled every 20ms, `/` and `#home` went from blank to the landing page without the loading shell; `#workspace` still showed it. Live production was not checked.
+
+## 2026-11-08 — Backdrop follows scroll; larger CTA text
+
+At the user's request the photo backdrop now fills the page only while the visitor is at the top, with the divider lines under the header and above "How it works" hidden. After scrolling it returns to the earlier hero-only look: paper over the header, faded hero edges, and the divider lines back. The "Open a case" label is larger (23px desktop, 21px tablet, 20px phone, up from 19/17/17). See frontend.md.
+
+Verification: `tsc --noEmit` and `vite build` (placeholder `VITE_*` URLs) passed. Headless Chromium screenshots at 1440px (top, scrolled 300px, back at top) and 390px showed the expected states and readable text. Live production was not checked.
+
+## 2026-11-08 — Backdrop photos fill the whole landing page
+
+At the user's request the photo backdrop is no longer confined to the hero with faded top and bottom edges. It is now a fixed, full-viewport layer behind the entire landing page, including the header, "How it works" steps and footer. `HeroBackdrop` moved from `MinimalHero` into `Landing.tsx`. The workspace and sign-in pages are unaffected.
+
+Verification: `tsc --noEmit` and `vite build` (placeholder `VITE_*` URLs) passed. Headless Chromium screenshots at 1440px (top, and scrolled to the footer) and 390px showed the photo behind the header, hero, steps and footer, with all text readable. Live production was not checked.
+
+## 2026-11-08 — Remove case tabs; compact upload pill
+
+At the user's request, removed the sliding section tabs from the case page again (`src/ui/SectionNav.tsx` deleted) and shrank the document drop zone to a pill in the Documents header, about the size of the earlier "Add a document" button. It keeps the spring lift/tilt animation on hover and drag and still uploads on drop or pick. See frontend.md.
+
+Verification: `vite build` (placeholder `VITE_*` URLs), 10 logic tests and both mocked browser fixtures passed. The pill was rendered at rest and on hover against mocked data. Not deployed.
+
+## 2026-11-08 — Restore workspace motion and add reported savings
+
+At the user's request, restored the animated file drop zone (now uploads on drop or pick, with a spring tilt on hover/drag) and the sliding-pill section tabs on the case page. Money is shown only from agent-reported outcomes: a "You save" card with count-up and before/now bars on the case page, and a reported-savings total in a new overview stat strip. The bill-minus-EOB discrepancy was not restored because it is not a verified figure. The overview also gained a greeting, staggered tile entrance, a shared hover highlight and status-colored tile accents. See frontend.md.
+
+Verification: `tsc --noEmit` and `vite build` (placeholder `VITE_*` URLs) passed; 10 progress/activation-state tests and both mocked browser fixtures passed. Overview (desktop and 390px) and the finished case page were rendered against mocked data and checked visually. Not deployed or checked against the hosted backend.
+
+## 2026-11-08 — Hero backdrop: real people, 5-second photo switch
+
+At the user's request the landing hero backdrop no longer scrolls, and its stock photos were replaced with nine documentary photos of real people recovering from injuries (public domain plus one CC BY 2.0 photo, credited in the new footer line). One photo shows for 5 seconds, then a quick crossfade switches to the next. The photos keep a little colour and are more visible (42% opacity instead of 20%). Sources and selection rules are in frontend.md.
+
+Verification: `tsc --noEmit` and `vite build` (placeholder `VITE_*` URLs) passed. In headless Chromium at 1440px and 390px, screenshots 5.2 seconds apart showed different photos with the wordmark, heading and button still readable. The footer credit was checked at 1440px. Live production was not checked.
+
+## 2026-11-08 — Scrolling photo backdrop in the landing hero
+
+The user asked for a faded background of people struggling with injuries behind the hero, to add a human touch, scrolling through several images. Added `src/components/hero-backdrop.tsx`, twelve CC0 photos in `public/hero/`, and `.hero-backdrop*` styles in `src/landing.css`. The photos are grayscale at low opacity and drift slowly left behind the wordmark. Sources are listed in frontend.md.
+
+Verification: `tsc --noEmit` and `vite build` (placeholder `VITE_*` URLs) passed. The built landing page was rendered in headless Chromium at 1440px and 390px, and screenshots 5.5 seconds apart showed the strip moving with the heading, wordmark and button still readable. Live production was not checked.
+
+## 2026-11-08 — Simplify the signed-in workspace
+
+The user asked for the app to be as uncluttered as the landing page. After auditing what each element shows, the case page is now: header, a status card that holds any question for the owner, the outcome (only once one exists), one activity feed, documents, and details. The overview shows case tiles with a Needs you / Waiting / Resolved badge and one summary line. Removed: the hardcoded next-step card, the bill-minus-EOB "discrepancy" and "$ to investigate" figures, the section tabs and Done/Next tags, internal agent metadata, the legacy Naïve review and manual outreach panel, the document-type dropdown, the greeting, the live dot and the workspace footer. Insurer replies were previously only inside the collapsed legacy panel and now appear in the activity feed. Six unused components were deleted. Backend and APIs are unchanged. See frontend.md.
+
+Verification: `tsc --noEmit` and `vite build` (placeholder `VITE_*` URLs) passed; 10 progress/activation-state tests passed; the mocked `activation-ui-fixture.ts` and `intake-ui-fixture.ts` browser checks passed. The case page and overview were rendered in Chromium against mocked API data (needs-you, finished-with-outcome, 390px mobile) and visually checked. `scripts/e2e.ts` assertions were updated for the removed elements but not run, since it needs the hosted backend. The legacy crew, outreach and reply smokes target removed controls.
+
+## 2026-11-08 — Remove landing FAQ section
+
+Removed the "Questions" (FAQ) section from `src/Landing.tsx` and its `.questions` styles from `src/landing.css`, as the user requested. The page now goes from the "How it works" steps to the footer. See frontend.md.
+
+Verification: `tsc --noEmit` passed. The full `npm run build` needs the `VITE_*` service URLs and was not run. The page was not visually checked in a browser.
+
+## 2026-11-08 — New logo and settling hero wordmark
+
+Replaced the asterisk mark with the new two-stroke "A" logo (blue, rounded corners) across the app, README icon and a new favicon. The hero animation now finishes by dropping the handwritten "as" onto the same line as "surance" (dipping slightly below its bottom so the script reads as part of the word), while the struck "in" slides behind the heading below and fades out. The heading and call to action sit lower to give the dropped "in" more room. The handwritten "as" is larger and heavier. See frontend.md.
+
+Verification: `tsc --noEmit` passed. Real-time Chrome frame captures of a local Vite server (placeholder service URLs) at 1440px and 390px wide, plus reduced motion, confirmed the start, mid and settled states. The full `npm run build` needs the three `VITE_*` service URLs and was not run. The settled layout during live window resizing was not checked.
+
 ## 2026-11-07 — Pin general sessions and verify persistent bindings
 
 Ordinary reviews and bounded decisions now require an explicit immutable general agent version and keep the existing task-budget ceiling. A live provider read confirmed version 21 has no MCP connectors and only delegation/wait tools enabled. Set the private runtime version to 21 and declared it for cases/autopoll. The persistent worker now checks its pinned case URL, identity metadata, attachment, tool default, and approved budget before starting inference; mismatches require review, and provider failures retain backoff.
@@ -908,3 +968,14 @@ Wired the requested outbound onboarding gate into cases and phone deployment con
 - `PhoneStatus` now reads `onboardingEnabled` strictly: only true enables **Verify and call me**. Missing or false readiness preserves OTP login, displays call unavailability, and never submits a call request. Call and handling-scope copy appears only when that action is available. Existing-account linking and fictional test sign-ins never call; typed fictional numbers are also excluded.
 - General landing and empty-workspace copy no longer promises a call when the readiness gate is unavailable. Email remains an optional legacy-account fallback.
 - Verification: the extended `npx tsx scripts/phone-ui-check.ts` and `npx tsc --noEmit` passed. The mocked flow covers enabled calls, absent/false call readiness with successful phone login, and both quick-button and typed fictional-account paths with zero call requests. No real SMS or calls were sent.
+
+## 2026-11-08 — Merge landing and workspace redesign with phone-first work
+
+Merged the 20 redesign commits from `main` into the `phone-first-snapshot` branch so the people working on the chat UI and the visual design share one base.
+
+- Kept the redesign's landing backdrop, logo, simplified workspace, status panel, and activity feed. Removed the old `CrewReview` section and the landing FAQ, as the redesign did.
+- Kept the phone entry on the landing page, the onboarding call notice, key amounts, Gmail connection for non-phone accounts, and `src/CaseChat.tsx`. Chat sits between agent status and outcomes.
+- Version 2 authorities reply through the conversation link. Inline reply and provider approval remain only for earlier authorities. The legacy `PhoneIntakes` panel is no longer mounted.
+- Reported savings shows "Not yet known" until an insurer decision is recorded, rather than $0.
+
+This merge changes frontend and documentation only and deploys nothing. Verification results are in the merge commit message. Live phone-to-advocate continuation remains unverified.

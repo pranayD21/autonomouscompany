@@ -12,19 +12,16 @@ import {api, sealCases} from "./services";
 import {CaseForm} from "./CaseForm";
 import {Documents} from "./Documents";
 import {CaseChat} from "./CaseChat";
-import {CrewReview} from "./CrewReview";
-import {ArrowLeft, ArrowUpRight, Home, LogOut, Plus, Sparkle} from "./Icons";
+import {Autonomy} from "./Autonomy";
+import {Outcomes} from "./Outcomes";
+import {ArrowLeft, ArrowUpRight, Home, LogOut, Plus} from "./Icons";
 import {Sidebar, SidebarLink, SidebarSection, SidebarText} from "./ui/Sidebar";
-import {SectionNav} from "./ui/SectionNav";
-import {useCaseProgress, type StepId} from "./progress";
-import {CaseSection} from "./ui/CaseSection";
+import {OWNER_LABEL, useProgressMap} from "./progress";
 import {NumberTicker} from "./ui/motion";
 
 const message = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Please try again.";
-const money = (cents: number | null) => cents === null ? "Not provided" : new Intl.NumberFormat("en-US", {style: "currency", currency: "USD"}).format(cents / 100);
+const money = (cents: number) => new Intl.NumberFormat("en-US", {style: "currency", currency: "USD"}).format(cents / 100);
 const caseKind = (item: BillCase) => item.case_type === "workplace_injury" ? "Workplace injury" : "Health insurance";
-const gap = (item: BillCase) => item.bill_cents !== null && item.eob_cents !== null ? Math.max(0, item.bill_cents - item.eob_cents) : null;
-const MONEY_CAVEAT = "To investigate — not verified savings.";
 
 type Route = {view: "overview"} | {view: "new"} | {view: "case"; id: string};
 function readRoute(): Route {
@@ -44,14 +41,9 @@ function useRoute() {
   return [route, go] as const;
 }
 
-/** The single most useful thing to do next on a case. */
-function nextStep(_item: BillCase): {title: string; href: string; cta: string} {
-  return {title: "See what Assurance is doing for you.", href: "#section-authorization", cta: "View agent activity"};
-}
-
 function LiveStatus({status}: {status: string}) {
-  if (status === "live") return <span className="live-dot" title="Live updates connected"><span className="visually-hidden">Live updates connected</span></span>;
-  return <span className="status">Live updates: {status === "connecting" ? "reconnecting…" : status}</span>;
+  if (status === "live") return <span className="visually-hidden">Live updates connected</span>;
+  return <span className="status">{status === "connecting" ? "Reconnecting…" : `Live updates ${status}`}</span>;
 }
 
 export function Workspace({sealed, userId, userName, onSignOut}: {sealed: SealedLiveQuery<BillCase>; userId: string; userName: string; onSignOut: () => void}) {
@@ -78,12 +70,12 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
       }
     } catch (err) { setNotice(message(err)); throw err; } finally { setBusy(null); }
   }
-  async function act(id: string, action: "analyze" | "delete") {
+  async function remove(id: string) {
     setBusy(id); setNotice("");
     try {
-      const result = await api<{txid: string}>(`/cases/${id}${action === "analyze" ? "/analyze" : ""}`, {method: action === "analyze" ? "POST" : "DELETE"}, userId);
+      const result = await api<{txid: string}>(`/cases/${id}`, {method: "DELETE"}, userId);
       await utils.awaitTxId(result.txid, 15_000);
-      if (action === "delete") go("#workspace");
+      go("#workspace");
       return true;
     } catch (err) { setNotice(message(err)); return false; } finally { setBusy(null); }
   }
@@ -98,8 +90,8 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
   if (data === undefined) { view = <p role="status" className="loading-line">Connecting to your cases…</p>; viewKey = "loading"; }
   else if (showIntake) { view = <Intake hasCases={cases.length > 0} disabled={busy !== null} onCancel={() => go("#workspace")} onSave={(d,files) => saveDetails(d,undefined,files)} live={live}/>; viewKey = "new"; }
   else if (route.view === "case" && !selected) { view = <div className="empty"><p>This case isn’t available. It may have been deleted.</p><a className="text-link" href="#workspace">Back to all cases</a></div>; viewKey = "missing"; }
-  else if (selected) { view = <CaseView key={selected.id} item={selected} userId={userId} crewEnabled={crewEnabled} busy={busy} live={live} onSave={d => saveDetails(d, selected)} onAct={action => act(selected.id, action)}/>; viewKey = `case-${selected.id}`; }
-  else { view = <Overview cases={cases} userName={userName} live={live}/>; viewKey = "overview"; }
+  else if (selected) { view = <CaseView key={selected.id} item={selected} userId={userId} crewEnabled={crewEnabled} busy={busy} live={live} onSave={d => saveDetails(d, selected)} onAct={() => remove(selected.id)}/>; viewKey = `case-${selected.id}`; }
+  else { view = <Overview cases={cases} userId={userId} userName={userName} crewEnabled={crewEnabled} live={live}/>; viewKey = "overview"; }
 
   return <div className="shell">
     <Sidebar footer={<div className="sidebar-user"><span className="avatar" aria-hidden="true">{userName.slice(0, 1).toUpperCase()}</span><SidebarText className="sidebar-user-name">{userName}</SidebarText><button className="icon-button sign-out" onClick={onSignOut} aria-label="Sign out" title="Sign out"><LogOut size={18}/></button></div>}>
@@ -108,7 +100,7 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
       <SidebarSection label={`Your cases · ${cases.length}`}/>
       {cases.map(item => <SidebarLink key={item.id} href={`#case/${item.id}`} active={selected?.id === item.id}
         icon={<span className="case-dot" data-status={item.status}>{item.title.trim().slice(0, 1).toUpperCase() || "•"}</span>}
-        label={item.title} meta={item.status.replaceAll("_", " ")}/>)}
+        label={item.title}/>)}
     </Sidebar>
     <main id="workspace-content" className="surface">
       {phoneSelected()&&<OnboardingCallNotice userId={userId}/>}
@@ -118,7 +110,6 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
       <AnimatePresence mode="wait">
         <motion.div key={viewKey} className="view" initial={{opacity: 0, y: 8}} animate={{opacity: 1, y: 0}} exit={{opacity: 0}} transition={{duration: 0.22, ease: [0.16, 1, 0.3, 1]}}>{view}</motion.div>
       </AnimatePresence>
-      <footer className="surface-footer"><span>assurance<span className="brand-period">.</span></span><small>Your case, handled.</small></footer>
     </main>
   </div>;
 }
@@ -128,51 +119,42 @@ function Greeting({name}: {name: string}) {
   return <>{hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"}, {name.split(" ")[0]}</>;
 }
 
-function Overview({cases, userName, live}: {cases: readonly BillCase[]; userName: string; live: ReactNode}) {
-  const [hovered, setHovered] = useState<number | null>(null);
-  const knownAmounts = cases.filter(c => gap(c) !== null);
-  const total = knownAmounts.reduce((sum, c) => sum + gap(c)!, 0);
-  const reviewed = cases.filter(c => c.status === "reviewed").length;
-  const focus = cases.find(c => c.status !== "reviewed") ?? cases[0];
-  const step = focus && nextStep(focus);
+const ease = [0.16, 1, 0.3, 1] as const;
+
+export function Overview({cases, userId, userName, crewEnabled, live}: {cases: readonly BillCase[]; userId: string; userName: string; crewEnabled: boolean; live: ReactNode}) {
+  const progress = useProgressMap(cases, userId, crewEnabled);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const all = cases.map(c => progress.get(c.id));
+  const needYou = all.filter(p => p?.loaded && p.owner === "you").length;
+  const saved = all.reduce((sum, p) => sum + (p?.outcome?.reduction_cents ?? 0), 0);
   return <>
     <div className="page-head">
       <div><p className="eyebrow"><Greeting name={userName}/></p><h1>Your cases</h1></div>
       {live}
     </div>
-
-    {focus && step && <div className="next-step">
-      <span className="next-step-icon" aria-hidden="true"><Sparkle size={18}/></span>
-      <div><h2>{step.title}</h2><p>{focus.title}</p></div>
-      <a className="pill-link" href={`#case/${focus.id}`}>Open case <ArrowUpRight size={15} aria-hidden="true"/></a>
-    </div>}
-
-    <div className="summary-strip">
-      <div className="summary-money"><strong>{knownAmounts.length ? <NumberTicker value={total} format={n => money(Math.round(n))}/> : "Not yet known"}</strong><small>{knownAmounts.length ? `${MONEY_CAVEAT}${knownAmounts.length < cases.length ? " Some case amounts are missing." : ""}` : "Add documents to establish amounts."}</small></div>
-      <div className="summary-meta">
-        <span><b>{cases.length}</b> open</span>
-        <span><b>{reviewed}</b> of {cases.length} reviewed</span>
-        <span className="stat-meter" aria-hidden="true"><motion.span initial={{scaleX: 0}} animate={{scaleX: cases.length ? reviewed / cases.length : 0}} transition={{duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15}}/></span>
-      </div>
-    </div>
-
+    <motion.div className="overview-stats" initial={{opacity: 0, y: 6}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, ease}}>
+      <div><span>Open cases</span><strong>{cases.length}</strong></div>
+      <div data-alert={needYou > 0}><span>Need you</span><strong>{needYou}</strong></div>
+      <div className="overview-savings"><span>Reported savings</span><strong>{saved ? <NumberTicker value={saved} format={n => money(Math.round(n))}/> : "Not yet known"}</strong><small>{saved ? "From recorded insurer decisions. Not a verified payout." : "Shows up once an insurer decision is recorded."}</small></div>
+    </motion.div>
     <div className="case-grid" onMouseLeave={() => setHovered(null)}>
       {cases.map((item, i) => {
-        const diff = gap(item);
-        return <a key={item.id} href={`#case/${item.id}`} className="case-tile" onMouseEnter={() => setHovered(i)} onFocus={() => setHovered(i)}>
-          <AnimatePresence>{hovered === i && <motion.span className="case-tile-hover" layoutId="case-hover" initial={{opacity: 0}} animate={{opacity: 1, transition: {duration: 0.15}}} exit={{opacity: 0, transition: {duration: 0.15, delay: 0.1}}}/>}</AnimatePresence>
-          <span className="case-tile-inner">
-            <span className="case-tile-top"><span className="case-tile-kind">{caseKind(item)}</span><span className="badge" data-status={item.status}>{item.status.replaceAll("_", " ")}</span></span>
+        const p = progress.get(item.id);
+        return <motion.a key={item.id} href={`#case/${item.id}`} className="case-tile" onMouseEnter={() => setHovered(item.id)} onFocus={() => setHovered(item.id)}
+          initial={{opacity: 0, y: 12}} animate={{opacity: 1, y: 0}} transition={{duration: 0.45, delay: 0.06 * i, ease}}>
+          <AnimatePresence>{hovered === item.id && <motion.span className="case-tile-hover" layoutId="case-hover" initial={{opacity: 0}} animate={{opacity: 1, transition: {duration: 0.15}}} exit={{opacity: 0, transition: {duration: 0.15, delay: 0.1}}}/>}</AnimatePresence>
+          <span className="case-tile-inner" data-owner={p?.loaded ? p.owner : undefined}>
+            <span className="case-tile-top"><span className="case-tile-kind">{caseKind(item)}</span>{p?.loaded && <span className="badge" data-owner={p.owner}><span className="badge-dot"/>{OWNER_LABEL[p.owner]}</span>}</span>
             <strong className="case-tile-title">{item.title}</strong>
-            {(item.intake?.injury_description || item.notes) && <span className="case-tile-desc">{item.intake?.injury_description || item.notes}</span>}
-            <span className="case-tile-foot"><span>{diff === null ? "Amounts not added" : <><b>{money(diff)}</b> to investigate</>}</span><ArrowUpRight size={16} aria-hidden="true"/></span>
+            <span className="case-tile-foot"><span className="case-tile-desc">{p?.loaded ? p.title : " "}</span><ArrowUpRight size={16} aria-hidden="true"/></span>
           </span>
-        </a>;
+        </motion.a>;
       })}
-      <a href="#new" className="case-tile case-tile--new" onMouseEnter={() => setHovered(cases.length)}>
-        <AnimatePresence>{hovered === cases.length && <motion.span className="case-tile-hover" layoutId="case-hover" initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}}/>}</AnimatePresence>
-        <span className="case-tile-inner"><span className="new-plus" aria-hidden="true"><Plus size={22}/></span><strong className="case-tile-title">Open a new case</strong></span>
-      </a>
+      <motion.a href="#new" className="case-tile case-tile--new" onMouseEnter={() => setHovered("new")}
+        initial={{opacity: 0, y: 12}} animate={{opacity: 1, y: 0}} transition={{duration: 0.45, delay: 0.06 * cases.length, ease}}>
+        <AnimatePresence>{hovered === "new" && <motion.span className="case-tile-hover" layoutId="case-hover" initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}}/>}</AnimatePresence>
+        <span className="case-tile-inner"><span className="new-plus" aria-hidden="true"><Plus size={20}/></span><strong>Open a new case</strong></span>
+      </motion.a>
     </div>
   </>;
 }
@@ -187,85 +169,54 @@ function Intake({hasCases, disabled, onCancel, onSave, live}: {hasCases: boolean
   </>;
 }
 
-const SECTIONS = [
-  {id: "section-conversation", label: "Conversation"},
-  {id: "section-overview", label: "Overview"},
-  {id: "section-documents", label: "Documents"},
-  {id: "section-authorization", label: "Agent work"},
-  {id: "section-outcomes", label: "Outcomes"},
-];
-
-function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}: {item: BillCase; userId: string; crewEnabled: boolean; busy: string | null; live: ReactNode; onSave: (d: CaseInput) => Promise<void>; onAct: (action: "analyze" | "delete") => Promise<boolean>}) {
-  const progress = useCaseProgress(item, userId, crewEnabled);
-  const sectionStatus = (step: StepId) => progress.loaded ? progress.steps[step] : undefined;
+export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}: {item: BillCase; userId: string; crewEnabled: boolean; busy: string | null; live: ReactNode; onSave: (d: CaseInput) => Promise<void>; onAct: (action: "delete") => Promise<boolean>}) {
+  const diff = item.bill_cents !== null && item.eob_cents !== null ? Math.max(0, item.bill_cents - item.eob_cents) : null;
   const [editing, setEditing] = useState(false);
-  const diff = gap(item);
-  const step = nextStep(item);
-  const max = Math.max(item.bill_cents ?? 0, item.eob_cents ?? 0, 1);
-  const bothKnown = item.bill_cents !== null && item.eob_cents !== null;
+  const i = item.intake;
   const facts = [
-    ["Insurer", item.intake?.insurer_name], ["Employer", item.intake?.employer_name], ["Claim number", item.intake?.claim_number],
-    ["Incident date", item.intake?.incident_date],
-    ["Claim stage", item.intake?.claim_stage && item.intake.claim_stage !== "unknown" ? item.intake.claim_stage.replaceAll("_", " ") : undefined],
-    ["Jurisdiction", item.intake?.jurisdiction],
+    ["Insurer", i?.insurer_name], ["Employer", i?.employer_name], ["Claim number", i?.claim_number], ["Member ID", i?.member_id],
+    ["Incident date", i?.incident_date], ["State", i?.jurisdiction],
+    ["Claim stage", i?.claim_stage && i.claim_stage !== "unknown" ? i.claim_stage.replaceAll("_", " ") : undefined],
+    ["Bill amount", item.bill_cents !== null ? money(item.bill_cents) : undefined],
+    ["EOB responsibility", item.eob_cents !== null ? money(item.eob_cents) : undefined],
   ].filter((f): f is [string, string] => !!f[1]);
-  const openEditor = () => { setEditing(true); document.getElementById("section-overview")?.scrollIntoView({behavior: "smooth"}); };
   return <article className="case" data-case-id={item.id}>
     <div className="page-head">
       <div>
         <a className="back-link" href="#workspace"><ArrowLeft size={16} aria-hidden="true"/>All cases</a>
-        <p className="eyebrow">{caseKind(item)}{item.intake?.claim_number ? ` · Claim ${item.intake.claim_number}` : ""}</p>
-        <div className="case-title-row"><h1>{item.title}</h1><span className="badge" data-status={item.status}>{item.status.replaceAll("_", " ")}</span>{live}</div>
+        <p className="eyebrow">{caseKind(item)}{i?.claim_number ? ` · Claim ${i.claim_number}` : ""}</p>
+        <h1>{item.title}</h1>
       </div>
       <div className="actions">
+        {live}
         <button className="text-button quiet-button" disabled={busy !== null} onClick={() => { if (window.confirm("Delete this case?")) void onAct("delete"); }}>Delete</button>
       </div>
     </div>
 
-    <div className="case-hero">
-      <div className="next-step">
-        <span className="next-step-icon" aria-hidden="true"><Sparkle size={18}/></span>
-        <div><h2>{step.title}</h2></div>
-        <a className="pill-link" href={step.href} onClick={e => { e.preventDefault(); if (step.href === "#section-overview") openEditor(); else document.getElementById(step.href.slice(1))?.scrollIntoView({behavior: "smooth"}); }}>{step.cta}<ArrowUpRight size={15} aria-hidden="true"/></a>
-      </div>
-      {phoneSelected() ? <dl className="case-key-numbers" aria-label="Key amounts"><div><dt>Bill amount</dt><dd>{item.bill_cents === null ? "Not yet known" : money(item.bill_cents)}</dd></div><div><dt>EOB responsibility</dt><dd>{item.eob_cents === null ? "Not yet known" : money(item.eob_cents)}</dd></div><div><dt>Estimated discrepancy</dt><dd>{diff === null ? "Not yet known" : money(diff)}</dd><small>To investigate · not verified savings</small></div></dl> : bothKnown
-        ? <div className="money-card">
-            <p className="discrepancy">Potential discrepancy <b>{money(diff)}</b></p>
-            <div className="money-row"><span>Bill</span><span>{money(item.bill_cents)}</span></div>
-            <span className="bar" aria-hidden="true"><motion.span className="bar-fill bar-fill--bill" initial={{scaleX: 0}} animate={{scaleX: (item.bill_cents ?? 0) / max}} transition={{duration: 0.8, ease: [0.16, 1, 0.3, 1]}}/></span>
-            <div className="money-row"><span>EOB responsibility</span><span>{money(item.eob_cents)}</span></div>
-            <span className="bar" aria-hidden="true"><motion.span className="bar-fill" initial={{scaleX: 0}} animate={{scaleX: (item.eob_cents ?? 0) / max}} transition={{duration: 0.8, delay: 0.08, ease: [0.16, 1, 0.3, 1]}}/></span>
-            <small>{MONEY_CAVEAT}</small>
-          </div>
-        : <div className="money-card money-card--empty">
-            <p>{item.bill_cents === null && item.eob_cents === null ? "No amounts yet." : item.bill_cents === null ? `EOB responsibility ${money(item.eob_cents)} · bill missing` : `Bill ${money(item.bill_cents)} · EOB missing`}</p>
-            <button className="text-button" onClick={openEditor}>Add bill and EOB amounts</button>
-          </div>}
-    </div>
+    {phoneSelected() && <dl className="case-key-numbers" aria-label="Key amounts"><div><dt>Bill amount</dt><dd>{item.bill_cents === null ? "Not yet known" : money(item.bill_cents)}</dd></div><div><dt>EOB responsibility</dt><dd>{item.eob_cents === null ? "Not yet known" : money(item.eob_cents)}</dd></div><div><dt>Estimated discrepancy</dt><dd>{diff === null ? "Not yet known" : money(diff)}</dd><small>To investigate · not verified savings</small></div></dl>}
 
-    <SectionNav sections={SECTIONS}/>
+    <Autonomy caseId={item.id} userId={userId} enabled={crewEnabled} between={<>
+      <section id="section-conversation" className="case-section" aria-label="Conversation">
+        <header className="case-section-head"><h3>Conversation</h3></header>
+        <CaseChat key={`chat-${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision}/>
+      </section>
+      <Outcomes caseId={item.id} userId={userId} revision={item.revision}/>
+    </>}/>
 
-    <CaseSection id="section-conversation" title="Conversation">
-      <CaseChat key={`chat-${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision}/>
-    </CaseSection>
+    {!phoneSelected() && <GmailConnection key={`gmail-${item.id}`} caseId={item.id} userId={userId}/>}
 
-    <CaseSection id="section-overview" title="Overview" status={sectionStatus("details")} aside={<button className="text-button" onClick={() => setEditing(e => !e)} aria-expanded={editing}>{editing ? "Cancel editing" : "Update case details"}</button>}>
+    <Documents key={`documents-${item.id}`} caseId={item.id} userId={userId} revision={item.revision}/>
+
+    <section id="section-details" className="case-section" aria-label="Case details">
+      <header className="case-section-head"><h3>Details</h3><button className="text-button" onClick={() => setEditing(e => !e)} aria-expanded={editing}>{editing ? "Cancel" : "Edit details"}</button></header>
       <AnimatePresence initial={false}>
         {editing && <motion.div className="edit-panel" initial={{height: 0, opacity: 0}} animate={{height: "auto", opacity: 1}} exit={{height: 0, opacity: 0}} transition={{duration: 0.3, ease: [0.16, 1, 0.3, 1]}}>
-          <p className="caveat">Updates are saved as new case evidence. An active agent can use them on its next turn.</p>
           <CaseForm key={`${item.id}-${item.revision}`} initial={item} disabled={busy !== null} onSave={async d => { await onSave(d); setEditing(false); }}/>
         </motion.div>}
       </AnimatePresence>
+      {i?.injury_description ? <p className="story-text">{i.injury_description}</p> : <p className="quiet-line">No description yet.</p>}
       {facts.length > 0 && <dl className="facts">{facts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
-      {item.intake?.injury_description ? <p className="story-text">{item.intake.injury_description}</p> : <p className="quiet-line">No description yet.</p>}
       {item.notes && <p className="notes">{item.notes}</p>}
-    </CaseSection>
-
-    <CaseSection id="section-documents" title="Documents" status={sectionStatus("documents")}>
-      {!phoneSelected()&&<GmailConnection key={`gmail-${item.id}`} caseId={item.id} userId={userId}/>}
-      <Documents key={`documents-${item.id}`} caseId={item.id} userId={userId} revision={item.revision}/>
-    </CaseSection>
-
-    <CrewReview key={`${item.id}-${item.revision}`} revision={item.revision} id={item.id} userId={userId} enabled={crewEnabled} quickAnalysis={item.analysis} steps={progress.loaded ? progress.steps : undefined}/>
+    </section>
   </article>;
 }

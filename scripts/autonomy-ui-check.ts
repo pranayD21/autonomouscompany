@@ -29,9 +29,9 @@ export async function checkAutonomyPermissions(page:Page,apiBase:string,caseId:s
   await expect(form.getByRole("checkbox")).toHaveCount(0);await expect(form.getByRole("textbox")).toHaveCount(0);
   await form.getByRole("button",{name:"Start handling my case",exact:true}).click();await expect.poll(()=>posted.length).toBe(1);
   expect(posted[0]).toEqual({authorize:true,persistent:true,policy:{version:2,consent:DEFAULT_INTAKE_CONSENT}});
-  await expect(panel.getByText("Activation queued",{exact:true})).toBeVisible();await expect(form).toHaveCount(0);
+  await expect(panel.getByRole("heading",{name:"Getting started",exact:true})).toBeVisible();await expect(form).toHaveCount(0);
   sessions=[{id:runId,authority_id:authorityId,state:"running",engine:"direct_openai",goal:"Find supported claim avenues",finish_condition:"Document an insurer decision and any remaining responsibility",next_check_at:null,reason:null,created_at:new Date().toISOString()}];setups=[];
-  await reload();await expect(panel.getByRole("heading",{name:"Working",exact:true})).toBeVisible();await panel.getByText("Agent details",{exact:true}).click();await expect(panel.getByText("Engine: Direct model",{exact:true})).toBeVisible();await expect(panel.getByText("Find supported claim avenues",{exact:true})).toBeVisible();
+  await reload();await expect(panel.getByRole("heading",{name:"Working",exact:true})).toBeVisible();await expect(panel.getByText("Find supported claim avenues",{exact:true})).toBeVisible();
   sessions[0]={...sessions[0],state:"human_required",waiting_on:"Please provide the fictional claim reference."};await reload();
   await expect(panel.getByRole("heading",{name:"Needs your attention",exact:true})).toBeVisible();await expect(panel.getByRole("button",{name:"Review pending actions",exact:true})).toHaveCount(0);
   await expect(panel.getByRole("link",{name:"Reply in the conversation",exact:true})).toHaveAttribute("href","#section-conversation");

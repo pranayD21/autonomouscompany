@@ -8,7 +8,7 @@ import { auth, realtime, sealCases } from "./services";
 import "./style.css";
 import {Landing} from "./Landing";
 import {Workspace} from "./Workspace";
-import {Asterisk} from "./Icons";
+import {Logo} from "./Icons";
 import {MotionConfig} from "motion/react";
 
 const message = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Please try again.";
@@ -42,9 +42,13 @@ function App() {
     try { const result = await auth.signOut(); if (result.error) throw new Error(result.error.message); realtime.close(); window.location.assign("/"); }
     catch (err) { setSignOutError(message(err)); }
   }
-  if (!isPending && (locationHash === "#home" || (!session?.user && locationHash !== "#workspace" && !locationHash.startsWith("#case/") && !error))) return <Landing/>;
+  const workspaceRoute = locationHash === "#workspace" || locationHash.startsWith("#case/");
+  if (locationHash === "#home" || (!isPending && !session?.user && !workspaceRoute && !error)) return <Landing/>;
+  // While the session check runs on a landing-eligible URL, show plain paper rather than the
+  // loading shell, whose header/footer divider lines would flash before the landing page appears.
+  if (isPending && !workspaceRoute) return null;
   if (!isPending && !error && session?.user) return <>{signOutError && <p role="alert" className="error floating-error">{signOutError}</p>}<Dashboard key={session.user.id} userId={session.user.id} userName={session.user.name || session.user.phoneNumber || session.user.email || "Your account"} onSignOut={() => void signOut()}/></>;
-  return <><a className="skip-link" href="#workspace-content">Skip to content</a><header className="app-header"><a href="#home" className="brand" aria-label="Assurance home"><Asterisk strokeWidth={2.5} aria-hidden="true"/>assurance<span className="brand-period">.</span></a></header>
+  return <><a className="skip-link" href="#workspace-content">Skip to content</a><header className="app-header"><a href="#home" className="brand" aria-label="Assurance home"><Logo aria-hidden="true"/>assurance<span className="brand-period">.</span></a></header>
     <main id="workspace-content" className="app-main">{isPending ? <p role="status">Loading your session…</p> : error ? <p role="alert" className="error">Authentication is unavailable. Please reload and try again.</p> : <PhoneEntry/>}</main>
     <footer className="app-footer"><span>assurance<span className="brand-period">.</span></span><small>Your case, handled.</small></footer></>;
 }

@@ -1,6 +1,6 @@
 # Website conversation UI
 
-The case workspace now includes a Conversation section before its overview. `src/CaseChat.tsx` shows actual saved owner messages and Assurance questions/updates. `src/Workspace.tsx` mounts it with a case-and-owner key so drafts do not move between cases. `src/style.css` defines the responsive message bubbles, bounded scrolling area and composer.
+The case workspace includes a Conversation section directly after agent status. `src/CaseChat.tsx` shows actual saved owner messages and Assurance questions/updates. `src/Workspace.tsx` mounts it with a case-and-owner key so drafts do not move between cases. `src/style.css` defines the responsive message bubbles, bounded scrolling area and composer.
 
 The interface uses the existing authenticated `api` helper and `VITE_CASES_API_URL`. It reads `GET /cases/:id/messages` as `{messages:[{id,role,text,created_at,kind}],state,waiting_on,can_send}` and posts `{id,text}` to the same route. Roles are `user` and `assistant`. The client does not manufacture greetings or model responses. Server state drives the header status; a successful save is reported as “Message saved,” not as completed agent work.
 
