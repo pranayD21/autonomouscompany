@@ -35,6 +35,10 @@ The latest user override starts with a phone number and an explicit “Verify an
 
 Keep `PHONE_FLOW_ENABLED=false`; the separate `PHONE_ONBOARDING_ENABLED` gate enables the requested outbound path. The user also asked to allow a callback: a completed inbound call from the verified number to the onboarding line can retry a failed or incomplete attempt. Do not enable other inbound routing, case SMS, Mac Messages, or resubmit registration. Finish the connected hosted journey before native Naïve browser verification. Use built-in browser tools and a fictional portal, with case isolation and submission receipts; do not build another browser framework. See [phone onboarding](docs/phone-onboarding.md).
 
+## Current outreach restriction
+
+On November 8, 2026 the user said their real phone case must not contact insurers or anyone else for now, only their designated inbox. With `OUTREACH_RESTRICT_TO_ALLOWLIST=true`, `OUTREACH_ALLOWED_EMAILS` and `OUTREACH_ALLOWED_PHONES` are the only outside recipients on every path, overriding the removal of recipient allowlists above until the user lifts it. See [phone onboarding](docs/phone-onboarding.md).
+
 ## Hackathon context
 
 Naïve Autonomous Company Hackathon, November 7–8, 2026, YC Office, 560 20th St., San Francisco. Hacking is scheduled from Saturday 1pm to Sunday 11am. Team: Pranay Dogra, Yuvraj Taneja, Shaunik Musukula, Ishaan Agrawal, and Prashanth Prabhala.

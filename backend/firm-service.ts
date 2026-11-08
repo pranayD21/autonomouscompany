@@ -1,3 +1,4 @@
+import {outreachRestricted} from './providers/outreach';
 import {caseToolServices} from "./case-tool-service";
 import {recordFirmTestFee} from "./firm-finance";
 import {queueCaseAgentEvent} from "./case-agent-events";
@@ -72,6 +73,7 @@ export async function executeFirmTool(db:NodePgDatabase,role:FirmRole,name:strin
  }
  const operationId=z.uuid().parse(raw.operation_id);
  return once(db,role,name,operationId,raw,async()=>{
+  if(name==='open_email_lead'&&outreachRestricted())throw Error('OUTREACH_RESTRICTED_BY_OWNER');
   if(name==='open_email_lead')return sendLeadInvitation(db,z.uuid().parse(raw.lead_id),{operationId,text:z.string().trim().min(1).parse(raw.message),subject:z.string().trim().min(1).parse(raw.subject)});
   if(name==='set_case_budget'){
    const item=await currentCase(db,caseId!);const amount=z.number().int().positive().parse(raw.budget_micro_usd),reason=z.string().trim().min(1).parse(raw.reason),recovery=raw.expected_recovery_cents==null?null:z.number().int().nonnegative().parse(raw.expected_recovery_cents);

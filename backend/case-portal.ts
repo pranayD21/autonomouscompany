@@ -1,3 +1,4 @@
+import {outreachRestricted} from './providers/outreach';
 import {createHash} from 'node:crypto';
 import {and,eq,sql} from 'drizzle-orm';
 import type {NodePgDatabase} from 'drizzle-orm/node-postgres';
@@ -36,6 +37,7 @@ async function once(db:NodePgDatabase,identity:CaseToolIdentity,id:string,input:
  const receipt=await act();await db.update(firmRecords).set({payload:{state:'completed',fingerprint,receipt},updated_at:new Date()}).where(eq(firmRecords.key,op));return {state:'completed',receipt};
 }
 export async function portalOpen(db:NodePgDatabase,identity:CaseToolIdentity,input:{operation_id:string;url:string},request:PortalProvider=firmNaive){
+ if(outreachRestricted())throw Error('OUTREACH_RESTRICTED_BY_OWNER');
  const origin=portalOrigin(input.url),bound=await binding(db,identity),context=`assurance-${bound.authority.id}`;
  return once(db,identity,input.operation_id,{kind:'open',origin},async()=>{
  const existing=await db.select().from(firmRecords).where(eq(firmRecords.key,key(identity.case_id)));if(existing.length)throw Error('PORTAL_ALREADY_BOUND');
@@ -46,6 +48,7 @@ export async function portalOpen(db:NodePgDatabase,identity:CaseToolIdentity,inp
  });
 }
 export async function portalAction(db:NodePgDatabase,identity:CaseToolIdentity,raw:unknown,request:PortalProvider=firmNaive){
+ if(outreachRestricted())throw Error('OUTREACH_RESTRICTED_BY_OWNER');
  const input=portalActionInput.parse(raw),r=await record(db,identity);if(input.action.action==='goto'&&portalOrigin(input.action.url)!==r.payload.origin)throw Error('PORTAL_ORIGIN_MISMATCH');
  return once(db,identity,input.operation_id,input,()=>request('POST',`${root}${r.payload.computer_id}/browser/actions`,input.action));
 }

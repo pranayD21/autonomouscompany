@@ -1065,3 +1065,6 @@ The first real phone case stalled at staffing. Its CEO and Front Desk sessions e
 
 Verification: the firm runner suite covers three continuations followed by escalation, with a mocked provider. Hosted continuation is not yet verified. The fixture's onboarding proof passed on production after the earlier budget fix: budget recorded, advocate bound, session started, first goal saved, onboarding events finished, zero outreach.
 
+## 2026-11-08 — Restrict outside contact to the owner's inbox
+
+The user confirmed their phone case is real and asked that it contact no insurers, only their own inbox for now. Open permissions did not check the recipient allowlist, so added `OUTREACH_RESTRICT_TO_ALLOWLIST` with checks at the action and the send, and refusals for portals and emailed-lead invitations. Advocate sessions are told the limit. See [phone onboarding](phone-onboarding.md). Verification is recorded in that release's commit message.

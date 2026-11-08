@@ -22,6 +22,9 @@ export function destinationAllowed(kind: "call"|"email", destination: string) {
   const list=process.env[kind==="call"?"OUTREACH_ALLOWED_PHONES":"OUTREACH_ALLOWED_EMAILS"]??"";
   return list.split(",").map(s=>s.trim().toLowerCase()).filter(Boolean).includes(destination.toLowerCase());
 }
+// While on, the allowlists are the only outside recipients on every path, including open permissions.
+export const outreachRestricted=()=>process.env.OUTREACH_RESTRICT_TO_ALLOWLIST==="true";
+export const outreachBlocked=(kind:"call"|"email",destination:string)=>outreachRestricted()&&!destinationAllowed(kind,destination);
 export class DispatchFailure extends Error {
   constructor(public code: string, public definiteRejection: boolean) {super(code);}
 }
@@ -34,6 +37,7 @@ async function responseJson(response: Response) {
   return response.json();
 }
 export async function sendOutreach(action: OutreachAction, request: typeof fetch=fetch): Promise<DispatchResult> {
+  if(outreachBlocked(action.kind,action.destination))throw new DispatchFailure("OUTREACH_RESTRICTED",true);
   // No automatic HTTP retries: a timeout may already have placed a call.
   if(action.kind==="call") {
     if(!outreachEnabled("call"))throw new DispatchFailure("VOICE_NOT_CONFIGURED",true);

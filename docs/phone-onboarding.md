@@ -38,6 +38,12 @@ The phone token and sign-in mode live in `localStorage`, shared across tabs, so 
 
 Shared fictional test accounts only appear in the Vite development server. The phone Function's `/status` still returns the test numbers and fixed code, and they still sign in, because `scripts/phone-flow.test.ts` covers them.
 
+## Outreach restriction
+
+Set `OUTREACH_RESTRICT_TO_ALLOWLIST=true` on the `firm`, `tools`, `autopoll`, and `cases` Functions to limit outside contact to `OUTREACH_ALLOWED_EMAILS` and `OUTREACH_ALLOWED_PHONES`. `takeOpenCaseAction` refuses other recipients before recording an action, and `sendOutreach` refuses them again at the send. Portals and `open_email_lead` are refused while it is on. Email-address verification mail and requested onboarding calls use separate paths and are unaffected. New advocate sessions are told the allowed address and that it is the owner's inbox, not an insurer. Authenticated `GET /stack/status` reports `outreach.restricted`. To lift it, set the flag to `false` and redeploy.
+
+Web search and page reads stay available for research. Read-only requests can still reach outside websites, so this limits contact, not all network access.
+
 ## Call wording
 
 Greetings identify Assurance without an opening AI statement, at the user's direction. The prompts require a truthful answer if someone sincerely asks whether they are speaking with an AI, and forbid claiming to be human. Onboarding and callback greetings still announce that a transcript is saved. Some jurisdictions restrict undisclosed AI calls or require consent to recording; this has not been legally reviewed.
