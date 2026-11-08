@@ -1,5 +1,13 @@
 # Change log
 
+## Voice agents aligned with the workplace demo
+
+Updated `backend/providers/voice-config.ts` so the default hosted demo follows the fictional pharmaceutical-office chemical burn. Unknown employer, location, policy, claim, treatment, and money details remain unknown. The agents ask one question at a time, separate workers' compensation from personal health coverage, and do not claim a submission or outcome. The old bill/EOB example is optional and separate. Updated the case-call prompt to use the same insurer-facing boundaries.
+
+Both configuration scripts now validate independently fetched saved prompts and greetings. ElevenLabs also checks authentication, recording-off, and the duration limit. Applied the updates to the existing provider agents without replacing their IDs or phone number. Both scripts exited 0 with `prompt_matches: true` and `greeting_matches: true`; AgentPhone remained hosted with messaging off, and ElevenLabs retained authentication, recording-off, and 180 seconds. `npm run build` passed with the existing chunk warning. Deployed the updated case-call prompt in cases Function deployment 31. No call, inference, email, subscription, or top-up was initiated.
+
+Checked the AgentPhone SIP dashboard in Dia and searched the connected mailbox for approval. The dashboard still offers request-only access; the search returned no matching approval. Left the working native call route intact. ElevenLabs SIP routing and spoken behavior with the revised prompts remain unverified. Updated outreach and implementation documentation, and corrected the stale empty-operator-allowlist statement in stack.md.
+
 ## Operator access and provider readiness recheck
 
 The initial Auth lookup found no account matching the operator's supplied email. The operator then created an account and confirmed it in chat. Its signed-in Dia session returned the same user ID as the database record. Added only that ID to the private `CREW_ALLOWED_USER_IDS`, preserving other environment values, and deployed cases Function revision 30. The live `/stack/status` response returned HTTP 200 with `naive.configured: true` and `naive.enabledForUser: true`. It initially served the preceding access state after the CLI reported completion, so verification continued until the live response reflected the change. Budgets and recipient restrictions are unchanged. Email verification remains false; ownership was established through the operator's confirmation and authenticated browser session, not by changing Auth records. Added the first-operator procedure to hosting.md and updated the implementation handoff.

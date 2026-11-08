@@ -31,4 +31,6 @@ if(!updated.ok)throw new Error(`Update HTTP ${updated.status}`);
 const verified=await fetch(`https://api.elevenlabs.io/v1/convai/agents/${id}`,{headers});
 if(!verified.ok)throw new Error(`Verify HTTP ${verified.status}`);
 a=await verified.json();
-console.log(JSON.stringify({id,name:a.name,auth_required:a.platform_settings?.auth?.enable_auth,record_voice:a.platform_settings?.privacy?.record_voice,max_duration_seconds:a.conversation_config?.conversation?.max_duration_seconds}));
+if(a.conversation_config?.agent?.prompt?.prompt!==voicePrompt||a.conversation_config?.agent?.first_message!==agentPhoneConfig.beginMessage)throw new Error("ElevenLabs saved prompt or greeting does not match the requested demo");
+if(a.platform_settings?.auth?.enable_auth!==true||a.platform_settings?.privacy?.record_voice!==false||a.conversation_config?.conversation?.max_duration_seconds!==180)throw new Error("ElevenLabs demo authentication, recording, or duration settings changed");
+console.log(JSON.stringify({id,name:a.name,prompt_matches:true,greeting_matches:true,auth_required:a.platform_settings?.auth?.enable_auth,record_voice:a.platform_settings?.privacy?.record_voice,max_duration_seconds:a.conversation_config?.conversation?.max_duration_seconds}));

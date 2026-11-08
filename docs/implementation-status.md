@@ -43,6 +43,8 @@ Private case uploads now work end to end on Neon Object Storage. PNG/JPEG/WebP/P
 
 The app, browser title, README, and configured AgentPhone/ElevenLabs demo agent names now use Assurance. Provider IDs and prior receipts remain stable. ElevenLabs API readback confirmed authentication required, voice recording disabled, and the 180-second maximum after the rename. No new external call or email was sent.
 
+Both voice agents now use the selected workplace chemical-burn scenario instead of beginning with the old bill-only example. Independent provider readbacks confirmed the exact prompts and greetings. The case-call prompt also separates workplace claims from health-insurance disputes. Spoken behavior after this update remains untested. AgentPhone's SIP dashboard still shows request-only access, and no approval email was found.
+
 The live document review included an unsupported payer-priority statement and requested real replacement records despite demo mode. The request prompt now explicitly forbids these behaviors. A later source-backed review failed quotation validation and was corrected in the same session using GPT-5.4 mini. The corrected review passed exact-quote checks and kept payer priority and financial outcomes unresolved. Broader jurisdiction/policy research remains required. Do not present the saved synthetic review as verified coverage guidance.
 
 ## Official-source research update
