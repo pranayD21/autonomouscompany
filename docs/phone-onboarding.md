@@ -52,7 +52,7 @@ Inbound hosted calls cannot take a per-call prompt, and the fixed greeting plays
 - `get_case_details` returns the title, type, reported account, advocate state and goal, and the last five conversation messages. Member IDs, claim numbers, and documents are left out.
 - `save_case_update` posts "By phone: ..." to the case conversation through `sendCaseMessage`, so the advocate receives it. Retries of the same text on a call save one message.
 
-A call that reaches a specific case gets an `about_existing` row in `advocacy_phone_call_cases`, so it cannot also open a new case. AgentPhone does not document a caller number in tool requests, so the server reads its live inbound calls. If it cannot single out one caller, the caller is unknown and no case data is returned.
+A call that reaches a specific case gets a provisional `about_existing` row in `advocacy_phone_call_cases`. If the finished call also asks for a new case, that case opens from the speech after the request, because callers change their minds mid-call. Otherwise the row becomes `existing` and nothing opens. AgentPhone does not document a caller number in tool requests, so the server reads its live inbound calls. If it cannot single out one caller, the caller is unknown and no case data is returned.
 
 Limitations: caller ID is the only proof of identity, so a spoofed number could hear the returned case details and add updates. Two simultaneous callers on this line are treated as unknown unless a request names one. Run `OUTREACH_TEST_DATABASE_URL=... npx tsx --test --test-concurrency=1 scripts/voice-tools.test.ts` against a disposable database. After changing the prompt or tools, rerun the configure script.
 

@@ -126,6 +126,19 @@ if(database){
   await stopPhoneOnboarding(pool,u.owner);listed=[...listed,call('call_after_stop',u.phone)];await due(u.owner);await getPhoneOnboarding(pool,u.owner,{request});assert.equal(await count(),1);
   assert.equal(dials,0);
  });
+ test('a caller who asks about an existing case and then wants a new one gets the new case',async()=>{
+  const u=await owner(),transport=provider(u.phone);await requestPhoneOnboarding(pool,u.owner,transport);await getPhoneOnboarding(pool,u.owner,transport);
+  const at=new Date(Date.now()+1000).toISOString();
+  const switched={id:'call_switch_'+u.phone,agentId:'agt_onboard_test',phoneNumberId:'num_onboard_test',fromNumber:u.phone,toNumber:'+14124482627',direction:'inbound',status:'completed',startedAt:at,transcripts:[{transcript:'What do you know about the workplace injury?',response:'Here is what was reported.'},{transcript:'Wait, actually, it is a new case.',response:'Which type?'},{transcript:'Health insurance issue.',response:'What happened?'},{transcript:'I went to the hospital and my insurance is refusing to cover the bill.',response:'Thanks.'}]};
+  const onlyAsked={...switched,id:'call_asked_'+u.phone,transcripts:[{transcript:'What do you know about the workplace injury from the plant last month?',response:'Here is what was reported.'}]};
+  const listed=[switched,onlyAsked];
+  const request:typeof fetch=async url=>{const path=String(url);if(path.includes('/calls?'))return Response.json({data:listed});const found=listed.find(c=>path.endsWith('/'+encodeURIComponent(c.id)));if(found)return Response.json(found);throw Error('unexpected '+path);};
+  for(const c of listed)await pool.query("INSERT INTO advocacy_phone_call_cases(call_id,owner_id,state,reason) VALUES($1,$2,'about_existing','x')",[c.id,u.owner]);
+  await due(u.owner);const result=await getPhoneOnboarding(pool,u.owner,{request});
+  const {rows}=await pool.query('SELECT case_type,intake FROM advocacy_cases WHERE owner_id=$1 ORDER BY created_at',[u.owner]);assert.equal(rows.length,2);assert.equal(rows[1].case_type,'health_insurance');assert.doesNotMatch(rows[1].intake.injury_description,/plant|What do you know/);assert.ok(result);
+  const states=(await pool.query('SELECT call_id,state FROM advocacy_phone_call_cases WHERE owner_id=$1',[u.owner])).rows;assert.equal(states.find(s=>s.call_id===switched.id).state,'active');assert.equal(states.find(s=>s.call_id===onlyAsked.id).state,'existing');
+  await due(u.owner);await getPhoneOnboarding(pool,u.owner,{request});assert.equal((await pool.query('SELECT count(*)::int AS n FROM advocacy_cases WHERE owner_id=$1',[u.owner])).rows[0].n,2);
+ });
  test('completed call with delayed transcript remains pending, then activates without redial',async()=>{
   const u=await owner(),options={transcripts:[] as unknown[]},transport=provider(u.phone,options);await requestPhoneOnboarding(pool,u.owner,transport);assert.equal((await getPhoneOnboarding(pool,u.owner,transport)).status,'submitted');
   options.transcripts=[{transcript:goodTurns[0].text,response:goodTurns[1].text},{transcript:goodTurns[2].text}];await due(u.owner);assert.equal((await getPhoneOnboarding(pool,u.owner,transport)).status,'active');assert.equal(transport.count(),1);

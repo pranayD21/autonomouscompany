@@ -1101,3 +1101,6 @@ On the first real phone case, Front Desk looped for ten minutes: `firm.hire_advo
 
 Verification: firm runner and case session suites on the disposable database, with a mocked provider. Hosted behavior is recorded once observed on the phone case.
 
+## 2026-11-08 — New case after asking about an existing one
+
+A real call asked about the open case, then said it was a new case, and no case opened. The tool mark blocked it, and both categories in one call read as ambiguous. A finished call that asks for a new case now opens one from the speech after that request. Verification is recorded in that release's commit message.

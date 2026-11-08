@@ -52,6 +52,12 @@ export function extractOnboardingIntake(turns:CallTurn[]){
  const sufficient=types.size===1&&said.some(t=>t.length>=30)&&narrative.length<=4000&&!stopped;
  return {sufficient,stopped,case_type:types.size===1?[...types][0] as 'workplace_injury'|'health_insurance':null,narrative};
 }
+// A caller can discuss an existing case and then ask for a new one. Only speech from that request on describes the new case.
+const asksForNewCase=(text:string)=>/\bnew (?:case|claim)\b/i.test(text)&&!/\b(?:not|isn't|no|don't|do not) (?:\w+ )?(?:a )?new (?:case|claim)\b/i.test(text);
+export function newCaseTurns(turns:CallTurn[]){
+ const start=turns.findIndex(t=>t.role==='user'&&asksForNewCase(t.text));
+ return start<0?turns:turns.slice(start);
+}
 async function providerJson(request:typeof fetch,path:string,init?:RequestInit){
  const response=await request(`https://api.agentphone.ai/v1/${path}`,{...init,headers:{Authorization:`Bearer ${process.env.AGENTPHONE_API_KEY}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(20000)});
  if(!response.ok)throw new DispatchFailure(`AGENTPHONE_HTTP_${response.status}`,[400,401,402,403,404,409,422,429].includes(response.status));
@@ -167,27 +173,31 @@ export async function reconcileNewCaseCalls(pool:Pool,id:string,options:Options=
  const list=await providerJson(request,`calls?direction=inbound&status=completed&limit=20&search=${encodeURIComponent(row.phone)}`);
  const calls=(Array.isArray(list.data)?list.data:[]).filter((c:CallBinding&{startedAt?:string})=>callBound(row,c)&&new Date(c.startedAt??0)>=new Date(since.at)).sort((a:{startedAt:string},b:{startedAt:string})=>new Date(a.startedAt).getTime()-new Date(b.startedAt).getTime());
  if(!calls.length)return 0;
- const {rows:seen}=await pool.query<{call_id:string}>('SELECT call_id FROM advocacy_phone_call_cases WHERE call_id=ANY($1)',[calls.map((c:{id:string})=>c.id)]);
+ // about_existing is provisional until the finished call shows whether the caller also asked for a new case.
+ const {rows:seen}=await pool.query<{call_id:string;state:string}>('SELECT call_id,state FROM advocacy_phone_call_cases WHERE call_id=ANY($1)',[calls.map((c:{id:string})=>c.id)]);
  let opened=0;
- for(const call of calls.filter((c:{id:string})=>!seen.some(s=>s.call_id===c.id)).slice(0,5)){
+ for(const call of calls.filter((c:{id:string})=>!seen.some(s=>s.call_id===c.id&&s.state!=='about_existing')).slice(0,5)){
   const data=await providerJson(request,`calls/${encodeURIComponent(call.id)}`);
   if(!callBound(row,data))throw Error('CALL_BINDING_MISMATCH');
   const evidence=parseCallEvidence('agentphone',call.id,data);
   // A completed call without its transcript yet is checked again on the next pass.
   if(!evidence)continue;
-  const intake=extractOnboardingIntake(evidence.turns);
   const caller=evidence.turns.filter(t=>t.role==='user').map(t=>t.text).join('\n');
-  const aboutExisting=/\b(?:existing|current|same|ongoing|open) (?:case|claim)\b/i.test(caller)&&!/\bnew (?:case|claim)\b/i.test(caller);
+  const wantsNew=asksForNewCase(caller);
+  if(seen.some(s=>s.call_id===call.id)&&!wantsNew){await pool.query("UPDATE advocacy_phone_call_cases SET state='existing' WHERE call_id=$1 AND state='about_existing'",[call.id]);continue;}
+  // Only a call that reached an existing case needs that discussion cut away. Otherwise the whole call describes the new case.
+  const intake=extractOnboardingIntake(seen.some(s=>s.call_id===call.id)?newCaseTurns(evidence.turns):evidence.turns);
+  const aboutExisting=/\b(?:existing|current|same|ongoing|open) (?:case|claim)\b/i.test(caller)&&!wantsNew;
   if(!intake.sufficient||aboutExisting){
    const reason=aboutExisting?'That call was about an existing case, so no new case was opened.':intake.stopped?'You asked us not to start a case on that call.':'That call needs a clear case type and account of what happened before a case can start. Call again to try once more.';
-   await pool.query("INSERT INTO advocacy_phone_call_cases(call_id,owner_id,state,reason) VALUES($1,$2,'needs_information',$3) ON CONFLICT(call_id) DO NOTHING",[call.id,row.owner_id,reason]);
+   await pool.query("INSERT INTO advocacy_phone_call_cases(call_id,owner_id,state,reason) VALUES($1,$2,'needs_information',$3) ON CONFLICT(call_id) DO UPDATE SET state='needs_information',reason=EXCLUDED.reason,case_id=NULL WHERE advocacy_phone_call_cases.state='about_existing'",[call.id,row.owner_id,reason]);
    continue;
   }
   await drizzle(pool).transaction(async tx=>{
    // The onboarding row lock also serializes this with the owner's stop control.
    const {rows:[active]}=await tx.execute(sql`SELECT id FROM advocacy_phone_onboarding WHERE id=${row.id} AND state='active' FOR UPDATE`);
    if(!active)return;
-   const claimed=await tx.execute(sql`INSERT INTO advocacy_phone_call_cases(call_id,owner_id,state) VALUES(${call.id},${row.owner_id},'opening') ON CONFLICT(call_id) DO NOTHING RETURNING call_id`);
+   const claimed=await tx.execute(sql`INSERT INTO advocacy_phone_call_cases(call_id,owner_id,state) VALUES(${call.id},${row.owner_id},'opening') ON CONFLICT(call_id) DO UPDATE SET state='opening',case_id=NULL,reason=NULL WHERE advocacy_phone_call_cases.state='about_existing' RETURNING call_id`);
    if(!claimed.rows.length)return;
    const result=await submitCase(tx,row.owner_id,{title:intake.case_type==='workplace_injury'?'Workplace injury':'Health insurance claim',case_type:intake.case_type,intake:{contact_phone:row.phone,injury_description:intake.narrative},notes:`Caller-reported account from a call to open a new case. Transcript ${evidence.sha256}. Treat speech as reported evidence, not independently verified facts.\n${intake.narrative}`},true);
    await tx.execute(sql`UPDATE advocacy_phone_call_cases SET state='active',case_id=${result.id},reason='Your new case is open.' WHERE call_id=${call.id}`);
