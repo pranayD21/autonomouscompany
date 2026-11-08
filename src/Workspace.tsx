@@ -10,14 +10,14 @@ import type {BillCase} from "../backend/schema";
 import type {CaseInput} from "../backend/claim-input";
 import {api, sealCases} from "./services";
 import {CaseForm} from "./CaseForm";
-import {CaseDocumentsProvider, Documents} from "./Documents";
+import {CaseDocumentsProvider, Documents, useDocumentCount} from "./Documents";
 import {CaseChat} from "./CaseChat";
 import {Autonomy} from "./Autonomy";
 import {Outcomes} from "./Outcomes";
-import {ArrowLeft, Home, LogOut, Plus} from "./Icons";
+import {ArrowLeft, Close, Home, LogOut, Plus} from "./Icons";
 import {Sidebar, SidebarLink, SidebarSection, SidebarText} from "./ui/Sidebar";
 import {Overview} from "./Overview";
-import {ClaimProgress} from "./ui/ClaimProgress";
+import {ClaimProgress, ClaimProgressMeter} from "./ui/ClaimProgress";
 import {OWNER_LABEL, useProgressMap} from "./progress";
 import "./claim-workspace.css";
 
@@ -146,8 +146,12 @@ function Intake({hasCases, disabled, userId, onCancel, onSave, live}: {hasCases:
   </>;
 }
 
+type CasePanel = "progress" | "documents" | "activity" | "details" | "outcome";
+
+/** One case as a full-window conversation: case details in the header, messages, then the composer. */
 export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}: {item: BillCase; userId: string; crewEnabled: boolean; busy: string | null; live: ReactNode; onSave: (d: CaseInput) => Promise<void>; onAct: (action: "delete") => Promise<boolean>}) {
   const [editing, setEditing] = useState(false);
+  const [panel, setPanel] = useState<CasePanel | null>(null);
   const i = item.intake;
   const facts = [
     ["Insurer", i?.insurer_name], ["Employer", i?.employer_name], ["Claim number", i?.claim_number], ["Member ID", i?.member_id],
@@ -158,48 +162,77 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
   ].filter((f): f is [string, string] => !!f[1]);
   const progress = useProgressMap([item], userId, crewEnabled).get(item.id);
   const counterpart = i?.insurer_name || i?.employer_name;
-  return <CaseDocumentsProvider key={`${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision}><article className="case claim-workspace" data-case-id={item.id}>
-    <div className="page-head">
-      <div>
-        <a className="back-link" href="#workspace"><ArrowLeft size={16} aria-hidden="true"/>All cases</a>
-        <p className="eyebrow">{caseKind(item)}{counterpart ? ` · ${counterpart}` : ""}{i?.claim_number ? ` · Claim ${i.claim_number}` : ""}</p>
-        <h1>{item.title}</h1>
-        <p className="case-next" aria-live="polite">{progress?.loaded
-          ? <>{progress.owner !== "waiting" && <span className="badge" data-owner={progress.owner}><span className="badge-dot"/>{OWNER_LABEL[progress.owner]}</span>}<span className="case-next-title">{progress.title}</span></>
-          : <span className="ov-skeleton"/>}</p>
-      </div>
-      <div className="actions">{live}</div>
-    </div>
+  const toggle = (next: CasePanel) => setPanel(open => open === next ? null : next);
+  useEffect(() => {
+    if (!panel) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setPanel(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [panel]);
 
-    <div className="claim-layout">
-      <div className="claim-main">
-      <Autonomy key={item.id} caseId={item.id} userId={userId} enabled={crewEnabled} compact between={<section id="section-conversation" aria-label="Conversation">
-        <CaseChat key={`chat-${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision}/>
-      </section>}/>
-      <Outcomes caseId={item.id} userId={userId} revision={item.revision}/>
-      </div>
-      <aside className="claim-context" aria-label="Claim transparency">
-        <ClaimProgress progress={progress}/>
-        <div className="claim-context-heading"><span className="eyebrow">Behind your claim</span><p>Nothing hidden. Just out of your way.</p></div>
-        <Documents/>
+  const details = <section className="chat-panel-details" aria-label="Case details">
+    <header className="case-section-head"><h3>Details</h3><button className="text-button" onClick={() => setEditing(e => !e)} aria-expanded={editing}>{editing ? "Cancel" : "Edit details"}</button></header>
+    <AnimatePresence initial={false}>
+      {editing && <motion.div className="edit-panel" initial={{height: 0, opacity: 0}} animate={{height: "auto", opacity: 1}} exit={{height: 0, opacity: 0}} transition={{duration: 0.3, ease: [0.16, 1, 0.3, 1]}}>
+        <CaseForm key={`${item.id}-${item.revision}`} initial={item} disabled={busy !== null} onSave={async d => { await onSave(d); setEditing(false); }}/>
+      </motion.div>}
+    </AnimatePresence>
+    {i?.injury_description ? <p className="story-text">{i.injury_description}</p> : <p className="quiet-line">No description yet.</p>}
+    {facts.length > 0 && <dl className="facts">{facts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
+    {item.notes && <p className="notes">{item.notes}</p>}
+    {!phoneSelected() && <GmailConnection key={`gmail-${item.id}`} caseId={item.id} userId={userId}/>}
+    <button className="text-button quiet-button" disabled={busy !== null} onClick={() => { if (window.confirm("Delete this case?")) void onAct("delete"); }}>Delete case</button>
+  </section>;
 
-    <details id="section-details" className="case-disclosure">
-      <summary><span className="disclosure-icon" aria-hidden="true">≡</span><span>Case details<small>Your information and handling settings</small></span></summary>
-    <section className="disclosure-body" aria-label="Case details">
-      <header className="case-section-head"><h3>Details</h3><button className="text-button" onClick={() => setEditing(e => !e)} aria-expanded={editing}>{editing ? "Cancel" : "Edit details"}</button></header>
-      <AnimatePresence initial={false}>
-        {editing && <motion.div className="edit-panel" initial={{height: 0, opacity: 0}} animate={{height: "auto", opacity: 1}} exit={{height: 0, opacity: 0}} transition={{duration: 0.3, ease: [0.16, 1, 0.3, 1]}}>
-          <CaseForm key={`${item.id}-${item.revision}`} initial={item} disabled={busy !== null} onSave={async d => { await onSave(d); setEditing(false); }}/>
-        </motion.div>}
-      </AnimatePresence>
-      {i?.injury_description ? <p className="story-text">{i.injury_description}</p> : <p className="quiet-line">No description yet.</p>}
-      {facts.length > 0 && <dl className="facts">{facts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
-      {item.notes && <p className="notes">{item.notes}</p>}
-      {!phoneSelected() && <GmailConnection key={`gmail-${item.id}`} caseId={item.id} userId={userId}/>}
-      <button className="text-button quiet-button" disabled={busy !== null} onClick={() => { if (window.confirm("Delete this case?")) void onAct("delete"); }}>Delete case</button>
-    </section>
-    </details>
-      </aside>
-    </div>
+  return <CaseDocumentsProvider key={`${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision}><article className="case claim-workspace claim-full" data-case-id={item.id}>
+    <Autonomy key={item.id} caseId={item.id} userId={userId} enabled={crewEnabled} compact render={({status, activity, activityCount, working}) => {
+      const tabs: {id: CasePanel; label: string; count?: ReactNode}[] = [
+        {id: "documents", label: "Documents", count: <DocumentCount/>},
+        {id: "activity", label: "Activity", count: activityCount ?? undefined},
+        {id: "details", label: "Details"},
+        ...(progress?.outcome ? [{id: "outcome" as const, label: "Outcome"}] : []),
+      ];
+      const top = <>
+        <div className="chat-top">
+          <div className="chat-top-bar">
+            <a className="chat-back back-link" href="#workspace"><ArrowLeft size={15} aria-hidden="true"/>All cases</a>
+            <span className="chat-top-eyebrow">{caseKind(item)}{counterpart ? ` · ${counterpart}` : ""}{i?.claim_number ? ` · Claim ${i.claim_number}` : ""}</span>
+            <span className="chat-top-live">{live}</span>
+          </div>
+          <div className="chat-top-main">
+            <span className="claim-orb" data-working={working} aria-hidden="true"><span/></span>
+            <div className="chat-top-title">
+              <h1>{item.title}</h1>
+              <p className="case-next" aria-live="polite">{progress?.loaded
+                ? <>{progress.owner !== "waiting" && <span className="badge" data-owner={progress.owner}><span className="badge-dot"/>{OWNER_LABEL[progress.owner]}</span>}<span className="case-next-title">{progress.title}</span></>
+                : <span className="ov-skeleton"/>}</p>
+            </div>
+            <ClaimProgressMeter progress={progress} expanded={panel === "progress"} onToggle={() => toggle("progress")}/>
+          </div>
+          <div className="chat-top-foot">
+            {status}
+            <nav className="chat-tabs" aria-label="Case information">{tabs.map(t => <button key={t.id} type="button" className="chat-tab" aria-expanded={panel === t.id} aria-controls="chat-panel" onClick={() => toggle(t.id)}>
+              {t.label}{t.count !== undefined && <span className="chat-tab-count">{t.count}</span>}
+            </button>)}</nav>
+          </div>
+        </div>
+        <AnimatePresence initial={false}>{panel && <motion.div key="panel" id="chat-panel" className="chat-panel" role="region" aria-label={panel === "progress" ? "Progress" : tabs.find(t => t.id === panel)?.label}
+          initial={{height: 0, opacity: 0}} animate={{height: "auto", opacity: 1}} exit={{height: 0, opacity: 0}} transition={{duration: 0.28, ease: [0.16, 1, 0.3, 1]}}>
+          <div className="chat-panel-inner">
+            <button type="button" className="chat-panel-close" onClick={() => setPanel(null)} aria-label="Close panel"><Close size={16}/></button>
+            {panel === "progress" && <ClaimProgress progress={progress}/>}
+            {panel === "documents" && <Documents bare/>}
+            {panel === "activity" && activity}
+            {panel === "details" && details}
+            {panel === "outcome" && <Outcomes caseId={item.id} userId={userId} revision={item.revision}/>}
+          </div>
+        </motion.div>}</AnimatePresence>
+      </>;
+      return <section id="section-conversation" className="chat-full" aria-label="Conversation">
+        <CaseChat key={`chat-${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision} top={top}/>
+      </section>;
+    }}/>
   </article></CaseDocumentsProvider>;
 }
+
+function DocumentCount() { return <>{useDocumentCount()}</>; }

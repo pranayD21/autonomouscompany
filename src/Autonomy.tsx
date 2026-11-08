@@ -32,7 +32,9 @@ async function readFeed(caseId: string, userId: string): Promise<Feed> {
 }
 
 /** Agent status and anything it needs from you, then (after `between`) everything it has done. */
-export function Autonomy({caseId, userId, enabled, between, compact = false}: {caseId: string; userId: string; enabled: boolean; between?: ReactNode; compact?: boolean}) {
+export type AutonomyParts = {status: ReactNode; activity: ReactNode; activityCount: number | null; working: boolean};
+/** `render` lets the case page place the status strip and activity feed itself (full-window chat). */
+export function Autonomy({caseId, userId, enabled, between, compact = false, render}: {caseId: string; userId: string; enabled: boolean; between?: ReactNode; compact?: boolean; render?: (parts: AutonomyParts) => ReactNode}) {
   const [feed, setFeed] = useState<Feed>(empty), [loaded, setLoaded] = useState(false), [loadError, setLoadError] = useState("");
   const [answer, setAnswer] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState(""), [savedUpdate, setSavedUpdate] = useState(false);
   const updateId = useRef(crypto.randomUUID());
@@ -88,7 +90,7 @@ export function Autonomy({caseId, userId, enabled, between, compact = false}: {c
   else { label = "Not started"; detail = "This saved case has not started yet."; tone = "idle"; }
   if (label === "Stopped" && session) detail = "Assurance is not working on this case. A message that was already sending may still finish.";
 
-  return <><section id="section-status" className={`status-panel claim-conversation${compact ? " agent-context" : ""}`} data-tone={tone} aria-label="Case agent activation">
+  const statusSection = <section id="section-status" className={`status-panel claim-conversation${compact ? " agent-context" : ""}`} data-tone={tone} aria-label="Case agent activation">
     {!loaded && !loadError ? <p className="quiet-line">Loading…</p> : <>
       <div className="status-head">
         {!compact && <span className="claim-orb" data-working={working} aria-hidden="true"><span/></span>}
@@ -121,7 +123,9 @@ export function Autonomy({caseId, userId, enabled, between, compact = false}: {c
       {error && <p role="alert">{error}</p>}
       {loadError && <p role="alert">{loadError}</p>}
     </>}
-  </section>
+  </section>;
+  if (render) return <>{render({status: statusSection, activity: <Activity decisions={history.decisions} actions={actions} replies={replies}/>, activityCount: loaded ? activityCount(history.decisions, replies) : null, working})}</>;
+  return <>{statusSection}
   {between}
   {compact ? <details className="case-disclosure"><summary><span className="disclosure-icon" aria-hidden="true">↗</span><span>Activity log<small>Contacts, decisions, and received replies</small></span>{loaded && <span className="activity-count">{activityCount(history.decisions, replies)} {activityCount(history.decisions, replies) === 1 ? "update" : "updates"}</span>}</summary><div className="disclosure-body"><Activity decisions={history.decisions} actions={actions} replies={replies}/></div></details> : <Activity decisions={history.decisions} actions={actions} replies={replies}/>}
   </>;

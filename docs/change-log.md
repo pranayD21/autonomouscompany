@@ -1,5 +1,11 @@
 # Change log
 
+## November 8, 2026 — Full-window case chat
+
+The user disliked the chat sitting as a card inside the page and asked for the whole window to be the chat, with case details at the top. The case page is now one conversation that fills the surface. A dark header carries the back link, case type, insurer and claim number, the title, the next step, a four-segment progress meter, the agent status with Start/Stop, and toggles for Documents, Activity, Details and Outcome. These open one slide-down panel under the header (closed with ×, Escape or the same toggle). Messages fill the rest, and the composer is pinned to the bottom. The right context column and the activity disclosure under chat are gone from this page. Code: `CaseView` in `src/Workspace.tsx`, a new `render` prop on `Autonomy`, a `top` slot on `CaseChat`, `bare` mode for `Documents`, `ClaimProgressMeter` in `src/ui/ClaimProgress.tsx`, and styles in `src/claim-workspace.css`. On phones the page scrolls and the composer sticks to the bottom. See [frontend.md](frontend.md).
+
+Verification: `tsc --noEmit`, `npm run build` and the 18 focused UI tests passed. Playwright rendered a temporary synthetic copy of the claim-page fixture inside a `.surface`/`.view` wrapper with all app stylesheets, at 1400×900 and 390×844. Screenshots of the default view and the Activity, Progress and Details panels were inspected, with no page errors and no horizontal overflow. Not checked on a real device or with the software keyboard.
+
 ## November 8, 2026 — More contrast on the case chat
 
 The user said the chat's top colour bar looked odd and the page read as one colour. Removed the gradient bar on `.case-chat`. The chat header is now a dark ink band with a blue glow and hatch, matching the overview savings card. The message area has a cool blue-grey tint with a faint dot grid, owner bubbles are solid blue, and the stopped-work note is amber. The right column sits on a warm panel behind the white progress card. CSS only, in `src/claim-workspace.css`. See [frontend.md](frontend.md).

@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
+import {useCallback,useEffect,useRef,useState,type FormEvent,type ReactNode} from 'react';
 import {api} from './services';
 import {ClaimComposer} from './ui/ClaimComposer';
 import {CaseDocumentFeedback, CaseDocumentUpload} from './Documents';
@@ -6,7 +6,7 @@ export type CaseMessage={id:string;role:'user'|'assistant';text:string;created_a
 export type CaseConversation={messages:CaseMessage[];state?:string;waiting_on?:string|null;can_send?:boolean};
 const statusText=(state?:string)=>state==='human_required'?'Waiting for your reply':state==='running'?'Working on your case':state==='queued'||state==='starting'?'Getting started':state==='stopped'||state==='revoked'?'Agent work is stopped':state==='completed'?'Work finished':'Your case conversation';
 function timestamp(value:string){const date=new Date(value);return Number.isNaN(date.getTime())?'':date.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
-export function CaseChat({caseId,userId,revision}:{caseId:string;userId:string;revision:number}){
+export function CaseChat({caseId,userId,revision,top}:{caseId:string;userId:string;revision:number;top?:ReactNode}){
  const [conversation,setConversation]=useState<CaseConversation>({messages:[]}),[loaded,setLoaded]=useState(false),[draft,setDraft]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const pending=useRef<{id:string;text:string}|null>(null),list=useRef<HTMLDivElement>(null),follow=useRef(true),alive=useRef(true);
  const path=`/cases/${caseId}/messages`;
@@ -24,6 +24,7 @@ export function CaseChat({caseId,userId,revision}:{caseId:string;userId:string;r
  function attach(){document.querySelector<HTMLInputElement>('#section-conversation input[type="file"]')?.click();}
  const stopped=['stopped','revoked'].includes(conversation.state??'');
  return <div className="case-chat" data-state={conversation.state}>
+  {top}
   <header className="case-chat-header"><span className="claim-orb" data-working={['running','queued','starting'].includes(conversation.state??'')} aria-hidden="true"><span/></span><div><strong>Your Assurance advocate</strong><p><span className="chat-state-dot" aria-hidden="true"/>{statusText(conversation.state)}</p></div><button type="button" className="text-button chat-refresh" aria-label="Refresh messages" title="Refresh messages" onClick={()=>{setError('');void refresh().catch(e=>setError(e instanceof Error?e.message:'Could not refresh conversation.'));}}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-1l2 6M4 12l2 6a7 7 0 0 0 12-1"/></svg></button></header>
   <div ref={list} className="case-chat-log" role="log" aria-label="Messages with Assurance" aria-live="polite" aria-relevant="additions" onScroll={()=>{const el=list.current;if(el)follow.current=el.scrollHeight-el.scrollTop-el.clientHeight<80;}}>
    {!loaded&&<p className="case-chat-empty">Loading conversation…</p>}

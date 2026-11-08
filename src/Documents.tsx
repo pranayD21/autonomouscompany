@@ -26,6 +26,8 @@ export function CaseDocumentsProvider({caseId, userId, revision, children}: {cas
   return <DocumentContext.Provider value={manager}>{children}</DocumentContext.Provider>;
 }
 
+export function useDocumentCount() { return useDocuments().docs.length; }
+
 function useDocuments() {
   const manager = useContext(DocumentContext);
   if (!manager) throw new Error("Case documents must be inside their case provider.");
@@ -88,11 +90,10 @@ export function CaseDocumentFeedback() {
   return <>{(uploading || uploadNotice) && <p className="case-chat-feedback" role="status">{uploading ?? uploadNotice}</p>}{error && <p className="case-chat-feedback" role="alert">{error}</p>}</>;
 }
 
-export function Documents() {
+/** The case document library. `bare` renders just the list (for the case-page panel) without its disclosure. */
+export function Documents({bare = false}: {bare?: boolean}) {
   const {docs, busy, download, extract} = useDocuments();
-  return <details id="section-documents" className="case-disclosure documents">
-    <summary><span className="disclosure-icon"><FileIcon size={17} aria-hidden="true"/></span><span>Case documents<small>Original files and what we read</small></span><span className="disclosure-count">{docs.length}</span></summary>
-    <section className="disclosure-body" aria-label="Documents">
+  const body = <section id={bare ? "section-documents" : undefined} className={bare ? "documents chat-panel-documents" : "disclosure-body"} aria-label="Documents">
     {docs.length === 0 && <p className="quiet-line">No documents yet. Use Add files in the conversation for PDFs or images, up to 5 MB each.</p>}
     <ul className="doc-list"><AnimatePresence initial={false}>{docs.map(doc => {
       const result = doc.extraction_result;
@@ -114,6 +115,10 @@ export function Documents() {
         </details>}
       </motion.li>;
     })}</AnimatePresence></ul>
-    </section>
+    </section>;
+  if (bare) return body;
+  return <details id="section-documents" className="case-disclosure documents">
+    <summary><span className="disclosure-icon"><FileIcon size={17} aria-hidden="true"/></span><span>Case documents<small>Original files and what we read</small></span><span className="disclosure-count">{docs.length}</span></summary>
+    {body}
   </details>;
 }
