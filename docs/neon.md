@@ -57,12 +57,6 @@ Official references: https://neon.com/docs/llms.txt and the installed Neon servi
 Deployment verification: the CLI can report a completed deployment before requests reach the new Function version. Verify an affected authenticated route after deployment, including permission changes. During the crew review test, the old response persisted briefly; waiting and rechecking the same case avoided duplicate work. Migration 0002 was tested on a temporary branch before production; that temporary branch was then deleted.
 
 
-## AI Gateway credits
-
-A production catalog check returned HTTP 200, 63 models, zero enabled, and `paid_plan_required`, with recovery URL https://console.neon.tech/app/org-shy-darkness-62773978/billing. Current official guidance says directly card-billed Free organizations can add a card and purchase AI Gateway credits without upgrading. The minimum purchase is $5; new requests stop when balance falls below $2. In Billing, use the AI gateway credits card, add a payment card if needed, then Add credits. The default purchase selection is $25, so explicitly choose $5 for the minimum. No purchase was made.
-
-The earlier sponsor-credit promotion required a paid plan; that promotion flow is distinct from purchasing gateway credits on Free. Naïve credits do not fund Neon. If Billing still requires an upgrade or models remain locked after purchase, inspect the model restriction tooltip: marketplace billing, account verification, or another restriction can require a different remedy. See https://neon.com/docs/ai-gateway/prepaid-credits and https://neon.com/docs/ai-gateway/troubleshooting.
-
 ## Company Function configuration
 
 `neon.ts` declares the `firm` Function and `firm-operations` minute trigger. It hosts role MCP tools and the AgentMail webhook, then advances durable company sessions and inbound attachment extraction. The private environment sets `ASSURANCE_FIRM_ENABLED=true`. `ASSURANCE_FIRM_SCHEDULES_ENABLED=false` keeps the recurring CEO, Growth, and Knowledge schedules disabled. Deploy migrations and backend before publishing a dependent frontend. The cases Function also receives public AgentMail contact settings and the read-only Gmail auth-config ID; tokens stay server-only. See [company runtime](firm-runtime.md) for the full configuration.

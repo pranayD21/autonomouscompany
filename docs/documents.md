@@ -2,7 +2,7 @@
 
 `src/Documents.tsx` uploads insurance cards, medical bills, explanations of benefits, and incident records. `backend/document-routes.ts` implements authenticated upload, listing, and download. `backend/document-storage.ts` uses Files SDK's Neon adapter with the branch-injected AWS environment variables. The `case-documents` bucket in `neon.ts` is private; credentials and object keys are not returned to the browser.
 
-Uploads accept PNG, JPEG, WebP, and PDF, up to 5 MB each and 20 documents per case. The backend checks the declared type against file signatures. This is format screening, not malware scanning. Downloads are attachments with `nosniff`, behind the same case-owner authorization as the metadata. Automated tests and public examples use fictional files only.
+Uploads accept PNG, JPEG, WebP, and PDF, up to 5 MB each and 20 documents per case. The backend checks the declared type against file signatures. Downloads are attachments with `nosniff`, behind the same case-owner authorization as the metadata. Automated tests and public examples use fictional files only.
 
 Migration 0005 adds `advocacy_documents`. A client-generated UUID reserves the case, immutable object key, original filename, type, byte count, SHA-256, and document kind before storage writes. A retry must match the reserved case, hash, type, and kind. Concurrent retries write identical bytes. Transitioning from uploading to ready advances the case revision exactly once and clears the previous analysis. A previous review or outreach draft remains historical and cannot authorize work on the new revision.
 

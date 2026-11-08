@@ -60,7 +60,7 @@ The application supports progressive intake, private document uploads and extrac
 
 ## Durable crew reviews
 
-`advocacy_crew_runs.snapshot` stores the first valid completed result and `completed_at` records when the app saved it. `backend/providers/crew-result.ts` excludes intermediate submissions, errors, and pending approvals. The case-owner-only status route reads a saved result without another provider request; simultaneous refreshes cannot overwrite the first completion. Incomplete runs remain refreshable against the existing session ID. The API keeps these routes; the signed-in UI has no crew controls.
+`advocacy_crew_runs.snapshot` stores the first valid completed result and `completed_at` records when the app saved it. `backend/providers/crew-result.ts` excludes intermediate submissions, errors, and pending approvals. The case-owner-only status route reads a saved result without another provider request; simultaneous refreshes cannot overwrite the first completion. Incomplete runs remain refreshable against the existing session ID.
 
 Migration `0002_rapid_lizard.sql` adds nullable columns without changing existing runs. `scripts/crew-result.test.ts` covers the completion gates. `scripts/crew-app-smoke.ts --prepare` creates an isolated synthetic operator and writes private session state under ignored `test-results/`. Temporarily add that user's ID to `CREW_ALLOWED_USER_IDS`, deploy, then run the script without flags. It tests the deployed start route, duplicate requests, provider completion, persistence, and the crew controls that have since left the UI. Restore the original allowlist afterward. Reuse its existing record if a check times out; do not start another case just because observation timed out.
 
@@ -68,7 +68,7 @@ Case outreach is described in [outreach.md](outreach.md), including immutable dr
 
 ## Injury intake and revision boundaries
 
-`backend/claim-input.ts` validates the progressive intake JSON and distinguishes unknown amounts from zero. `src/CaseForm.tsx` supplies injury-first creation and revision-aware editing. Migration 0004 preserves legacy cases as health-insurance cases at revision 1. Crew requests are unique per case/revision; output is validated against the supplied financial amounts. Changes clear current analysis, and a saved review applies only to its revision. Earlier reviews are retained in the database and are not shown in the UI. Outreach records carry their source revision and cannot dispatch after case facts change.
+`backend/claim-input.ts` validates the progressive intake JSON and distinguishes unknown amounts from zero. `src/CaseForm.tsx` supplies injury-first creation and revision-aware editing. Migration 0004 preserves legacy cases as health-insurance cases at revision 1. Crew requests are unique per case/revision; output is validated against the supplied financial amounts. Changes clear current analysis, and a saved review applies only to its revision. Earlier reviews are retained in the database. Outreach records carry their source revision and cannot dispatch after case facts change.
 
 The phone subsystem adds a separate self-managed Better Auth phone Function alongside managed Neon email Auth. Both resolve to case-owner identities through the case API; no browser receives database or provider credentials. The customer path is a verified phone number, one requested AgentPhone onboarding call, and automatic case creation from a sufficient owner-bound transcript; see [phone onboarding](phone-onboarding.md).
 

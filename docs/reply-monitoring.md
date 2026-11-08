@@ -12,7 +12,7 @@ The trigger runs every five minutes. Each delivery handles at most five due thre
 
 - GET `/cases/:id/reply-monitors` returns only the owner's monitoring records.
 - POST `/cases/:id/actions/:actionId/reply-monitor` takes `{ "enabled": true }` or false. The case must belong to the caller and the action must have an authorized email receipt and thread ID.
-- The workspace has no monitoring toggle. Received replies appear in the case Activity feed in `src/Autonomy.tsx`, which refreshes every 15 seconds.
+- Received replies appear in the case Activity feed in `src/Autonomy.tsx`, which refreshes every 15 seconds.
 
 An accepted new reply advances the case revision and invalidates the current review, just as a manual check does. On a persistent case it also queues an event that wakes the advocate; see [case sessions](case-sessions.md). Monitoring itself sends nothing.
 

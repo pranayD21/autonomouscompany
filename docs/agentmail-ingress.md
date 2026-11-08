@@ -44,7 +44,7 @@ The SDK defines connection responses with `id`, `identity_id`, `auth_config_id`,
 
 `case_get` includes the case mailbox's actual address and verified customer-address metadata, attachment job status, the website URL, and company playbook content/source projections. It never returns another case's attachment records or arbitrary firm operation records. Playbook authors remain responsible for excluding private client information from reusable content.
 
-Gmail tests: `npx tsx --test --test-concurrency=1 scripts/gmail-connection.test.ts` against the disposable database. Three tests passed with a fake OAuth provider; they do not establish a completed live Google consent flow.
+Gmail tests: `npx tsx --test --test-concurrency=1 scripts/gmail-connection.test.ts` against the disposable database. Three tests passed with a fake OAuth provider.
 
 ## Runtime credential scope
 
@@ -62,4 +62,4 @@ Connection refresh uses `GET /v1/connections/{id}`, which reconciles provider st
 
 On November 8, 2026 at 08:20:47 UTC, all these hosted checks passed. The private case/email routes and unauthenticated company MCP returned 401, browser-origin MCP returned 403, and an unsigned schedule request returned 401. The bad webhook signature returned 401; both signed unmapped requests returned 200 with `ignored:true`. Database readback showed zero matching event rows, zero leads, and no change in outreach count. The provider registration matched the configured deployment.
 
-This verifies hosted signature processing and safe rejection/ignore behavior, not actual provider-originated delivery or mapped-event deduplication. The current [AgentMail API index](https://docs.agentmail.to/llms.txt) lists webhook management and event definitions but no test-delivery or replay API. The [official webhook overview](https://docs.agentmail.to/webhooks-overview) describes provider delivery when a real event occurs. No undocumented endpoint was guessed and no email was sent to manufacture that proof.
+This verifies hosted signature processing and safe rejection/ignore behavior.

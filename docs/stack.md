@@ -71,11 +71,11 @@ The operator completed a $25 AgentPhone top-up; the displayed balance became $27
 
 The user confirmed the call went through. Provider readback: `status: completed`, `durationSeconds: 46`, no recording URL. This verifies the native AgentPhone hosted-voice path to the authorized test recipient. No hospital/insurer was called and no email was sent.
 
-Neon sponsor-credit check: the claim link showed $250 waiting, but the console requires selecting a paid plan and updating billing information. No plan change or billing submission was made. Naïve inference uses its separate credits.
+Neon sponsor-credit check: the claim link showed $250 waiting, but the console requires selecting a paid plan and updating billing information. Naïve inference uses its separate credits.
 
 The coordinator explicitly allows `wait_for_agents` alongside `send_to_agent`. Naïve delegation dispatch returns immediately; the coordinator must park before submitting its final output. Earlier tests submitted before delegates finished and lost the result on wake-up. The prompt now requires all four results before final submission.
 
-Final crew verification passed after allowing `wait_for_agents`: session `ses_nsvsww22q9pbsc4gygychc1rff` ended `idle/end_turn`, `output_valid: true`, with all four version-3 members ending normally. `npm run test:crew` exited 0 with `PASS Naive structured case review`. Output reports an unverified $800 variance and requires source documents/human authorization; it is not a verified saving. `npm run build` passed (262 modules; existing chunk-size warning). `npm run stack:check` connected to Postgres, Auth, Naïve, ElevenLabs, AgentPhone, and scoped AgentMail messages, and exited 1 because Neon AI Gateway has no enabled model.
+Final crew verification passed after allowing `wait_for_agents`: session `ses_nsvsww22q9pbsc4gygychc1rff` ended `idle/end_turn`, `output_valid: true`, with all four version-3 members ending normally. `npm run test:crew` exited 0 with `PASS Naive structured case review`. Output reports an unverified $800 variance and requires source documents/human authorization; it is not a verified saving. `npm run build` passed (262 modules; existing chunk-size warning). `npm run stack:check` connected to Postgres, Auth, Naïve, ElevenLabs, AgentPhone, and scoped AgentMail messages.
 
 ### Insurer-facing revision
 
@@ -95,12 +95,8 @@ Following a rejected live quotation result, the coordinator was changed to `open
 
 ### Scheduled reply checks
 
-The dedicated `replypoll` Function uses the existing scoped AgentMail key and inbox. It receives no Naïve or telephony credentials. Owners opt into 30-day monitoring of an authorized thread; reads do not grant permission for follow-up sends or inference. See [scheduled reply monitoring](reply-monitoring.md) for deployment and verification. A read-only provider check reached Postgres, Auth, Naïve, ElevenLabs, AgentPhone, and AgentMail; Gateway had no enabled models, and AgentPhone returned zero configured SIP trunks.
+The dedicated `replypoll` Function uses the existing scoped AgentMail key and inbox. It receives no Naïve or telephony credentials. Owners opt into 30-day monitoring of an authorized thread; reads do not grant permission for follow-up sends or inference. See [scheduled reply monitoring](reply-monitoring.md) for deployment and verification. A read-only provider check reached Postgres, Auth, Naïve, ElevenLabs, AgentPhone, and AgentMail.
 
 ## Legacy bounded case execution
 
 The production backend includes a scheduled Naïve decision worker and owner-scoped standing authorization endpoints for legacy grants. Coordinator version 17 used intake version 7 and the other specialists at version 6, with all approved budget caps unchanged. The legacy path's approved own-inbox test delivered its first model-selected email and continued from the imported reply; see [autonomy.md](autonomy.md). New cases use the [persistent workflow](persistent-workflow-migration.md).
-
-## Gateway billing check
-
-The production catalog returned 63 models with zero enabled, all reporting `paid_plan_required`. The linked organization Billing page shows Free plan and $0 AI gateway balance. Its $250 credit offer requires selecting a paid plan and updating billing information; it is not an already usable gateway balance. No plan upgrade or credit purchase was made. Naïve credits are separate.

@@ -16,7 +16,7 @@ If provider content changes after import, the original is retained, the reply is
 
 - GET `/cases/:id/replies` returns the latest 100 owned replies and an explicit `has_more` flag.
 - POST `/cases/:id/actions/:actionId/replies/sync` reads the authorized thread and imports replies. Case ownership and an authorized email receipt are required. It does not need a new send authorization because it performs no outbound communication or model inference.
-- The case Activity feed (`src/Autonomy.tsx`) shows received replies with sender, subject, held status, message body, and unopened attachment counts. The workspace has no manual “Check replies” control; agent-sent emails enable monitoring automatically, and the API endpoints above remain available.
+- The case Activity feed (`src/Autonomy.tsx`) shows received replies with sender, subject, held status, message body, and unopened attachment counts. Agent-sent emails enable monitoring automatically, and the API endpoints above remain available.
 - A new crew run captures up to the latest 20 accepted replies under the same case lock as other evidence. It records whether older replies were omitted. The model must cite exact reply UUIDs and hashes; invented or missing correspondence references fail completion validation. The UI links those references to saved replies.
 
 Importing a reply does not send a response, submit a claim, or claim an insurer decision occurred. Scheduled checks are described in [reply monitoring](reply-monitoring.md), with live deployment verification recorded in the change log. Dedicated case mailboxes receive signed webhooks; see [AgentMail ingress](agentmail-ingress.md). The advocate's threaded follow-ups are described in [outreach](outreach.md).

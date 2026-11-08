@@ -1261,3 +1261,9 @@ The owner reported that the team tested the product end to end through manual UI
 Removed `NEED_HELP.txt` and `docs/autonomy-plan.md`, which were task lists; git history keeps their text. Rewrote the README's customer journey. Reworded stale backend messages with no logic change: case-deletion refusals, activation and phone-unavailable messages, the phone intake line, the `/stack/status` voice reason, and the research-gap message. Comment edits touched `backend/api.ts`, `naive.config.ts`, and `.env.example`. Enum values such as `todo` and `synthetic_demo_completed` stay because they are real states. No file under `src/` changed.
 
 Verification: `npm run build` passed (TypeScript and Vite) with the existing bundle-size and mixed-import warnings. `git diff --check` passed. No automated test suite, browser check, live provider action, or backend deployment was run for this change.
+
+## 2026-11-08 — Remove remaining limit statements
+
+A full read of the docs found limit statements the earlier keyword pass missed, including portal, pricing, gateway billing, SMS registration, and provider-gap sentences. Removed them from the topic docs. Operating rules, feature gates, authorization boundaries, test-mode payment rules, test-scope descriptions, evidence rules, and dated test results stay. Documentation only.
+
+Verification: `git diff --check` passed. No build or test was run because only Markdown changed.

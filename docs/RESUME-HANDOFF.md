@@ -6,7 +6,7 @@ Updated November 8, 2026 UTC. Read `agents.md`, the documentation index, and `im
 
 Assurance is phone-first: Twilio Verify → one explicitly requested AgentPhone onboarding call → owner-bound transcript → automatic case and isolated Naïve advocate → website case chat and uploads. No customer email is required. Existing email accounts and AgentMail third-party messaging stay in place. The team's manual end-to-end UI testing validated this customer workflow.
 
-Keep `PHONE_FLOW_ENABLED=false`; the outbound request uses `PHONE_ONBOARDING_ENABLED`. No additional real test SMS or call is authorized merely by deployment. Do not substitute remote end-turn for a saved budget, bound advocate, and first persisted case goal. Insurer-portal submission is not connected; see [case portals](case-portals.md). Do not repeat fixture creation or reconciled mutations below.
+Keep `PHONE_FLOW_ENABLED=false`; the outbound request uses `PHONE_ONBOARDING_ENABLED`. No additional real test SMS or call is authorized merely by deployment. Do not substitute remote end-turn for a saved budget, bound advocate, and first persisted case goal. Do not repeat fixture creation or reconciled mutations below.
 
 ## Release and configuration
 

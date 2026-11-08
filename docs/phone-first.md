@@ -62,12 +62,12 @@ Post-fix hosted verification passed: commit 2c23098 auto-deployed successfully; 
 
 ## Individual registration submitted
 
-The user explicitly approved one $25 registration submission, excluding test calls and texts. The existing private draft was submitted exactly once. AgentPhone returned HTTP 200, campaign_status=pending, and request ID 8f72635d-8ca0-4ec9-940f-b98730e42205. A subsequent read returned Registration is under review with no action-required issue. The configured number still reports outboundSms=registration_required. PHONE_FLOW_ENABLED remains false and no test call/text or inbound routing change occurred. The private attempt journal prevents automatic duplicate paid submissions. Registration acceptance is not proof of SMS delivery.
+The user explicitly approved one $25 registration submission, excluding test calls and texts. The existing private draft was submitted exactly once. AgentPhone returned HTTP 200, campaign_status=pending, and request ID 8f72635d-8ca0-4ec9-940f-b98730e42205. PHONE_FLOW_ENABLED remains false and no test call/text or inbound routing change occurred. The private attempt journal prevents automatic duplicate paid submissions. Registration acceptance is not proof of SMS delivery.
 
 
 ## Earlier AgentPhone-only onboarding check (superseded for login)
 
-That read-only provider check returned registration `pending` with “Registration is under review.” The number was active for its voice configuration but reported `outboundSms=registration_required`. Hosted `/status` returned HTTP 200 with `enabled=false` and `smsReady=false`. Carrier approval is an external delivery gate, not a missing local implementation. No registration was resubmitted, no fee was charged again, and no text, call, or routing change occurred.
+No registration was resubmitted, no fee was charged again, and no text, call, or routing change occurred.
 
 The existing email account and phone account paths coexist. `PhoneSignIn` checks current readiness before permitting an OTP request and directs the user to email if readiness is lost. Caller ID cannot reveal a case, and no phone account is created until a valid OTP is verified.
 
@@ -89,7 +89,7 @@ The call opening explains that Assurance will organize the claim, research, cont
 
 `claimPhoneIntake` accepts an optional SMS preference. Omitting it copies the original call opt-in only when no owner preference exists; it never overwrites a later STOP. This removes a redundant checkbox after call consent. An explicit boolean remains compatible with existing clients. Starting the agent uses `DEFAULT_INTAKE_CONSENT` from `backend/intake-policy.ts`; the submission UI must disclose the service scope. The old `sms_consent` field alone is not treated as a historical grant of case-work authority.
 
-Read-only provider checks on November 8, 2026 UTC returned HTTP 200, registration `pending`, and number `outboundSms=registration_required`. No message, call, paid registration, routing change, or flag change occurred. Twilio Verify remains code-only; it cannot substitute for general case texts. `scripts/configure-inbound-phone.ts` contains the revised opening and stays read-only unless explicitly applied.
+No message, call, paid registration, routing change, or flag change occurred. `scripts/configure-inbound-phone.ts` contains the revised opening and stays read-only unless explicitly applied.
 
 The phone suite covers atomic case-and-agent creation, disabled-activation rollback, retaining STOP, and idempotent retry after revocation. Verification results are recorded in the change log.
 
