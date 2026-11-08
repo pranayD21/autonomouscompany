@@ -1,5 +1,17 @@
 # Change log
 
+## 2026-11-07 — Shared case MCP endpoint and Naïve connection preparation
+
+Deployed a credential-scoped `/mcp` endpoint alongside the original case URL. Added identity/version-pinned session configuration, optional blueprint MCP tools, `NAIVE_CASE_TOOLS_URL`, and a resumable two-case live smoke script. The setup key is read from a private file and never replaces the runtime key on disk. Detailed operation and remaining work are in agent-tools.md.
+
+Seven local tests and `npm run build` pass. Neon deployment completed for all six functions. Initial Hono route registration and SDK/blueprint typing errors were corrected before the successful build. Live Naïve verification stopped at vault creation: the existing key lacks admin scope. One temporary synthetic case and identity exist for resumption; no model session or outbound communication was started by this test. No spending caps changed.
+
+## 2026-11-07 — Coordinator chooses specialist delegation
+
+Removed the mandatory four-specialist fan-out from the local Naïve coordinator blueprint. The bounded case-decision prompt now permits direct decisions for routine follow-ups, waits, and stops, with targeted specialist review when useful. Requested results must still be reconciled before submission. User assigned sole ownership of the previously shared files to this agent; no teammate coordination is required.
+
+Verification: `npm run build` passed (266 modules; existing bundle-size warning). Prompt changes are local, not published or deployed. No live inference, message, call, or budget change occurred. Naïve MCP session wiring remains unfinished; details are in agent-tools.md.
+
 ## Save agent reviews without an open browser
 
 Extracted completion validation and first-valid-result persistence into `backend/crew-completion.ts`. Both manual status reads and the new scheduler validate against immutable run inputs, including earlier case revisions. Added `backend/crew-monitor.ts`, `backend/crew-worker.ts`, and migration 0010 for durable check times, leases, coarse status, and invocation IDs. The worker reads at most five existing sessions per delivery; it never starts inference or sends correspondence. Corrections re-enable checking, and concurrent correction requests retain their schedule. Failed/cancelled sessions, rejected completed output, and pending approvals need human attention.

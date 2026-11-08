@@ -19,3 +19,14 @@ test("tool case argument cannot override the authenticated case",async()=>{
 test("authenticated case_get returns its own case",async()=>{
  const r=await (await req(caseId,"valid",rpc("tools/call",{name:"case_get",arguments:{case_id:caseId}}))).json();assert.equal(JSON.parse(r.result.content[0].text).case_id,caseId);
 });
+
+test("shared MCP URL derives case access solely from the bearer credential",async()=>{
+ const shared=caseTools({authenticate:async token=>token==="a"?{id:"a",case_id:caseId,owner_id:"owner"}:token==="b"?{id:"b",case_id:other,owner_id:"owner"}:null,getCase:async identity=>({case_id:identity.case_id}),recordFact:async()=>{throw Error("unexpected write");}});
+ for(const [token,own,wrong] of [["a",caseId,other],["b",other,caseId]]){
+  for(const target of [own,wrong]){
+   const response=await shared.request("/mcp",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json, text/event-stream",Authorization:`Bearer ${token}`},body:rpc("tools/call",{name:"case_get",arguments:{case_id:target}})});
+   const result=(await response.json()).result;
+   if(target===own)assert.equal(JSON.parse(result.content[0].text).case_id,own);else assert.equal(result.isError,true);
+  }
+ }
+});
