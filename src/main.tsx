@@ -1,5 +1,5 @@
-import {PhoneSignIn,usePhoneStatus} from "./PhoneSignIn";
-import { StrictMode, useEffect, useState, type FormEvent } from "react";
+import {PhoneEntry} from "./PhoneEntry";
+import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { RealtimeProvider } from "@neon/realtime-react";
 import type { SealedLiveQuery } from "@neon/realtime/client";
@@ -12,39 +12,6 @@ import {Logo} from "./Icons";
 import {MotionConfig} from "motion/react";
 
 const message = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Please try again.";
-
-function EmailSignIn() {
-  const [signup, setSignup] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true); setError("");
-    const form = new FormData(event.currentTarget);
-    const credentials = { email: String(form.get("email")), password: String(form.get("password")) };
-    try {
-      const result = signup ? await auth.signUp.email({ ...credentials, name: String(form.get("name")) }) : await auth.signIn.email(credentials);
-      if (result.error) throw new Error(result.error.message ?? "Unable to sign in.");
-      window.location.assign("/#workspace");
-    } catch (err) { setError(message(err)); } finally { setBusy(false); }
-  }
-  return <section className="auth-card"><h1>{signup ? "Create your account." : "Sign in to your cases."}</h1>
-    <form onSubmit={submit}>
-      {signup && <label>Name<input name="name" required autoComplete="name" maxLength={100}/></label>}
-      <label>Email<input name="email" type="email" required autoComplete="email"/></label>
-      <label>Password<input name="password" type="password" required minLength={8} autoComplete={signup ? "new-password" : "current-password"}/></label>
-      <button disabled={busy}>{busy ? "Please wait…" : signup ? "Create account" : "Sign in"}</button>
-    </form>
-    {error && <p role="alert" className="error">{error}</p>}
-    <button className="text-button" onClick={() => { setSignup(!signup); setError(""); }}>{signup ? "Already have an account? Sign in" : "New here? Create an account"}</button>
-  </section>;
-}
-
-function SignIn() {
- const status=usePhoneStatus();const [email,setEmail]=useState(false);
- if(status===null)return <p role="status">Checking sign-in options…</p>;
- if(!status.enabled||email)return <><EmailSignIn/>{status.enabled&&<button className="text-button" onClick={()=>setEmail(false)}>Use phone sign-in</button>}</>;
- return <section className="auth-card"><h1>Sign in to your cases.</h1><PhoneSignIn status={status}/><button className="text-button" onClick={()=>setEmail(true)}>Have an older email account? Sign in with email</button></section>;
-}
 
 function Dashboard({ userId, userName, onSignOut }: { userId: string; userName: string; onSignOut: () => void }) {
   const [sealed, setSealed] = useState<SealedLiveQuery<BillCase>>();
@@ -80,9 +47,9 @@ function App() {
   // While the session check runs on a landing-eligible URL, show plain paper rather than the
   // loading shell, whose header/footer divider lines would flash before the landing page appears.
   if (isPending && !workspaceRoute) return null;
-  if (!isPending && !error && session?.user) return <>{signOutError && <p role="alert" className="error floating-error">{signOutError}</p>}<Dashboard key={session.user.id} userId={session.user.id} userName={session.user.name || session.user.email} onSignOut={() => void signOut()}/></>;
+  if (!isPending && !error && session?.user) return <>{signOutError && <p role="alert" className="error floating-error">{signOutError}</p>}<Dashboard key={session.user.id} userId={session.user.id} userName={session.user.name || session.user.phoneNumber || session.user.email || "Your account"} onSignOut={() => void signOut()}/></>;
   return <><a className="skip-link" href="#workspace-content">Skip to content</a><header className="app-header"><a href="#home" className="brand" aria-label="Assurance home"><Logo aria-hidden="true"/>assurance<span className="brand-period">.</span></a></header>
-    <main id="workspace-content" className="app-main">{isPending ? <p role="status">Loading your session…</p> : error ? <p role="alert" className="error">Authentication is unavailable. Please reload and try again.</p> : <SignIn/>}</main>
+    <main id="workspace-content" className="app-main">{isPending ? <p role="status">Loading your session…</p> : error ? <p role="alert" className="error">Authentication is unavailable. Please reload and try again.</p> : <PhoneEntry/>}</main>
     <footer className="app-footer"><span>assurance<span className="brand-period">.</span></span><small>Your case, handled.</small></footer></>;
 }
 

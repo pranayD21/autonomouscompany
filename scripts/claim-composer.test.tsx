@@ -35,3 +35,12 @@ test("answer mode and user content are rendered safely", () => {
   assert.match(html, /&lt;script&gt;private update&lt;\/script&gt;/);
   assert.match(html, /Shift \+ Enter for a new line/);
 });
+
+test("persistent conversation preserves retry and read-only controls", () => {
+  const html = renderToStaticMarkup(<ClaimComposer value="Pending message" busy={false} needsAnswer={false} readOnly sendLabel="Retry message" onChange={() => {}} onSubmit={() => {}}/>);
+  assert.match(html, /readOnly=""/);
+  assert.match(html, /aria-label="Retry message"/);
+  assert.doesNotMatch(html, /type="submit" disabled=""/);
+  const disabled = renderToStaticMarkup(<ClaimComposer value="Update" busy={false} needsAnswer={false} disabled onChange={() => {}} onSubmit={() => {}}/>);
+  assert.match(disabled, /type="submit" disabled=""/);
+});

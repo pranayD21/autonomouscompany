@@ -42,7 +42,7 @@ export function CaseForm({initial,disabled,onSave}:{initial?:BillCase;disabled?:
   </details>
   <label htmlFor={`notes-${initial?.id??"new"}`}>Case notes</label><textarea id={`notes-${initial?.id??"new"}`} name="notes" defaultValue={initial?.notes} maxLength={8000} rows={3}/>
   </details>
-  {!initial&&<p className="caveat">Submitting asks Assurance to research, contact relevant organizations, and follow up on your behalf. You can stop it anytime.</p>}
+  {!initial&&<p className="caveat">Submitting asks Assurance to research, contact relevant organizations, submit claim forms and evidence, and follow up on your behalf. You can stop it anytime.</p>}
   {error&&<p role="alert">{error}</p>}
   <button disabled={disabled}>{disabled?"Saving…":initial?"Save updated details":"Start handling my case"}</button>
  </form>;

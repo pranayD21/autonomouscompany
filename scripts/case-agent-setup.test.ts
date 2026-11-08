@@ -4,7 +4,7 @@ import {randomUUID} from "node:crypto";
 import {Pool} from "pg";
 import {drizzle} from "drizzle-orm/node-postgres";
 import {migrate} from "drizzle-orm/node-postgres/migrator";
-import {eq,inArray} from "drizzle-orm";
+import {eq,inArray,sql} from "drizzle-orm";
 import {cases,crewRuns,caseAuthorities,caseAgentSetups} from "../backend/schema";
 import {authorizeCase,readCaseAutonomy} from "../backend/autonomy-service";
 import {pollCaseAgentSetups} from "../backend/case-agent-setup";
@@ -60,7 +60,7 @@ for(const change of ["revoke","owner","operator"]){test(`${change} change stops 
   if(change==="operator")process.env.CREW_ALLOWED_USER_IDS="";
   const r=await pollCaseAgentSetups(db,{provision:async()=>{throw Error("Must not provision");}});assert.equal(r.failed,0);
   const [job]=await db.select().from(caseAgentSetups).where(eq(caseAgentSetups.case_id,item.id));assert.equal(job.state,"stopped");
- }finally{process.env.CREW_ALLOWED_USER_IDS=owner;}
+ }finally{process.env.CREW_ALLOWED_USER_IDS=owner;delete process.env.NAIVE_OPEN_COORDINATOR_ID;delete process.env.NAIVE_OPEN_GENERAL_AGENT_VERSION;}
 });}
 
 test("capacity rejection defers setup until the shared provider cooldown without replacing its authority",async()=>{
@@ -70,4 +70,41 @@ test("capacity rejection defers setup until the shared provider cooldown without
  assert.equal(result.failed,0);assert.equal(result.deferred,1);
  const [job]=await db.select().from(caseAgentSetups).where(eq(caseAgentSetups.authority_id,authority.id));
  assert.equal(job.state,"queued");assert.equal(job.next_check_at.getTime(),retryAt.getTime());assert.equal(job.lease_id,null);
+});
+
+test("v2 setup permits a normal owner and parks unchanged permission while human input is required",async()=>{
+ const item=await fixture(false);
+ const result=await db.execute(sql`INSERT INTO advocacy_case_authorities(case_id,approved_by,policy,state) VALUES(${item.id},${owner},${JSON.stringify({version:2,consent:"Handle this fictional case."})}::jsonb,'human_required') RETURNING id`);
+ const authorityId=result.rows[0].id as string;
+ const [job]=await db.insert(caseAgentSetups).values({case_id:item.id,authority_id:authorityId,requested_by:owner}).returning();
+ let provisions=0;process.env.CREW_ALLOWED_USER_IDS="";
+ try{
+  process.env.NAIVE_OPEN_COORDINATOR_ID="agt_open_fixture";process.env.NAIVE_OPEN_GENERAL_AGENT_VERSION="3";
+  const deps={provision:async(input:any)=>{assert.equal(input.agentId,"agt_open_fixture");assert.equal(input.generalVersion,3);provisions++;}};
+  await pollCaseAgentSetups(db,deps);assert.equal(provisions,0);
+  assert.equal((await db.select().from(caseAgentSetups).where(eq(caseAgentSetups.id,job.id)))[0].state,"queued");
+  await db.update(caseAuthorities).set({state:"active"}).where(eq(caseAuthorities.id,authorityId));
+  await db.update(caseAgentSetups).set({next_check_at:new Date(0)}).where(eq(caseAgentSetups.id,job.id));
+  await pollCaseAgentSetups(db,deps);assert.equal(provisions,1);
+  assert.equal((await db.select().from(caseAgentSetups).where(eq(caseAgentSetups.id,job.id)))[0].state,"ready");
+ }finally{process.env.CREW_ALLOWED_USER_IDS=owner;delete process.env.NAIVE_OPEN_COORDINATOR_ID;delete process.env.NAIVE_OPEN_GENERAL_AGENT_VERSION;}
+});
+
+test('firm provisioning retries the hired agent and CEO budget without using the shared coordinator',async()=>{
+ const item=await fixture(false);
+ const authorityId=randomUUID(),agentId=`agt_case_${randomUUID()}`;
+ await pool.query("INSERT INTO advocacy_case_authorities(id,case_id,approved_by,policy) VALUES($1,$2,$3,$4)",[authorityId,item.id,owner,JSON.stringify({version:2,consent:'Authorize firm staffing for this fictional case.'})]);
+ const [job]=await db.insert(caseAgentSetups).values({case_id:item.id,authority_id:authorityId,requested_by:owner}).returning();
+ await pool.query("INSERT INTO advocacy_firm_staffing(case_id,authority_id,state,agent_id,budget_micro_usd) VALUES($1,$2,'hiring',$3,50000)",[item.id,authorityId,agentId]);
+ const key=`advocate-provision:${authorityId}`;
+ await pool.query("INSERT INTO advocacy_firm_records(key,kind,actor,case_id,payload) VALUES($1,'advocate_provisioning','frontdesk',$2,$3)",[key,item.id,JSON.stringify({authority_id:authorityId,agent_id:agentId,general_version:7,state:'queued'})]);
+ const inputs:any[]=[];
+ const first=await pollCaseAgentSetups(db,{provision:async input=>{inputs.push(input);throw Object.assign(Error('Admission rejected'),{status:429});}});
+ assert.equal(first.deferred,1);assert.equal((await pool.query('SELECT state FROM advocacy_firm_staffing WHERE case_id=$1',[item.id])).rows[0].state,'hiring');
+ await db.update(caseAgentSetups).set({next_check_at:new Date(0)}).where(eq(caseAgentSetups.id,job.id));
+ await Promise.all([pollCaseAgentSetups(db,{provision:async input=>{inputs.push(input);}}),pollCaseAgentSetups(db,{provision:async input=>{inputs.push(input);}})]);
+ assert.equal(inputs.length,2);assert.deepEqual(inputs[0],inputs[1]);assert.equal(inputs[1].agentId,agentId);assert.equal(inputs[1].generalVersion,7);assert.equal(inputs[1].budgetMicroUsd,50000);
+ assert.equal((await pool.query('SELECT state FROM advocacy_firm_staffing WHERE case_id=$1',[item.id])).rows[0].state,'active');
+ assert.equal((await db.select().from(caseAgentSetups).where(eq(caseAgentSetups.id,job.id)))[0].state,'ready');
+ assert.equal((await pool.query('SELECT payload FROM advocacy_firm_records WHERE key=$1',[key])).rows[0].payload.state,'ready');
 });

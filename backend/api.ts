@@ -1,3 +1,8 @@
+import {gmailRoutes} from './gmail-connection';
+import {requestEmailVerification,confirmEmailVerification} from "./email-verification";
+import {claimEmailLead} from "./agentmail-webhook";
+import {verifiedOwnerEmail} from "./verified-email";
+import {readCaseMessages,sendCaseMessage,ownerMessageInput} from "./case-messages";
 import {submitCase,addOwnerUpdate} from "./intake-service";
 import {isNaiveCapacityError,naiveRetryAt} from "./naive-retry";
 import {requestIdentity} from "./request-identity";
@@ -17,7 +22,7 @@ import { createRealtime, rawSql } from "@neon/realtime/server";
 import { neon } from "@neon/ai-sdk-provider";
 import { generateText } from "ai";
 import { z } from "zod";
-import { cases, crewRuns, outreachActions, caseReplies, replyMonitors, documents, documentExtractions, caseAuthorities, caseToolCredentials, type BillCase } from "./schema";
+import { emailLeads, cases, crewRuns, outreachActions, caseReplies, replyMonitors, documents, documentExtractions, caseAuthorities, caseToolCredentials, type BillCase } from "./schema";
 import {authorizeCase,revokeCaseAuthority,resumeCaseAuthority,readCaseAutonomy} from "./autonomy-service";
 import {issueCaseToolCredential} from "./case-tool-auth";
 import {setReplyMonitoring} from "./reply-monitor";
@@ -43,6 +48,7 @@ const realtime = createRealtime({
 const origins = (process.env.APP_ORIGINS ?? "").split(",");
 const app = new Hono<{ Variables: { userId: string } }>();
 app.use("*", cors({ origin: (origin) => origins.includes(origin) ? origin : undefined, allowHeaders: ["Authorization", "Content-Type"], allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"] }));
+app.get("/firm/contact",c=>{const email=process.env.AGENTMAIL_PUBLIC_EMAIL;return c.json({email:email&&z.email().safeParse(email).success?email:null});});
 app.use("*", async (c, next) => {
   const authorization = c.req.header("authorization");
   if (!authorization?.startsWith("Bearer ")) return c.json({ error: "Sign in to access your cases." }, 401);
@@ -54,6 +60,7 @@ app.use("*", async (c, next) => {
 });
 app.use("*", async (c,next) => bodyLimit({ maxSize: /^\/cases\/[^/]+\/documents\/?$/.test(c.req.path) ? 5*1024*1024+16384 : 16_384 })(c,next));
 app.route("/cases/:id/documents", documentRoutes(pool));
+app.route("/cases/:id/gmail",gmailRoutes(db));
 app.route("/phone",phoneRoutes(pool));
 app.onError((error, c) => {
   console.error("Case API failure", error.name);
@@ -61,6 +68,28 @@ app.onError((error, c) => {
 });
 
 const owned = (id: string, userId: string) => and(eq(cases.id, id), eq(cases.owner_id, userId));
+app.post("/email/verify",async c=>{
+ const origin=c.req.header("origin");if(!origin||!origins.includes(origin))return c.json({error:"Open Assurance in your browser to verify email."},400);
+ try{return c.json(await requestEmailVerification(db,pool,c.get("userId"),origin));}catch{return c.json({error:"Verification email could not be confirmed. Check your inbox before trying again later."},503);}
+});
+app.post("/email/verify/confirm",async c=>{
+ const parsed=z.object({token:z.string().max(100)}).safeParse(await c.req.json().catch(()=>null));if(!parsed.success)return c.json({error:"Invalid verification link."},400);
+ try{return c.json(await confirmEmailVerification(db,c.get("userId"),parsed.data.token));}catch{return c.json({error:"This verification link is invalid or expired. Request another from your workspace."},400);}
+});
+app.get("/email/leads",async c=>{
+ const email=await verifiedOwnerEmail(pool,c.get("userId"));
+ if(!email)return c.json({email_verified:false,leads:[]});
+ const leads=await db.select({id:emailLeads.id,subject:emailLeads.subject,created_at:emailLeads.created_at,case_id:emailLeads.case_id}).from(emailLeads).where(and(sql`lower(${emailLeads.sender}) = ${email}`,sql`(${emailLeads.claimed_owner} IS NULL OR ${emailLeads.claimed_owner} = ${c.get("userId")})`)).orderBy(desc(emailLeads.created_at)).limit(100);
+ return c.json({email_verified:true,leads});
+});
+app.post("/email/leads/:id/claim",async c=>{
+ const parsed=z.object({case_type:z.enum(["workplace_injury","health_insurance"])}).safeParse(await c.req.json().catch(()=>null));
+ if(!z.uuid().safeParse(c.req.param("id")).success||!parsed.success)return c.json({error:"Choose the kind of case."},400);
+ const email=await verifiedOwnerEmail(pool,c.get("userId"));
+ if(!email)return c.json({error:"Verify your account email before opening an emailed case."},403);
+ try{return c.json(await claimEmailLead(db,{leadId:c.req.param("id"),ownerId:c.get("userId"),verifiedEmail:email,emailVerified:true,caseType:parsed.data.case_type}));}
+ catch(e){if(e instanceof Error&&e.message==="NOT_FOUND")return c.json({error:"Email case not found."},404);throw e;}
+});
 app.get("/session", (c) => c.json({ userId: c.get("userId") }));
 app.get("/cases", async (c) => c.json(await db.select().from(cases).where(eq(cases.owner_id, c.get("userId"))).orderBy(desc(cases.created_at)).limit(100)));
 app.post("/cases", async (c) => {
@@ -69,6 +98,17 @@ app.post("/cases", async (c) => {
   if(!parsed.success||body?.id!==undefined&&!z.uuid().safeParse(body.id).success||body?.start_agent!==undefined&&typeof body.start_agent!=="boolean")return c.json({error:"Provide a description and valid case details."},400);
   try{return c.json(await submitCase(db,c.get("userId"),parsed.data,body.start_agent===true,body.id),201);}
   catch(e){if(e instanceof Error&&e.message==="DIRECT_ACTIVATION_UNAVAILABLE")return c.json({error:"Agent work is temporarily unavailable. Your case was not submitted; please try again."},503);if(e instanceof Error&&e.message==="NOT_FOUND")return c.json({error:"Case not found."},404);throw e;}
+});
+app.get("/cases/:id/messages",async c=>{
+ if(!z.uuid().safeParse(c.req.param("id")).success)return c.json({error:"Case not found."},404);
+ try{return c.json(await readCaseMessages(db,c.req.param("id"),c.get("userId")));}
+ catch(e){if(e instanceof Error&&e.message==="NOT_FOUND")return c.json({error:"Case not found."},404);throw e;}
+});
+app.post("/cases/:id/messages",async c=>{
+ const parsed=ownerMessageInput.safeParse(await c.req.json().catch(()=>null));
+ if(!parsed.success||!z.uuid().safeParse(c.req.param("id")).success)return c.json({error:"Write a message of up to 4,000 characters."},400);
+ try{return c.json(await sendCaseMessage(db,c.req.param("id"),c.get("userId"),parsed.data));}
+ catch(e){if(e instanceof Error&&e.message==="NOT_FOUND")return c.json({error:"Case not found."},404);if(e instanceof Error&&e.message==="UPDATE_CONFLICT")return c.json({error:"This message ID was already used with different text."},409);throw e;}
 });
 app.post("/cases/:id/updates",async c=>{
  const parsed=z.object({text:z.string().trim().min(1).max(4000),id:z.uuid()}).safeParse(await c.req.json().catch(()=>null));
@@ -157,7 +197,7 @@ app.get("/cases/:id/sessions/:runId/approvals",async c=>{
   if(isNaiveCapacityError(error)){
    const retryAt=await naiveRetryAt(db,error,900000);
    c.header("Retry-After",String(Math.max(1,Math.ceil((retryAt.getTime()-Date.now())/1000))));
-   return c.json({error:"Naïve is at capacity. Pending actions are preserved; try again after the indicated delay.",retry_at:retryAt.toISOString()},503);
+   return c.json({error:"The shared Naïve request queue is busy. Pending actions are preserved; try again after the indicated delay.",retry_at:retryAt.toISOString()},503);
   }
   return c.json({error:"Pending actions are unavailable. The session must belong to an active authorized case."},409);}
 });
@@ -170,7 +210,7 @@ app.post("/cases/:id/sessions/:runId/approvals",async c=>{
   if(isNaiveCapacityError(error)){
    const retryAt=await naiveRetryAt(db,error,900000);
    c.header("Retry-After",String(Math.max(1,Math.ceil((retryAt.getTime()-Date.now())/1000))));
-   return c.json({error:"Naïve is at capacity. This action has not been confirmed. Retry the same pending action after the indicated delay.",retry_at:retryAt.toISOString()},503);
+   return c.json({error:"The shared Naïve request queue is busy. This action has not been confirmed. Retry the same pending action after the indicated delay.",retry_at:retryAt.toISOString()},503);
   }
   return c.json({error:"The action changed or this case cannot be confirmed. Refresh its pending actions."},409);}
 });

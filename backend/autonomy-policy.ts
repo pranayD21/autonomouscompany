@@ -22,7 +22,7 @@ const rationale={reason:z.string().trim().min(1).max(1200),evidence_refs:z.array
 export const caseDecision=z.discriminatedUnion("tool",[
  z.object({tool:z.literal("contact_customer"),...rationale,contact_id:z.string(),subject:z.string().trim().min(1).max(160).refine(s=>!/[\r\n]/.test(s)),body:z.string().trim().min(1).max(4000)}).strict(),
  z.object({tool:z.literal("contact_insurer"),...rationale,contact_id:z.string(),subject:z.string().trim().min(1).max(160).refine(s=>!/[\r\n]/.test(s)),body:z.string().trim().min(1).max(4000)}).strict(),
- z.object({tool:z.literal("wait_for_reply"),...rationale,minutes:z.number().int().min(5).max(10080)}).strict(),
+ z.object({tool:z.literal("wait_for_reply"),...rationale,minutes:z.number().int().positive()}).strict(),
  z.object({tool:z.literal("stop_case"),...rationale,outcome:z.enum(["goal_met","synthetic_demo_completed","no_supported_next_step","customer_requested_stop"]),summary:z.string().trim().min(1).max(1600)}).strict(),
  z.object({tool:z.literal("request_human_help"),...rationale,question:z.string().trim().min(1).max(1000)}).strict(),
 ]);
@@ -49,7 +49,7 @@ export function checkCaseDecision(authority:CaseAuthority,decision:CaseDecision,
  }
  if(context.customer_requested_stop)return "CUSTOMER_STOPPED";
  if(context.uncertain_dispatch)return "DISPATCH_NEEDS_RECONCILIATION";
- if(decision.tool==="wait_for_reply")return null;
+ if(decision.tool==="wait_for_reply")return decision.minutes<5||decision.minutes>10080?"LEGACY_FOLLOWUP_RANGE":null;
  if(context.outbound_used>=authority.max_outbound)return "OUTBOUND_LIMIT";
  const contact=authority.contacts.find(c=>c.id===decision.contact_id);
  if(!contact||contact.role!==(decision.tool==="contact_customer"?"customer":"insurer"))return "CONTACT_NOT_AUTHORIZED";

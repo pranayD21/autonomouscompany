@@ -85,6 +85,7 @@ export const outreachActions = pgTable("advocacy_outreach_actions", {
   approved_by: text("approved_by"),
   approved_at: timestamp("approved_at", { withTimezone: true }),
   provider_id: text("provider_id"),
+  provider_inbox_id:text("provider_inbox_id"),
   provider_thread_id: text("provider_thread_id"),
   provider_status: text("provider_status"),
   reply_to_message_id: text("reply_to_message_id"),
@@ -278,3 +279,51 @@ export const directCaseEvents=pgTable("advocacy_direct_case_events",{
  event_key:text("event_key").notNull(),kind:text("kind").notNull(),payload:jsonb("payload").notNull().default({}),
  processed_at:timestamp("processed_at",{withTimezone:true}),created_at:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),
 },t=>[uniqueIndex("advocacy_direct_event_idx").on(t.run_id,t.event_key)]);
+
+// Durable website conversation, independent of provider sessions and phone delivery.
+export const caseMessages=pgTable('advocacy_case_messages',{
+ id:uuid('id').primaryKey().defaultRandom(),
+ case_id:uuid('case_id').notNull().references(()=>cases.id,{onDelete:'cascade'}),
+ role:text('role').$type<'user'|'assistant'>().notNull(),
+ body:text('body').notNull(),kind:text('kind').notNull().default('message'),
+ dedupe_key:text('dedupe_key'),
+ credential_id:uuid('credential_id').references(()=>caseToolCredentials.id,{onDelete:'set null'}),
+ created_at:timestamp('created_at',{withTimezone:true}).notNull().defaultNow(),
+},t=>[index('advocacy_case_messages_case_idx').on(t.case_id),uniqueIndex('advocacy_case_messages_dedupe_idx').on(t.case_id,t.dedupe_key)]);
+
+// AgentMail ingress is durable before company agents process it; inbox ownership is case-scoped.
+export const emailLeads=pgTable('advocacy_email_leads',{
+ id:uuid('id').primaryKey().defaultRandom(),inbox_id:text('inbox_id').notNull(),message_id:text('message_id').notNull(),
+ sender:text('sender').notNull(),subject:text('subject').notNull(),body:text('body').notNull(),attachments:jsonb('attachments').$type<Record<string,unknown>[]>().notNull().default([]),
+ state:text('state').notNull().default('new'),case_id:uuid('case_id').references(()=>cases.id,{onDelete:'set null'}),claimed_owner:text('claimed_owner'),
+ created_at:timestamp('created_at',{withTimezone:true}).notNull().defaultNow(),
+},t=>[uniqueIndex('advocacy_email_lead_message_idx').on(t.inbox_id,t.message_id)]);
+export const caseMailboxes=pgTable('advocacy_case_mailboxes',{
+ case_id:uuid('case_id').primaryKey().references(()=>cases.id,{onDelete:'cascade'}),inbox_id:text('inbox_id').notNull(),email:text('email').notNull(),
+ client_email:text('client_email'),client_email_verified_at:timestamp('client_email_verified_at',{withTimezone:true}),
+ created_at:timestamp('created_at',{withTimezone:true}).notNull().defaultNow(),
+},t=>[uniqueIndex('advocacy_case_mailbox_inbox_idx').on(t.inbox_id)]);
+export const agentmailEvents=pgTable('advocacy_agentmail_events',{
+ event_id:text('event_id').primaryKey(),payload_hash:text('payload_hash').notNull(),event_type:text('event_type').notNull(),inbox_id:text('inbox_id').notNull(),message_id:text('message_id').notNull(),
+ payload:jsonb('payload').$type<Record<string,unknown>>().notNull(),state:text('state').notNull().default('received'),
+ case_id:uuid('case_id').references(()=>cases.id,{onDelete:'set null'}),lead_id:uuid('lead_id').references(()=>emailLeads.id,{onDelete:'set null'}),
+ received_at:timestamp('received_at',{withTimezone:true}).notNull().defaultNow(),processed_at:timestamp('processed_at',{withTimezone:true}),error:text('error'),
+},t=>[index('advocacy_agentmail_case_idx').on(t.case_id),index('advocacy_agentmail_state_idx').on(t.state)]);
+
+// Company work is separate from client credentials and conversations.
+export const firmStaffing=pgTable('advocacy_firm_staffing',{
+ case_id:uuid('case_id').primaryKey().references(()=>cases.id,{onDelete:'cascade'}),authority_id:uuid('authority_id').notNull().references(()=>caseAuthorities.id,{onDelete:'cascade'}),
+ state:text('state').notNull().default('requested'),budget_micro_usd:integer('budget_micro_usd'),expected_recovery_cents:integer('expected_recovery_cents'),budget_reason:text('budget_reason'),
+ agent_id:text('agent_id'),board_card_id:text('board_card_id'),board_id:text('board_id'),
+ created_at:timestamp('created_at',{withTimezone:true}).notNull().defaultNow(),updated_at:timestamp('updated_at',{withTimezone:true}).notNull().defaultNow(),
+});
+export const firmEvents=pgTable('advocacy_firm_events',{
+ id:uuid('id').primaryKey().defaultRandom(),event_key:text('event_key').notNull(),role:text('role').notNull(),kind:text('kind').notNull(),case_id:uuid('case_id').references(()=>cases.id,{onDelete:'cascade'}),payload:jsonb('payload').$type<Record<string,unknown>>().notNull().default({}),
+ state:text('state').notNull().default('queued'),session_id:text('session_id'),lease_until:timestamp('lease_until',{withTimezone:true}),reason:text('reason'),created_at:timestamp('created_at',{withTimezone:true}).notNull().defaultNow(),
+},t=>[uniqueIndex('advocacy_firm_event_key_idx').on(t.event_key)]);
+export const firmRecords=pgTable('advocacy_firm_records',{
+ key:text('key').primaryKey(),kind:text('kind').notNull(),case_id:uuid('case_id').references(()=>cases.id,{onDelete:'cascade'}),payload:jsonb('payload').$type<Record<string,unknown>>().notNull(),actor:text('actor').notNull(),updated_at:timestamp('updated_at',{withTimezone:true}).notNull().defaultNow(),
+});
+export const firmOperations=pgTable('advocacy_firm_operations',{
+ id:uuid('id').primaryKey(),role:text('role').notNull(),tool:text('tool').notNull(),fingerprint:text('fingerprint').notNull(),state:text('state').notNull().default('reserved'),result:jsonb('result').$type<Record<string,unknown>>(),created_at:timestamp('created_at',{withTimezone:true}).notNull().defaultNow(),
+});

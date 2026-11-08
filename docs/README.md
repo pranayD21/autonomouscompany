@@ -42,7 +42,7 @@ Every repository change must update the relevant documentation in the same chang
 
 - [Recorded case outcomes](outcomes.md) — agent calculations, exact evidence quotes, retry handling, and verification limits.
 
-- [Hypothetical payments](payments.md) — Stripe sandbox setup and the current no-collection product scope.
+- [Test-mode finance](payments.md) — unconfirmed Stripe test PaymentIntents, cost reporting, and no real collection.
 
 - [AgentPhone-only voice](voice-agentphone.md): current new-call provider, configuration, historical receipts, and verification.
 
@@ -69,3 +69,16 @@ Every repository change must update the relevant documentation in the same chang
 - [Mac Messages bridge](mac-messages-bridge.md): hosted notification queue, authenticated local bridge, receipt and reply handling.
 - [Local Mac runner](mac-messages-local.md): sender setup, macOS permissions, private journal, and read-only checks.
 - [Mac bridge verification](mac-messages-tests.md): isolated database tests and covered failure paths.
+- [Naïve stable goals](naive-case-goals.md): case-bound goal persistence, MCP tool, and action prerequisites.
+- [Naïve restoration](naive-restoration.md): engine selection, v2 lifecycle compatibility, provider budget configuration, and hosted verification.
+- [Website chat UI](web-chat-ui.md): persistent owner/agent conversation, message retries, attachments, and responsive UI verification.
+- [Website case conversation](web-chat.md): durable owner/agent messages, case-scoped API, safe resume, and document requests without SMS.
+- [Permanent company agents](firm-blueprint.md): Naïve role declarations, identities, vaults, schedules, setup script, and verification boundaries.
+
+- [AgentMail intake and replies](agentmail-ingress.md): signed webhooks, email lead claiming, case inbox routing, and invitation delivery ledger.
+- [Company runtime](firm-runtime.md): durable company events, role tools, case staffing, budgets, board, learning, and verification boundaries.
+
+- [Authentication session recovery](auth-session-recovery.md): historical phone-session token contention, preserved login credentials, and verification boundaries.
+- [Case-isolated native browser portals](case-portals.md): portal service, private owner connection, durable action receipts and current upload gap.
+
+- [Requested phone onboarding](phone-onboarding.md): verified phone → one requested AgentPhone call → owner transcript → automatic isolated Naïve case setup, with no-redial recovery.

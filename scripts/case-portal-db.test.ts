@@ -1,0 +1,23 @@
+import {test,before,after} from 'node:test';
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+import {Pool} from 'pg';
+import {drizzle} from 'drizzle-orm/node-postgres';
+import {migrate} from 'drizzle-orm/node-postgres/migrator';
+import {submitCase} from '../backend/intake-service';
+import {issueCaseToolCredential} from '../backend/case-tool-auth';
+import {registerCaseAgentSession} from '../backend/case-agent-session';
+import {portalOpen,portalAction,portalStatus,portalReconcile,portalOwnerConnect,portalOwnerReady,type PortalProvider} from '../backend/case-portal';
+const url=process.env.OUTREACH_TEST_DATABASE_URL;if(!url)throw Error('Disposable DB required');
+const pool=new Pool({connectionString:url.replace('sslmode=require','sslmode=verify-full')}),db=drizzle(pool),owner=randomUUID(),id=randomUUID();let identity:{id:string;case_id:string;owner_id:string};let authority:string;
+before(async()=>{await migrate(db,{migrationsFolder:'drizzle'});Object.assign(process.env,{ASSURANCE_FIRM_ENABLED:'false',ASSURANCE_CASE_ENGINE:'naive',NAIVE_CASE_PROVISIONING_ENABLED:'true'});await submitCase(db,owner,{title:'Fictional portal fixture',case_type:'workplace_injury',intake:{injury_description:'Fictional incident.'}},true,id);authority=(await pool.query('SELECT id FROM advocacy_case_authorities WHERE case_id=$1',[id])).rows[0].id;const credential=await issueCaseToolCredential(db,id,owner,authority);identity={id:credential.id,case_id:id,owner_id:owner};await registerCaseAgentSession(db,{case_id:id,authority_id:authority,credential_id:credential.id,agent_id:'agt_portal',identity_id:'idn_portal',agent_version:1},owner);});
+after(async()=>{await pool.query('DELETE FROM advocacy_firm_records WHERE case_id=$1',[id]);await pool.query('DELETE FROM advocacy_case_agent_sessions WHERE case_id=$1',[id]);await pool.query('DELETE FROM advocacy_case_authorities WHERE case_id=$1',[id]);await pool.query('DELETE FROM advocacy_cases WHERE id=$1',[id]);await pool.end();});
+test('native portal binds one case context, keeps credentials out of records, and never replays an uncertain submission',async()=>{
+ const calls:{method:string;path:string;body:any}[]=[];let timeout=false;const provider:PortalProvider=async(method,path,body)=>{calls.push({method,path,body});if(timeout&&path.endsWith('/actions')&&(body as any).action==='click')throw Error('response lost');return path==='/v1/computers'?{id:'cmp_fixture'}:path.endsWith('live-view')?{url:'https://private.example.test/live'}:{confirmation:'FICTIONAL-123'};};
+ const op=randomUUID();await portalOpen(db,identity,{operation_id:op,url:'https://fictional.example.test/claim'},provider);await portalOpen(db,identity,{operation_id:op,url:'https://fictional.example.test/claim'},provider);assert.equal(calls.filter(c=>c.path==='/v1/computers').length,1);assert.deepEqual(calls[0].body.browser.allowed_domains,['fictional.example.test']);
+ await assert.rejects(()=>portalStatus(db,{...identity,owner_id:randomUUID()}),/ACCESS_ENDED/);await assert.rejects(()=>portalAction(db,identity,{operation_id:randomUUID(),action:{action:'goto',url:'https://other.example.test'}},provider),/ORIGIN_MISMATCH/);
+ await portalOwnerConnect(db,id,owner,{email:'fictional@example.test',password:'never-store-this-fixture-password'},provider);await portalOwnerReady(db,id,owner,provider);assert.equal(calls.find(c=>c.path.endsWith('/grants'))?.body.grantee_id,'agt_portal');assert.ok(!JSON.stringify((await pool.query('SELECT payload FROM advocacy_firm_records WHERE case_id=$1',[id])).rows).includes('never-store-this-fixture-password'));
+ timeout=true;const submit={operation_id:randomUUID(),action:{action:'click',selector:'#submit'}};await assert.rejects(()=>portalAction(db,identity,submit,provider));assert.equal((await portalAction(db,identity,submit,provider)).state,'uncertain');await assert.rejects(()=>portalAction(db,identity,{...submit,operation_id:randomUUID()},provider),/RECONCILIATION_REQUIRED/);assert.equal(calls.filter(c=>c.body?.action==='click').length,1);assert.equal((await portalReconcile(db,identity,provider)).state,'reconciliation_only_no_replay');
+ await pool.query("UPDATE advocacy_case_authorities SET policy=jsonb_build_object('version',2,'consent','Read this case only') WHERE id=$1",[authority]);await assert.rejects(()=>portalStatus(db,identity),/SCOPE_REQUIRED/);
+ await pool.query('UPDATE advocacy_case_tool_credentials SET revoked_at=now() WHERE id=$1',[identity.id]);await assert.rejects(()=>portalReconcile(db,identity,provider),/ACCESS_ENDED/);
+});

@@ -1,12 +1,14 @@
+import {directBlocksNaive} from './migrate-direct-case';
 import {and,desc,eq,sql} from "drizzle-orm";
 import type {NodePgDatabase} from "drizzle-orm/node-postgres";
 import {cases,caseAuthorities,caseDecisions,caseAgentSessions} from "./schema";
 import {issueCaseToolCredential} from "./case-tool-auth";
 import {registerCaseAgentSession} from "./case-agent-session";
 import {naiveClient} from "./providers/naive";
-import {caseAgentTools} from "./providers/case-agent";
+import {caseAgentTools,openCaseToolInstructions} from "./providers/case-agent";
 import {caseAuthority} from "./autonomy-policy";
-import {caseBindingMatches} from "./providers/case-binding";
+import {isOpenCasePermission} from "./open-case-policy";
+import {caseBindingMatches,openNaiveBudget} from "./providers/case-binding";
 
 type Client=ReturnType<typeof naiveClient>;
 type Page<T>={data:T[];has_more:boolean;next_cursor:string|null};
@@ -18,9 +20,9 @@ async function all<T>(read:(after?:string)=>Promise<Page<T>>){
  }while(true);
 }
 function unique<T>(items:T[]){if(items.length>1)throw Error("AMBIGUOUS_REMOTE_SETUP");return items[0];}
-export type ProvisionInput={caseId:string;authorityId:string;owner:string;agentId:string;generalVersion:number;toolsUrl:string};
+export type ProvisionInput={caseId:string;authorityId:string;owner:string;agentId:string;generalVersion:number;toolsUrl:string;budgetMicroUsd?:number};
 
-// Operator-only setup. The transaction makes the sealed token unusable until registration commits.
+// Legacy setup is operator-only; v2 uses owner scope. The sealed token is unusable until registration commits.
 export async function provisionCaseSession(db:NodePgDatabase,input:ProvisionInput,client:Client=naiveClient()){
  const connector=caseAgentTools(input.toolsUrl,input.caseId);
  if(!Number.isSafeInteger(input.generalVersion)||input.generalVersion<1)throw Error("INVALID_GENERAL_VERSION");
@@ -31,15 +33,18 @@ export async function provisionCaseSession(db:NodePgDatabase,input:ProvisionInpu
   const [authority]=await tx.select().from(caseAuthorities).where(and(eq(caseAuthorities.id,input.authorityId),eq(caseAuthorities.case_id,input.caseId),eq(caseAuthorities.approved_by,input.owner))).for("update");
   const [item]=await tx.select().from(cases).where(and(eq(cases.id,input.caseId),eq(cases.owner_id,input.owner))).for("update");
   if(!authority||!item)throw Error("INVALID_CASE_BINDING");
-  if((await tx.execute(sql`SELECT id FROM advocacy_direct_case_runs WHERE authority_id=${authority.id}`)).rows.length)throw Error("DIRECT_ENGINE_ALREADY_REGISTERED");
-  if(!(process.env.CREW_ALLOWED_USER_IDS??"").split(",").includes(input.owner))throw Error("OPERATOR_REQUIRED");
-  if(!caseAuthority.safeParse(authority.policy).success||!authority.policy.synthetic||!["active","waiting"].includes(authority.state)||new Date(authority.policy.expires_at)<=new Date())throw Error("ACTIVE_SYNTHETIC_AUTHORITY_REQUIRED");
+  if((await tx.execute(sql`SELECT r.id FROM advocacy_direct_case_runs r WHERE r.authority_id=${authority.id} AND ${directBlocksNaive}`)).rows.length)throw Error("DIRECT_ENGINE_ALREADY_REGISTERED");
+  const openPermission=isOpenCasePermission(authority.policy);
+  if(!openPermission&&!(process.env.CREW_ALLOWED_USER_IDS??"").split(",").includes(input.owner))throw Error("OPERATOR_REQUIRED");
+  if(!["active","waiting"].includes(authority.state)||!openPermission&&(!caseAuthority.safeParse(authority.policy).success||!authority.policy.synthetic||new Date(authority.policy.expires_at)<=new Date()))throw Error("ACTIVE_SYNTHETIC_AUTHORITY_REQUIRED");
+  const openBudget=openPermission?(input.budgetMicroUsd??openNaiveBudget()):null;
+  if(openBudget!==null&&(!Number.isSafeInteger(openBudget)||openBudget<=0))throw Error("INVALID_OPEN_BUDGET");
   const [existing]=await tx.select().from(caseAgentSessions).where(eq(caseAgentSessions.authority_id,authority.id));
   if(existing){if(existing.agent_id!==input.agentId)throw Error("SESSION_BINDING_CONFLICT");return existing;}
   const [round]=await tx.select().from(caseDecisions).where(eq(caseDecisions.authority_id,authority.id)).orderBy(desc(caseDecisions.round)).limit(1);
   if(round&&round.state!=="finished"||authority.lease_until&&authority.lease_until>new Date())throw Error("CASE_BUSY");
   const base=await client.agents.getVersion(input.agentId,input.generalVersion);
-  if(base.mcp_servers.length||base.tools.default_config.permission!=="deny"||base.budget.period!=="month"||base.budget.cap_micro_usd!==2000000||base.budget.max_task_micro_usd!==250000)throw Error("INVALID_GENERAL_CONFIGURATION");
+  if(base.mcp_servers.length||base.tools.default_config.permission!=="deny"||!openPermission&&(base.budget.period!=="month"||base.budget.cap_micro_usd!==2000000||base.budget.max_task_micro_usd!==250000))throw Error("INVALID_GENERAL_CONFIGURATION");
   const name=`assurance-case-${input.authorityId}`;
   const identities=await all(after=>client.identities.list({limit:100,after}));
   const identity=unique(identities.filter(i=>i.name===name))??await client.identities.create({name,metadata:{case_id:input.caseId,authority_id:input.authorityId}});
@@ -55,20 +60,20 @@ export async function provisionCaseSession(db:NodePgDatabase,input:ProvisionInpu
   }
   const credential=await issueCaseToolCredential(tx,input.caseId,input.owner,authority.id);
   const sealed=await client.vaults.credentials.create(vault.id,{kind:"static_bearer",key:`${name}:${credential.id}`,value:credential.token,mcp_server_url:connector.mcp_servers[0].url,agent_id:input.agentId,expires_at:credential.expires_at?.toISOString()});
-  if(sealed.key!==`${name}:${credential.id}`||sealed.kind!=="static_bearer"||sealed.agent_id!==input.agentId||sealed.mcp_server_url!==connector.mcp_servers[0].url||new Date(sealed.expires_at??0).getTime()!==credential.expires_at?.getTime())throw Error("SEALED_CREDENTIAL_MISMATCH");
+  if(sealed.key!==`${name}:${credential.id}`||sealed.kind!=="static_bearer"||sealed.agent_id!==input.agentId||sealed.mcp_server_url!==connector.mcp_servers[0].url||(credential.expires_at?new Date(sealed.expires_at??0).getTime()!==credential.expires_at.getTime():sealed.expires_at!=null))throw Error("SEALED_CREDENTIAL_MISMATCH");
   const versions=await client.agents.listVersions(input.agentId);
-  let version=unique(versions.data.filter(v=>v.metadata.assurance_authority===input.authorityId));
+  let version=unique(versions.data.filter(v=>v.metadata.assurance_authority===input.authorityId&&v.mcp_servers.length>0));
   try{
    if(!version){
     const current=await client.agents.get(input.agentId);
     if(current.mcp_servers.length||current.tools.default_config.permission!=="deny")throw Error("COORDINATOR_DEFAULT_NOT_GENERAL");
-    const updated=await client.agents.update(input.agentId,{...connector,system:base.system,metadata:{...base.metadata,assurance_authority:input.authorityId,assurance_restore_version:current.current_version},expected_version:current.current_version});
+    const updated=await client.agents.update(input.agentId,{...connector,...(openBudget?{budget:{period:"month" as const,cap_micro_usd:Math.max(base.budget.cap_micro_usd,openBudget),max_task_micro_usd:openBudget}}:{}),system:openPermission?`You are Assurance, a persistent insurance-claim advocacy agent. ${openCaseToolInstructions}`:base.system,metadata:{...base.metadata,assurance_authority:input.authorityId,assurance_restore_version:current.current_version},expected_version:current.current_version});
     version=await client.agents.getVersion(input.agentId,updated.current_version);
    }
   }finally{
    // Read back even after an uncertain publication; never overwrite another case's default.
    const current=await client.agents.get(input.agentId);
-   if(current.metadata.assurance_authority===input.authorityId){
+   if(current.metadata.assurance_authority===input.authorityId&&current.mcp_servers.length>0){
     const restoreVersion=current.metadata.assurance_restore_version;
     if(typeof restoreVersion!=="number"||!Number.isSafeInteger(restoreVersion)||restoreVersion<1)throw Error("MISSING_RESTORE_VERSION");
     const prior=await client.agents.getVersion(input.agentId,restoreVersion);
@@ -79,8 +84,9 @@ export async function provisionCaseSession(db:NodePgDatabase,input:ProvisionInpu
   const restored=await client.agents.get(input.agentId);
   if(restored.mcp_servers.length||restored.tools.default_config.permission!=="deny")throw Error("GENERAL_RESTORE_NOT_VERIFIED");
   const attached=await client.identities.agents(identity.id);
-  const binding={case_id:input.caseId,identity_id:identity.id,agent_id:input.agentId,agent_version:version.version};
+  const binding={case_id:input.caseId,identity_id:identity.id,agent_id:input.agentId,agent_version:version.version,open_permission:openPermission,budget_micro_usd:openBudget??undefined};
   if(!caseBindingMatches(binding,input.toolsUrl,{version,identity,attachedAgentIds:attached.data.map(a=>a.id)}))throw Error("REMOTE_BINDING_MISMATCH");
-  return registerCaseAgentSession(tx,{...binding,authority_id:input.authorityId,credential_id:credential.id},input.owner);
+  const {open_permission,...registeredBinding}=binding;
+  return registerCaseAgentSession(tx,{...registeredBinding,authority_id:input.authorityId,credential_id:credential.id},input.owner);
  });
 }

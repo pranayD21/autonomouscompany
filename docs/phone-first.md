@@ -1,5 +1,7 @@
 # Phone-first Assurance
 
+Current direction: the user restored phone-first entry for the MVP. The new path is verified phone → one explicitly requested outbound AgentPhone call → automatically created case and queued Naïve advocate when intake is sufficient. See [requested phone onboarding](phone-onboarding.md). The inbound-call, portal-text, and manual-claim flow described below is historical; its `PHONE_FLOW_ENABLED` gate remains false.
+
 The live SMS feature currently verifies phone sign-in through Twilio Verify. It does not yet deliver upload links, document requests, or case updates. The intended call-first experience is: call Assurance, describe the issue once, receive a secure upload link, verify the phone, and let the agent continue from the saved account. AgentPhone handles voice and those case texts; its carrier registration is still pending, so this separate flow remains disabled. No case details or medical information belong in SMS.
 
 ## Current phone-login configuration
@@ -102,3 +104,7 @@ It is therefore not a verified replacement for pending AgentPhone SMS. A future 
 ## Mac Messages notification alternative
 
 The user selected a computer-based delivery bridge and then approved using this Mac's existing Messages sender for the demo. `PHONE_NOTIFICATION_PROVIDER=mac_messages` selects the new pull-based bridge; Twilio Verify OTP and AgentPhone voice remain separate. It requires explicit local account configuration, a matching server token/sender label, fresh readiness, text consent, and the flow flag. See [Mac Messages bridge](mac-messages-bridge.md). The Mac account check succeeds, but reply database access is denied, so actual delivery and inbound routing remain disabled. The authenticated bridge API is deployed with the Mac selector; PHONE_FLOW_ENABLED remains false. No real Mac message has been sent.
+
+## Superseded customer entry
+
+The current firm direction uses email and the website for the customer relationship. Phone-primary sign-in, public test-number buttons, phone linking, call-intake panels, and SMS-notification controls are removed from the main UI. Existing phone sessions and account/case data remain compatible; no records were deleted. `PHONE_FLOW_ENABLED` remains disabled. Outbound AgentPhone case calls are a separate capability and are not removed by this UI change. See [frontend](frontend.md) for email entry and [website conversation](web-chat.md) for customer messaging.

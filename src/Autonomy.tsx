@@ -77,7 +77,7 @@ export function Autonomy({caseId, userId, enabled, between}: {caseId: string; us
   const session = (current && sessions.find(s => s.authority_id === current.id)) ?? (current ? undefined : sessions[0]);
   const question = [...history.decisions].sort(byNewest).find(d => d.decision?.tool === "request_human_help")?.decision;
   const needsYou = session && ["human_required", "needs_input"].includes(session.state);
-  const canMessage = session?.engine === "direct_openai" && current?.id === session.authority_id;
+  const canMessage = session?.engine === "direct_openai" && current?.id === session.authority_id && current.policy.version !== 2;
   const working = !!current && ["running", "queued", "starting", "direct_running"].includes(session?.state ?? "queued");
 
   let label: string, detail: ReactNode, tone: string;
@@ -99,7 +99,8 @@ export function Autonomy({caseId, userId, enabled, between}: {caseId: string; us
 
       {needsYou && <div className="ask">
         {question && "question" in question && <div className="claim-agent-message"><span className="claim-message-label">Assurance needs a little more information</span><p className="ask-question">{question.question}</p></div>}
-        {sessionNeedsProviderApproval(session) && <SessionApprovals caseId={caseId} runId={session.id} userId={userId}/>}
+        {current?.id === session.authority_id && current.policy.version === 2 && <a className="text-link" href="#section-conversation">Reply in the conversation</a>}
+        {sessionNeedsProviderApproval(session) && history.authorities.find(a => a.id === session.authority_id)?.policy.version !== 2 && <SessionApprovals caseId={caseId} runId={session.id} userId={userId}/>}
       </div>}
 
       {sentAnswer && <div className="claim-owner-message"><span className="claim-message-label">You · Update saved</span><p>{sentAnswer}</p></div>}

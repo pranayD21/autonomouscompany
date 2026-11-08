@@ -1,4 +1,7 @@
-import {PhoneIntakes} from "./PhoneIntakes";
+import {phoneSelected} from './phone-session';
+import {OnboardingCallNotice} from './phone-onboarding';
+import {GmailConnection} from './GmailConnection';
+import {EmailLeads} from "./EmailLeads";
 import {useCallback, useEffect, useRef, useState, type ReactNode} from "react";
 import {AnimatePresence, motion} from "motion/react";
 import {useLiveQuery} from "@neon/realtime-react";
@@ -8,6 +11,7 @@ import type {CaseInput} from "../backend/claim-input";
 import {api, sealCases} from "./services";
 import {CaseForm} from "./CaseForm";
 import {Documents} from "./Documents";
+import {CaseChat} from "./CaseChat";
 import {Autonomy} from "./Autonomy";
 import {Outcomes} from "./Outcomes";
 import {ArrowLeft, Home, LogOut, Plus} from "./Icons";
@@ -100,6 +104,8 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
         label={item.title}/>)}
     </Sidebar>
     <main id="workspace-content" className="surface">
+      {phoneSelected()&&<OnboardingCallNotice userId={userId}/>}
+      {!phoneSelected()&&route.view!=="case"&&<EmailLeads userId={userId} onOpen={id=>go(`#case/${id}`)}/>}
       {error && <p role="alert" className="error">Live updates stopped: {error.message}. Reload to reconnect.</p>}
       <AnimatePresence>{notice && <motion.p role="alert" className="error" initial={{opacity: 0, y: -6}} animate={{opacity: 1, y: 0}} exit={{opacity: 0}}>{notice}</motion.p>}</AnimatePresence>
       <AnimatePresence mode="wait">
@@ -112,14 +118,15 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
 function Intake({hasCases, disabled, onCancel, onSave, live}: {hasCases: boolean; disabled: boolean; onCancel: () => void; onSave: (d: CaseInput,files?:File[]) => Promise<void>; live: ReactNode}) {
   return <>
     <div className="page-head">
-      <div>{hasCases && <button className="back-link" onClick={onCancel}><ArrowLeft size={16} aria-hidden="true"/>All cases</button>}<h1>{hasCases ? "Open a new case." : "Open your first case."}</h1><p className="lede">Tell us what happened or upload your documents. Assurance takes it from there.</p></div>
+      <div>{hasCases && <button className="back-link" onClick={onCancel}><ArrowLeft size={16} aria-hidden="true"/>All cases</button>}<h1>{hasCases ? "Open a new case." : phoneSelected() ? "Your cases" : "Open your first case."}</h1><p className="lede">{phoneSelected()&&!hasCases ? "Your cases will appear here. You can add details and documents below." : "Tell us what happened or upload your documents. Assurance takes it from there."}</p></div>
       {live}
     </div>
-    <div className="intake-card"><CaseForm disabled={disabled} onSave={onSave}/></div>
+    {phoneSelected()&&!hasCases ? <details className="intake-card"><summary>Add case details yourself (optional)</summary><CaseForm disabled={disabled} onSave={onSave}/></details> : <div className="intake-card"><CaseForm disabled={disabled} onSave={onSave}/></div>}
   </>;
 }
 
 export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}: {item: BillCase; userId: string; crewEnabled: boolean; busy: string | null; live: ReactNode; onSave: (d: CaseInput) => Promise<void>; onAct: (action: "delete") => Promise<boolean>}) {
+  const diff = item.bill_cents !== null && item.eob_cents !== null ? Math.max(0, item.bill_cents - item.eob_cents) : null;
   const [editing, setEditing] = useState(false);
   const i = item.intake;
   const facts = [
@@ -142,7 +149,17 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
       </div>
     </div>
 
-    <Autonomy key={item.id} caseId={item.id} userId={userId} enabled={crewEnabled} between={<Outcomes caseId={item.id} userId={userId} revision={item.revision}/>}/>
+    {phoneSelected() && <dl className="case-key-numbers" aria-label="Key amounts"><div><dt>Bill amount</dt><dd>{item.bill_cents === null ? "Not yet known" : money(item.bill_cents)}</dd></div><div><dt>EOB responsibility</dt><dd>{item.eob_cents === null ? "Not yet known" : money(item.eob_cents)}</dd></div><div><dt>Estimated discrepancy</dt><dd>{diff === null ? "Not yet known" : money(diff)}</dd><small>To investigate · not verified savings</small></div></dl>}
+
+    <Autonomy key={item.id} caseId={item.id} userId={userId} enabled={crewEnabled} between={<>
+      <section id="section-conversation" className="case-section" aria-label="Conversation">
+        <header className="case-section-head"><h3>Conversation</h3></header>
+        <CaseChat key={`chat-${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision}/>
+      </section>
+      <Outcomes caseId={item.id} userId={userId} revision={item.revision}/>
+    </>}/>
+
+    {!phoneSelected() && <GmailConnection key={`gmail-${item.id}`} caseId={item.id} userId={userId}/>}
 
     <Documents key={`documents-${item.id}`} caseId={item.id} userId={userId} revision={item.revision}/>
 

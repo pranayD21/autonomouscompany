@@ -1,0 +1,15 @@
+import {useEffect,useState,useRef} from 'react';
+import {api} from './services';
+type Lead={id:string;subject:string;case_id:string|null};
+export function EmailLeads({userId,onOpen}:{userId:string;onOpen:(id:string)=>void}){
+ const [leads,setLeads]=useState<Lead[]>([]),[verified,setVerified]=useState(true),[error,setError]=useState(''),[busy,setBusy]=useState<string|null>(null);
+ const verification=useRef<{owner:string;promise:Promise<unknown>}|null>(null);
+ const [kinds,setKinds]=useState<Record<string,string>>({});
+ useEffect(()=>{let active=true;const url=new URL(location.href),token=url.searchParams.get('verify_email');if(token){url.searchParams.delete('verify_email');history.replaceState(null,'',url);}if(token)verification.current={owner:userId,promise:api('/email/verify/confirm',{method:'POST',body:JSON.stringify({token})},userId)};const confirmed=verification.current?.owner===userId?verification.current.promise:Promise.resolve();confirmed.catch(e=>{if(active)setError(e instanceof Error?e.message:'Could not verify email.');}).then(()=>api<{email_verified:boolean;leads:Lead[]}>('/email/leads',{},userId)).then(data=>{if(active){setLeads(data.leads);setVerified(data.email_verified);}}).catch(()=>{});return()=>{active=false;};},[userId]);
+ async function claim(lead:Lead){if(lead.case_id){onOpen(lead.case_id);return;}setBusy(lead.id);setError('');try{const result=await api<{id:string}>(`/email/leads/${lead.id}/claim`,{method:'POST',body:JSON.stringify({case_type:kinds[lead.id]})},userId);onOpen(result.id);setLeads(items=>items.filter(item=>item.id!==lead.id));}catch(e){setError(e instanceof Error?e.message:'Could not open this email.');}finally{setBusy(null);}}
+ async function verify(){setBusy('verify');setError('');try{await api('/email/verify',{method:'POST'},userId);setError('Check your email for the verification link, then return here.');}catch(e){setError(e instanceof Error?e.message:'Could not verify email.');}finally{setBusy(null);}}
+
+ if(!verified)return <section aria-label="Connect your email"><p>If you emailed Assurance, verify your account email to connect that conversation to your workspace.</p><button disabled={busy!==null} onClick={()=>void verify()}>{busy==='verify'?'Sending…':'Verify my email'}</button>{error&&<p role="status">{error}</p>}</section>;
+ if(!leads.length)return error?<p role="status">{error}</p>:null;
+ return <section aria-label="Your emails to Assurance"><h2>Your emails to Assurance</h2>{leads.map(lead=><div key={lead.id}><p>{lead.subject||'Your email'}</p>{!lead.case_id&&<label>What is this about? <select value={kinds[lead.id]||''} onChange={e=>setKinds({...kinds,[lead.id]:e.target.value})}><option value="" disabled>Choose case type</option><option value="workplace_injury">An injury at work</option><option value="health_insurance">A health insurance decision or bill</option></select></label>}<button disabled={busy!==null||(!lead.case_id&&!kinds[lead.id])} onClick={()=>void claim(lead)}>{busy===lead.id?'Opening…':'Open case'}</button></div>)}{error&&<p role="alert">{error}</p>}</section>;
+}

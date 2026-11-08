@@ -1,3 +1,4 @@
+import {firmEnabled,queueFirmEvent} from "./firm-events";
 import {and,eq,inArray,sql} from "drizzle-orm";
 import type {NodePgDatabase} from "drizzle-orm/node-postgres";
 import {z} from "zod";
@@ -12,6 +13,7 @@ import {sendOutreach,outreachEnabled} from "./providers/outreach";
 export type OpenActionInput={operation_id:string;authority_id:string;decision:CaseDecision;channel?:"email"|"call";destination?:string};
 export async function takeOpenCaseAction(db:NodePgDatabase,identity:CaseToolIdentity,input:OpenActionInput,sender=sendOutreach){
  const decision=caseDecision.parse(input.decision);
+ if(decision.tool==="wait_for_reply"&&!Number.isFinite(new Date(Date.now()+decision.minutes*60000).getTime()))throw Error("INVALID_FOLLOWUP_TIMESTAMP");
  const prepared=await db.transaction(async tx=>{
   const [item]=await tx.select().from(cases).where(and(eq(cases.id,identity.case_id),eq(cases.owner_id,identity.owner_id))).for("update");
   const [authority]=await tx.select().from(caseAuthorities).where(and(eq(caseAuthorities.id,input.authority_id),eq(caseAuthorities.case_id,identity.case_id),eq(caseAuthorities.approved_by,identity.owner_id))).for("update");
@@ -45,6 +47,7 @@ export async function takeOpenCaseAction(db:NodePgDatabase,identity:CaseToolIden
   const result={state,reason,...(decision.tool==="stop_case"?{outcome:decision.outcome,verification:decision.outcome==="goal_met"?"evidence_reported_not_independently_verified":"not_a_verified_real_payout"}:{})};
   await tx.update(caseDecisions).set({result}).where(eq(caseDecisions.id,round.id));
   await tx.update(caseAuthorities).set({state,reason,next_wake_at:decision.tool==="wait_for_reply"?new Date(Date.now()+decision.minutes*60000):null}).where(eq(caseAuthorities.id,authority.id));
+  if(firmEnabled()&&decision.tool==="stop_case")for(const role of ["ceo","reviewer","knowledge","finance"] as const)await queueFirmEvent(tx,{role,event_key:`closed:${round.id}:${role}`,kind:"case_closed",case_id:item.id,payload:{outcome:decision.outcome,summary:decision.summary,evidence_refs:decision.evidence_refs}});
   return {authority,round:{...round,result},send:false};
  });
  if(prepared.send){

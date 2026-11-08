@@ -29,3 +29,9 @@ Previous synthetic tests observed HTTP 429 on session status reads and timeouts;
 The user cancelled the external report. No report was sent. Continue the local reduced-load implementation without contacting Naïve.
 
 Case-binding preflight performs its version, identity, and attachment reads sequentially. Concurrent preflight reads would contend for the singleton lease and could repeatedly defer startup. A regression test rejects overlapping reads and confirms the complete binding still validates.
+
+## Short request contention
+
+The shared lease still permits only one provider request at a time. When another request holds that lease, a caller now rechecks after one second within the existing four-retry admission window. It does not assume the lease's 35-second crash timeout is a provider cooldown. Actual `next_allowed_at` cooldowns, Retry-After, request timeouts, and no-replay behavior remain unchanged. This prevents simultaneous scheduler ticks from repeatedly deferring otherwise healthy short requests.
+
+Deferred-work status refers to the shared Naïve request queue. A local occupied lease is not evidence that Naïve returned HTTP 429; live rejection claims require a provider response.

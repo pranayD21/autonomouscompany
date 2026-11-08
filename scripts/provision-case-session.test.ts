@@ -4,7 +4,7 @@ import {randomUUID} from "node:crypto";
 import {Pool} from "pg";
 import {drizzle} from "drizzle-orm/node-postgres";
 import {migrate} from "drizzle-orm/node-postgres/migrator";
-import {eq,inArray} from "drizzle-orm";
+import {eq,inArray,sql} from "drizzle-orm";
 import {cases,caseAuthorities,caseAgentSessions,caseToolCredentials} from "../backend/schema";
 import {provisionCaseSession,type ProvisionInput} from "../backend/provision-case-session";
 import type {naiveClient} from "../backend/providers/naive";
@@ -17,8 +17,8 @@ async function fixture():Promise<ProvisionInput>{
  const [authority]=await db.insert(caseAuthorities).values({case_id:item.id,approved_by:owner,policy:{synthetic:true,goal:"Gather fictional facts",contacts:[],max_decisions:3,max_outbound:0,min_contact_interval_minutes:60,expires_at:new Date(Date.now()+86400000).toISOString()}}).returning();
  return {caseId:item.id,authorityId:authority.id,owner,agentId:"agt_test",generalVersion:21,toolsUrl:"https://example.com/mcp"};
 }
-function provider(){
- const base={version:21,current_version:21,system:"Synthetic test",metadata:{},mcp_servers:[],tools:{default_config:{permission:"deny"}},budget:{period:"month",cap_micro_usd:2000000,max_task_micro_usd:250000}};
+function provider(metadata:Record<string,unknown>={}){
+ const base={version:21,current_version:21,system:"Synthetic test",metadata,mcp_servers:[],tools:{default_config:{permission:"deny"}},budget:{period:"month",cap_micro_usd:2000000,max_task_micro_usd:250000}};
  let current:any=structuredClone(base),seq=21,calls=0,failPublish=false;
  const versions:any[]=[structuredClone(base)],identities:any[]=[],vaults:any[]=[],sealed:any[]=[];
  const page=(data:any[])=>({data,has_more:false,next_cursor:null});
@@ -51,4 +51,38 @@ test("restoration preserves a newer general default instead of rolling it back t
  const input=await fixture(),p=provider();p.newGeneral();
  await provisionCaseSession(db,input,p.client);
  assert.equal(p.current().system,"Newer general configuration");assert.deepEqual(p.current().mcp_servers,[]);
+});
+
+
+test("open permission provisions without operator/expiry constraints and seals a non-expiring credential",async()=>{
+ const input=await fixture(),p=provider();
+ await db.execute(sql`UPDATE advocacy_case_authorities SET policy=${JSON.stringify({version:2,consent:"Handle my claim and ask me for needed details."})}::jsonb WHERE id=${input.authorityId}`);
+ const priorAllowed=process.env.CREW_ALLOWED_USER_IDS,priorBudget=process.env.NAIVE_OPEN_SESSION_BUDGET_MICRO_USD;
+ process.env.CREW_ALLOWED_USER_IDS="";process.env.NAIVE_OPEN_SESSION_BUDGET_MICRO_USD="9000000";
+ try{
+  const run=await provisionCaseSession(db,input,p.client);
+  const pinned=p.versions.find(v=>v.version===run.agent_version);
+  assert.equal(pinned.budget.max_task_micro_usd,9000000);assert.equal(pinned.budget.cap_micro_usd,9000000);
+  const [credential]=await db.select().from(caseToolCredentials).where(eq(caseToolCredentials.id,run.credential_id));
+  assert.equal(credential.expires_at,null);assert.equal(p.sealed[0].expires_at,undefined);
+  assert.deepEqual(p.current().mcp_servers,[]);assert.equal(p.current().budget.max_task_micro_usd,250000);
+  assert.equal((await provisionCaseSession(db,input,p.client)).id,run.id);
+ }finally{
+  if(priorAllowed===undefined)delete process.env.CREW_ALLOWED_USER_IDS;else process.env.CREW_ALLOWED_USER_IDS=priorAllowed;
+  if(priorBudget===undefined)delete process.env.NAIVE_OPEN_SESSION_BUDGET_MICRO_USD;else process.env.NAIVE_OPEN_SESSION_BUDGET_MICRO_USD=priorBudget;
+ }
+});
+
+
+test("case-owned general agent metadata is not mistaken for its published case connector",async()=>{
+ const input=await fixture(),p=provider({assurance_case:input.caseId,assurance_authority:input.authorityId});
+ await db.execute(sql`UPDATE advocacy_case_authorities SET policy=${JSON.stringify({version:2,consent:"Authorize the firm to hire this advocate."})}::jsonb WHERE id=${input.authorityId}`);
+ const run=await provisionCaseSession(db,{...input,budgetMicroUsd:50000},p.client);
+ assert.notEqual(run.agent_version,input.generalVersion);
+ const pinned=p.versions.find(v=>v.version===run.agent_version);
+ assert.equal(pinned.mcp_servers[0].url,`${input.toolsUrl}/${input.caseId}`);
+ assert.equal(p.current().metadata.assurance_authority,input.authorityId);
+ assert.deepEqual(p.current().mcp_servers,[]);
+ assert.equal((await provisionCaseSession(db,{...input,budgetMicroUsd:50000},p.client)).id,run.id);
+ assert.equal(p.identities.length,1);assert.equal(p.sealed.length,1);
 });

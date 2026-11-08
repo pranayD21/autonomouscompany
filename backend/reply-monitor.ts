@@ -27,7 +27,7 @@ export async function pollReplyMonitors(db:NodePgDatabase,invocationId:string,sy
   const claimed=await db.execute(sql`
    WITH due AS (
     SELECT action_id FROM advocacy_reply_monitors
-    WHERE enabled AND (expires_at>now() OR EXISTS (
+    WHERE enabled AND NOT EXISTS (SELECT 1 FROM advocacy_outreach_actions a JOIN advocacy_case_mailboxes m ON m.case_id=a.case_id WHERE a.id=advocacy_reply_monitors.action_id) AND (expires_at>now() OR EXISTS (
      SELECT 1 FROM advocacy_case_decisions d JOIN advocacy_case_authorities a ON a.id=d.authority_id
      WHERE d.action_id=advocacy_reply_monitors.action_id AND a.policy->>'version'='2'
       AND a.state IN ('active','waiting','human_required')
