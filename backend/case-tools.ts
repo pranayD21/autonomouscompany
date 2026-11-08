@@ -7,6 +7,7 @@ export type CaseToolIdentity={id:string;case_id:string;owner_id:string};
 export type CaseToolDependencies={
  authenticate:(token:string)=>Promise<CaseToolIdentity|null>;
  getCase:(identity:CaseToolIdentity)=>Promise<unknown>;
+ citeSource?:(identity:CaseToolIdentity,input:{operation_id:string;url:string;quote:string})=>Promise<unknown>;
  recordFact:(identity:CaseToolIdentity,input:{operation_id:string;statement:string;source_ref:string})=>Promise<unknown>;
 };
 const textResult=(value:unknown)=>({content:[{type:"text" as const,text:JSON.stringify(value)}]});
@@ -29,6 +30,10 @@ export function caseTools(deps:CaseToolDependencies){
   server.registerTool("case_record_fact",{description:"Record a sourced statement, not independent verification. Reuse operation_id when retrying.",inputSchema:{case_id:z.uuid(),operation_id:z.uuid(),statement:z.string().trim().min(1).max(4000),source_ref:z.string().trim().min(1).max(200)}},async input=>{
    if(input.case_id!==identity.case_id)return {...textResult({error:"CASE_MISMATCH"}),isError:true};
    try{return textResult(await deps.recordFact(identity,input));}catch{return {...textResult({error:"FACT_NOT_SAVED",message:"Check source_ref and operation_id against case_get; do not invent evidence."}),isError:true};}
+  });
+  if(deps.citeSource)server.registerTool("cite_source",{description:"Fetch a public source and verify a short exact quote. Does not verify legal applicability. Use only public URLs; never include private case details in URLs.",inputSchema:{case_id:z.uuid(),operation_id:z.uuid(),url:z.url().max(2000),quote:z.string().min(12).max(1000)}},async input=>{
+   if(input.case_id!==identity.case_id)return {...textResult({error:"CASE_MISMATCH"}),isError:true};
+   try{return textResult(await deps.citeSource!(identity,input));}catch{return {...textResult({error:"SOURCE_NOT_SAVED",message:"Public HTTPS source and an exact quote of at most 25 words required. Reuse the saved citation for an already cited text; do not invent evidence."}),isError:true};}
   });
   const transport=new WebStandardStreamableHTTPServerTransport({sessionIdGenerator:undefined,enableJsonResponse:true});
   await server.connect(transport);

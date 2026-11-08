@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-07 — Agent-directed public-source citations
+
+Added `cite_source` to the deployed case MCP service, with per-case ownership, immutable source snapshots, exact short-quote checks, idempotent operations, and evidence references usable by recorded facts. Public HTTPS retrieval validates DNS and every redirect, pins the connection to a validated address, bounds downloads, and supports HTML/plain text/PDF text layers. Added ipaddr.js directly; its older transitive version remains nested for proxy-addr. Prepared Naïve web search/fetch and citation permissions without changing budgets or publishing the agent configuration.
+
+Verification: 13 transport/configuration/source tests and two database tests pass; build passes. Live direct HTTPS retrieval and deployed MCP retrieval/storage/retry/reference verification passed against example.com, followed by fixture cleanup. Migration 0015 and all six Functions deployed. An initial `tsx -e` smoke command hit a CJS/ESM package-export error; rerunning through Node’s ESM loader passed. No model session, claim communication, or payment occurred. Naïve-driven research remains unverified until vault access is configured. See research.md and agent-tools.md.
+
 ## 2026-11-07 — Completed-call transcript ingestion
 
 Added bounded AgentPhone/ElevenLabs transcript readers, immutable hash-addressed evidence snapshots, owner/case/receipt checks, and idempotent imports. New speech evidence advances the case revision once and wakes existing live authority without resetting limits or restoring stopped authority. Manual refresh and the existing five-minute scheduler collect completed transcripts; bounded decisions and MCP case reads receive them as untrusted reported speech. Migration 0014 adds the evidence table. The scheduler now receives its operator allowlist.

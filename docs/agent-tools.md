@@ -11,6 +11,7 @@ The expanded autonomy proposal is in [autonomy-plan.md](autonomy-plan.md). This 
 Available tools:
 
 - `case_get`: returns the case, document IDs/hashes, accepted correspondence, outreach history, recorded statements, completed-call transcript snapshots, and valid source references.
+- `cite_source`: retrieves a chosen public source, verifies a short exact quote, and saves a case-linked snapshot. See research.md for network restrictions and provenance limits.
 - `case_record_fact`: records a statement and an existing case evidence reference. It does not independently verify the statement. A case-scoped operation UUID makes retries idempotent; a retry with changed data fails. A successful new record advances the case revision once.
 
 `backend/case-tool-service.ts` implements database operations. Migration 0013 adds credential and sourced-statement tables. No sending, calling, checkout, outcome, or scheduling tools are exposed yet. The existing bounded own-inbox autonomy grant is unchanged.
@@ -31,7 +32,7 @@ The installed SDK attaches MCP servers to agent versions, not individual session
 
 ## Naïve session connection (prepared, not live-verified)
 
-`backend/providers/case-agent.ts` defines the MCP tool configuration and session inputs. Each session selects an explicit Naïve identity and agent version, with a task budget no larger than the existing $0.25 cap. A case identity owns a vault containing its case bearer token. The coordinator declares the shared `/mcp` URL; Naïve injects the identity's credential at the network boundary. The token is never included in prompts or inline agent headers. Only `assurance.case_get` and `assurance.case_record_fact` are enabled from this server. The existing coordinator retains its $2 monthly cap; no new agent budget is created.
+`backend/providers/case-agent.ts` defines the MCP tool configuration and session inputs. Each session selects an explicit Naïve identity and agent version, with a task budget no larger than the existing $0.25 cap. A case identity owns a vault containing its case bearer token. The coordinator declares the shared `/mcp` URL; Naïve injects the identity's credential at the network boundary. The token is never included in prompts or inline agent headers. The prepared configuration enables `assurance.case_get`, `assurance.case_record_fact`, and `assurance.cite_source`, plus Naïve web search/fetch. The existing coordinator retains its $2 monthly cap; no new agent budget is created.
 
 Set `NAIVE_CASE_TOOLS_URL` to the tools Function's `/mcp` URL. The blueprint adds these tools only when that variable is set. `scripts/case-agent-smoke.ts setup` provisions two synthetic case identities/vaults and starts two version-pinned sessions, each instructed to read its own case, verify the other case is denied, and record one sourced statement. `poll` observes the saved sessions without creating new ones. Local state and event logs live in ignored `test-results/` files. The setup script can read a temporary admin-scoped key from `NAIVE_SETUP_KEY_FILE`; it changes the key only inside its process, not in the app environment.
 

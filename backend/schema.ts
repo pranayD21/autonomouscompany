@@ -188,3 +188,12 @@ export const callEvidence=pgTable("advocacy_call_evidence",{
  sha256:text("sha256").notNull(),
  received_at:timestamp("received_at",{withTimezone:true}).defaultNow().notNull(),
 },t=>[uniqueIndex("advocacy_call_evidence_receipt_hash_idx").on(t.action_id,t.sha256),index("advocacy_call_evidence_case_idx").on(t.case_id)]);
+
+export const caseSources=pgTable("advocacy_case_sources",{
+ id:uuid("id").primaryKey().defaultRandom(),
+ case_id:uuid("case_id").notNull().references(()=>cases.id,{onDelete:"restrict"}),
+ operation_id:uuid("operation_id").notNull(),
+ requested_url:text("requested_url").notNull(),url:text("url").notNull(),title:text("title").notNull(),
+ text:text("text").notNull(),quote:text("quote").notNull(),sha256:text("sha256").notNull(),
+ retrieved_at:timestamp("retrieved_at",{withTimezone:true}).notNull(),
+},t=>[uniqueIndex("advocacy_case_source_operation_idx").on(t.case_id,t.operation_id),uniqueIndex("advocacy_case_source_hash_idx").on(t.case_id,t.sha256)]);

@@ -30,3 +30,9 @@ test("shared MCP URL derives case access solely from the bearer credential",asyn
   }
  }
 });
+
+test("citation tool refuses another case before fetching a URL",async()=>{
+ let fetches=0;const sourceApp=caseTools({authenticate:async()=>({id:"credential",case_id:caseId,owner_id:"owner"}),getCase:async()=>({}),recordFact:async()=>({}),citeSource:async()=>{fetches++;return{};}});
+ const response=await sourceApp.request("/mcp",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json, text/event-stream",Authorization:"Bearer valid"},body:rpc("tools/call",{name:"cite_source",arguments:{case_id:other,operation_id:caseId,url:"https://example.com/",quote:"A fictional quote that must not be fetched"}})});
+ assert.equal((await response.json()).result.isError,true);assert.equal(fetches,0);
+});
