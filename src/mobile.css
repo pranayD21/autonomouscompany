@@ -1,7 +1,7 @@
 @media (max-width: 820px) {
   html { scroll-padding-top: 88px; }
   .shell { min-height: 100svh; }
-  .surface { min-height: calc(100svh - 64px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .surface { min-height: calc(100svh - 64px - env(safe-area-inset-top, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); }
   .view, .page-head > div, .case-section, .status-panel, .phone-entry, .ov-head > div, .ov-card-slot { min-width: 0; }
   .surface h1, .surface h2, .surface h3, .surface p, .app-main p, .surface summary, .surface strong, .surface a, .app-main a { overflow-wrap: anywhere; }
   .surface h1 { font-size: clamp(30px, 6vw, 46px); line-height: 1.12; letter-spacing: -1.2px; }
@@ -158,3 +158,49 @@
 }
 @keyframes how-nudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .landing-page .hero-how-link span { animation: none; } }
+
+/* Sign-in code step: the instruction sits between the "Verification code" label and its field
+   (new markup in src/PhoneSignIn.tsx; mirrors the label grid used by .phone-entry label). */
+.phone-code-field { display: grid; gap: 8px; }
+.phone-code-field .phone-code-hint, .app-main .phone-code-field .phone-code-hint { margin: -2px 0 0; font-size: 13px; line-height: 1.5; color: var(--quiet); }
+
+/* Phones: safe areas (index.html sets viewport-fit=cover) and readable small print. */
+@media (max-width: 820px) {
+  .landing-page .site-header { padding-top: max(10px, env(safe-area-inset-top, 0px)); padding-left: max(6%, env(safe-area-inset-left, 0px)); padding-right: max(6%, env(safe-area-inset-right, 0px)); }
+  .landing-page .hero-content { padding-left: max(6%, env(safe-area-inset-left, 0px)); padding-right: max(6%, env(safe-area-inset-right, 0px)); }
+  .landing-page .how-section { padding-left: max(6%, env(safe-area-inset-left, 0px)); padding-right: max(6%, env(safe-area-inset-right, 0px)); }
+  .landing-page .site-footer { margin-left: max(6%, env(safe-area-inset-left, 0px)); margin-right: max(6%, env(safe-area-inset-right, 0px)); }
+  .app-header { min-height: calc(76px + env(safe-area-inset-top, 0px)); padding-top: env(safe-area-inset-top, 0px); padding-left: max(7%, env(safe-area-inset-left, 0px)); padding-right: max(7%, env(safe-area-inset-right, 0px)); }
+  .app-footer { margin-left: max(7%, env(safe-area-inset-left, 0px)); margin-right: max(7%, env(safe-area-inset-right, 0px)); padding-bottom: max(28px, env(safe-area-inset-bottom, 0px)); }
+  .app-footer small { font-size: 12px; }
+  /* Total bar height is 64px plus the top inset (inset is 0 in ordinary Safari tabs). */
+  .mobile-bar { height: auto; min-height: calc(64px + env(safe-area-inset-top, 0px)); padding-top: env(safe-area-inset-top, 0px); }
+
+  .landing-page .site-footer > span, .landing-page .site-footer .photo-credit { font-size: 12px; }
+  .landing-page .photo-credit a { padding: 10px 2px; }
+  .phone-entry .demo-note { font-size: 13px !important; line-height: 1.55; }
+
+  .landing-page .site-header .nav-workspace { font-size: 13px; gap: 4px; white-space: nowrap; }
+  .landing-page .how-section .steps { gap: 10px; }
+  .landing-page .how-section .step-row, .landing-page .how-section .step-row:first-child { padding: 16px; gap: 14px; }
+}
+
+/* Short landscape phones (e.g. 852x393): cap the wordmark by height and drop the full-screen
+   spacing so the headline and call to action are on the first screen. */
+@media (max-width: 1000px) and (max-height: 500px) {
+  .landing-page .site-header { height: auto; min-height: 56px; padding-top: max(8px, env(safe-area-inset-top, 0px)); padding-bottom: 8px; padding-left: max(6.1%, env(safe-area-inset-left, 0px)); padding-right: max(6.1%, env(safe-area-inset-right, 0px)); }
+  .landing-page .minimal-root { min-height: 0; }
+  .landing-page .hero-content { display: block; padding: 14px max(6.1%, env(safe-area-inset-right, 0px)) max(20px, env(safe-area-inset-bottom, 0px)) max(6.1%, env(safe-area-inset-left, 0px)); }
+  .landing-page .hero-wordmark { font-size: min(17.1vw, 22svh); margin: 0 0 4px; }
+  .landing-page .hero-wordmark > span { padding-bottom: .3em; }
+  .landing-page .hero-bottom { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 24px; padding-top: 0; }
+  .landing-page .hero-message { display: block; }
+  .landing-page .hero-message h2 { font-size: clamp(22px, 3.4vw, 30px); letter-spacing: -1px; line-height: 1.12; }
+  .landing-page .landing-mobile-only { display: none; }
+  .landing-page .hero-action { width: auto; max-width: none; margin: 0; }
+  .landing-page .hero-action .primary-button { width: auto; min-height: 56px; }
+  .landing-page .how-section { padding-left: max(6%, env(safe-area-inset-left, 0px)); padding-right: max(6%, env(safe-area-inset-right, 0px)); }
+  .landing-page .site-footer { margin-left: max(6.1%, env(safe-area-inset-left, 0px)); margin-right: max(6.1%, env(safe-area-inset-right, 0px)); }
+  .app-header { padding-left: max(6.1%, env(safe-area-inset-left, 0px)); padding-right: max(6.1%, env(safe-area-inset-right, 0px)); }
+  .app-main { padding-left: max(6.1%, env(safe-area-inset-left, 0px)); padding-right: max(6.1%, env(safe-area-inset-right, 0px)); }
+}

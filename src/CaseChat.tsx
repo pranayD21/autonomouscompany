@@ -5,13 +5,15 @@ import {CaseDocumentFeedback, CaseDocumentUpload} from './Documents';
 import {Logo} from './Icons';
 export type CaseMessage={id:string;role:'user'|'assistant';text:string;created_at:string;kind?:string};
 export type CaseConversation={messages:CaseMessage[];state?:string;waiting_on?:string|null;can_send?:boolean};
-const statusText=(state?:string)=>state==='human_required'?'Waiting for your reply':state==='running'?'Working on your case':state==='queued'||state==='starting'?'Getting started':state==='stopped'||state==='revoked'?'Paused':state==='completed'?'Work finished':'Your case conversation';
+const KNOWN_LABELS:Record<string,string>={human_required:'Waiting for your reply',running:'Working on your case',queued:'Getting started',starting:'Getting started',stopped:'Paused',revoked:'Paused',completed:'Work finished'};
+/** Header status: the conversation's own state when it has a clear label, otherwise the case's derived progress wording (the overview's), otherwise a neutral line. */
+const statusText=(state?:string,fallback?:string)=>(state&&KNOWN_LABELS[state])||fallback||'Your case conversation';
 function clockTime(value:string){const date=new Date(value);return Number.isNaN(date.getTime())?'':date.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});}
 function dayLabel(value:string){const date=new Date(value);if(Number.isNaN(date.getTime()))return '';const today=new Date(),yesterday=new Date();yesterday.setDate(today.getDate()-1);if(date.toDateString()===today.toDateString())return 'Today';if(date.toDateString()===yesterday.toDateString())return 'Yesterday';return date.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',...(date.getFullYear()!==today.getFullYear()?{year:'numeric'}:{})});}
 const GROUP_MS=10*60*1000;
 function timestamp(value:string){const date=new Date(value);return Number.isNaN(date.getTime())?'':date.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
 /** The case conversation. The case page supplies the header pieces, a banner above the composer, and an overlay (children). */
-export function CaseChat({caseId,userId,revision,title,headerStart,headerEnd,beforeCompose,pausedNote=true,children}:{caseId:string;userId:string;revision:number;title?:string;headerStart?:ReactNode;headerEnd?:ReactNode;beforeCompose?:ReactNode;pausedNote?:boolean;children?:ReactNode}){
+export function CaseChat({caseId,userId,revision,title,headerStart,headerEnd,beforeCompose,pausedNote=true,fallbackStatus,children}:{caseId:string;userId:string;revision:number;title?:string;headerStart?:ReactNode;headerEnd?:ReactNode;beforeCompose?:ReactNode;pausedNote?:boolean;fallbackStatus?:{label:string;owner?:string};children?:ReactNode}){
  const [conversation,setConversation]=useState<CaseConversation>({messages:[]}),[loaded,setLoaded]=useState(false),[draft,setDraft]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const pending=useRef<{id:string;text:string}|null>(null),list=useRef<HTMLDivElement>(null),follow=useRef(true),alive=useRef(true);
  const path=`/cases/${caseId}/messages`;
@@ -30,11 +32,12 @@ export function CaseChat({caseId,userId,revision,title,headerStart,headerEnd,bef
  function attach(){document.querySelector<HTMLInputElement>('#section-conversation input[type="file"]')?.click();}
  const stopped=['stopped','revoked'].includes(conversation.state??'');
  const working=['running','queued','starting'].includes(conversation.state??'');
+ const knownState=!!conversation.state&&!!KNOWN_LABELS[conversation.state],stateLabel=statusText(conversation.state,fallbackStatus?.label);
  if(loaded&&seen.current===null)seen.current=new Set(conversation.messages.map(m=>m.id));
  return <div className="case-chat" data-state={conversation.state}>
   <header className="case-chat-header">
    {headerStart}
-   <div className="case-chat-heading"><strong title={title}>{title??'Your Assurance advocate'}</strong><p><span className="chat-state-dot" data-working={working} aria-hidden="true"/>{statusText(conversation.state)}</p></div>
+   <div className="case-chat-heading"><strong title={title}>{title??'Your Assurance advocate'}</strong><p><span className="chat-state-dot" data-working={working} data-owner={knownState?undefined:fallbackStatus?.owner} aria-hidden="true"/><span className="chat-state-text" title={stateLabel}>{stateLabel}</span></p></div>
    {headerEnd??<button type="button" className="chat-round" aria-label="Refresh messages" title="Refresh messages" onClick={()=>{setError('');void refresh().catch(e=>setError(e instanceof Error?e.message:'Could not refresh conversation.'));}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></button>}
   </header>
   <div ref={list} className="case-chat-log" role="log" aria-label="Messages with Assurance" aria-live="polite" aria-relevant="additions" onScroll={()=>{const el=list.current;if(el)follow.current=el.scrollHeight-el.scrollTop-el.clientHeight<80;}}>

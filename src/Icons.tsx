@@ -44,6 +44,9 @@ export function LogOut({size = 20, ...props}: IconProps) {
   return <svg {...base(size)} {...props}><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/></svg>;
 }
 
+export function User({size = 20, ...props}: IconProps) {
+  return <svg {...base(size)} {...props}><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>;
+}
 
 export function Check({size = 14, ...props}: IconProps) {
   return <svg {...base(size)} strokeWidth={2.4} {...props}><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>;

@@ -107,4 +107,41 @@ a.ov-attention:hover .ov-card-foot svg { transform: translate(2px, -2px); }
   .ov-row-arrow { grid-column: 3; grid-row: 1; width: 36px; height: 36px; }
   .ov-row-title { font-size: 19px; }
 }
+/* Phones: readable labels, a scrollable filter bar that never widens the page, and a compact bento
+   so the case list starts near the fold. Desktop sizes above are unchanged. */
+@media (max-width: 820px) {
+  .ov .eyebrow { font-size: 12px !important; letter-spacing: 1.4px; }
+  .ov-card-label, .ov-chip { font-size: 12px; letter-spacing: 1.3px; }
+  .ov-row-kind { font-size: 11.5px; letter-spacing: 1.1px; }
+  .ov-legend { font-size: 13px; }
+  .surface .ov-filter { font-size: 13px; }
+  .ov-filter-count { font-size: 11px; }
+}
+@media (max-width: 640px) {
+  .ov-filters { justify-content: flex-start; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+  .ov-filters::-webkit-scrollbar { display: none; }
+  .surface .ov-filter { flex: 1 0 auto; padding: 8px 12px; font-size: 13px; white-space: nowrap; }
+}
+@media (max-width: 480px) {
+  .ov-bento { gap: 10px; }
+  .ov-card { gap: 6px; padding: 16px 18px; border-radius: 20px; }
+  .ov-card-foot { margin: 2px -18px -16px; padding: 10px 18px; }
+  .ov-big { font-size: 36px; }
+  .ov-savings { min-height: 0; gap: 10px; }
+  .ov-savings-value { font-size: clamp(30px, 9vw, 40px); }
+  .ov-attention-case { font-size: 14px; }
+  .ov-meter { height: 8px; margin-top: 6px; }
+}
+@media (min-width: 360px) and (max-width: 480px) {
+  /* Needs you stays full width on top; the two summary cards share a row beneath it. */
+  .ov-bento { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "you you" "save mix"; }
+  .ov-card-slot { grid-area: you; }
+  .ov-savings { grid-area: save; padding: 16px; }
+  .ov-mix { grid-area: mix; padding: 16px; }
+  .ov-savings-value { font-size: clamp(24px, 7.4vw, 32px); }
+  .surface .ov-savings p { font-size: 12px; line-height: 1.5; }
+  .ov-savings .ov-chip { padding: 5px 10px; font-size: 11.5px; letter-spacing: 1px; }
+  .ov-mix .ov-card-label { font-size: 11.5px; letter-spacing: 1px; }
+  .ov-mix .ov-legend { flex-direction: column; gap: 2px; }
+}
 @media (prefers-reduced-motion: reduce) { .ov-skeleton { animation: none; } }

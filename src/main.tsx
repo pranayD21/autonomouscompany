@@ -11,6 +11,8 @@ import {Workspace} from "./Workspace";
 import {Logo} from "./Icons";
 import {MotionConfig} from "motion/react";
 import "./mobile.css";
+import {ErrorBoundary} from "./ErrorBoundary";
+import {formatPhone} from "./format";
 
 const message = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Please try again.";
 
@@ -48,10 +50,10 @@ function App() {
   // While the session check runs on a landing-eligible URL, show plain paper rather than the
   // loading shell, whose header/footer divider lines would flash before the landing page appears.
   if (isPending && !workspaceRoute) return null;
-  if (!isPending && !error && session?.user) return <>{signOutError && <p role="alert" className="error floating-error">{signOutError}</p>}<Dashboard key={session.user.id} userId={session.user.id} userName={session.user.name || session.user.phoneNumber || session.user.email || "Your account"} onSignOut={() => void signOut()}/></>;
+  if (!isPending && !error && session?.user) return <>{signOutError && <p role="alert" className="error floating-error">{signOutError}</p>}<Dashboard key={session.user.id} userId={session.user.id} userName={formatPhone(session.user.name || session.user.phoneNumber || session.user.email || "Your account")} onSignOut={() => void signOut()}/></>;
   return <><a className="skip-link" href="#workspace-content">Skip to content</a><header className="app-header"><a href="#home" className="brand" aria-label="Assurance home"><Logo aria-hidden="true"/>assurance<span className="brand-period">.</span></a></header>
     <main id="workspace-content" className="app-main">{isPending ? <p role="status">Loading your session…</p> : error ? <p role="alert" className="error">Authentication is unavailable. Please reload and try again.</p> : <PhoneEntry/>}</main>
     <footer className="app-footer"><span>assurance<span className="brand-period">.</span></span><small>Your case, handled.</small></footer></>;
 }
 
-createRoot(document.getElementById("root")!).render(<StrictMode><RealtimeProvider client={realtime}><MotionConfig reducedMotion="user"><App/></MotionConfig></RealtimeProvider></StrictMode>);
+createRoot(document.getElementById("root")!).render(<StrictMode><RealtimeProvider client={realtime}><MotionConfig reducedMotion="user"><ErrorBoundary><App/></ErrorBoundary></MotionConfig></RealtimeProvider></StrictMode>);

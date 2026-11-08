@@ -3,7 +3,7 @@ import {api, auth} from "./services";
 import type {DocumentExtraction} from "../backend/providers/document-reader";
 import type {CaseDocument} from "../backend/schema";
 import {AnimatePresence, motion} from "motion/react";
-import {FileIcon} from "./Icons";
+import {Check, FileIcon} from "./Icons";
 import {FileDrop} from "./ui/FileDrop";
 
 type DocumentView = Omit<CaseDocument, "object_key"> & {extraction_state: string | null; extraction_result: DocumentExtraction | null; extraction_error: string | null; confirmed_at: string | null};
@@ -13,7 +13,7 @@ const ACCEPT = "image/png,image/jpeg,image/webp,application/pdf";
 function readingLabel(doc: DocumentView) {
   if (doc.state !== "ready") return "Upload incomplete. Add the same file again.";
   if (doc.confirmed_at) return "Read and confirmed";
-  if (doc.extraction_result) return "Read";
+  if (doc.extraction_result) return "Read by Assurance";
   if (READING.includes(doc.extraction_state ?? "")) return "Reading…";
   if (doc.extraction_error) return "Couldn’t read this file";
   return "Not read yet";
@@ -102,7 +102,7 @@ export function Documents({bare = false}: {bare?: boolean}) {
         <div className="doc-head">
           <FileIcon size={16} aria-hidden="true"/>
           <strong>{doc.filename}</strong>
-          <span className="doc-reading" data-state={doc.confirmed_at ? "confirmed" : doc.extraction_state ?? "none"}>{readingLabel(doc)}</span>
+          <span className="doc-reading" data-state={doc.confirmed_at ? "confirmed" : doc.extraction_result ? "read" : doc.extraction_state ?? "none"}>{(doc.confirmed_at || doc.extraction_result) && doc.state === "ready" && <Check size={12} aria-hidden="true"/>}{readingLabel(doc)}</span>
           {canRead && <button className="text-button" disabled={busy} onClick={() => void extract(doc.id, "start")}>{doc.extraction_error ? "Try again" : "Read it"}</button>}
           {READING.includes(doc.extraction_state ?? "") && <button className="text-button" disabled={busy} onClick={() => void extract(doc.id, "refresh")}>Refresh</button>}
           {doc.state === "ready" && <button className="text-button" onClick={() => void download(doc)} aria-label={`Download ${doc.filename}`}>Download</button>}
@@ -110,7 +110,7 @@ export function Documents({bare = false}: {bare?: boolean}) {
         {result && <details><summary>What we read</summary>
           <p className="message-body">{result.visible_text}</p>
           <dl>{(["insurer_name", "member_name", "member_id", "group_number", "claim_number"] as const).map(key => <div key={key}><dt>{key.replaceAll("_", " ")}</dt><dd>{result[key] ?? "Not found"}</dd></div>)}</dl>
-          {result.uncertainties.length > 0 && <ul>{result.uncertainties.map((u, i) => <li key={i}>{u}</li>)}</ul>}
+          {(result.uncertainties?.length ?? 0) > 0 && <ul>{(result.uncertainties ?? []).map((u, i) => <li key={i}>{u}</li>)}</ul>}
           {!doc.confirmed_at && <button className="secondary" disabled={busy} onClick={() => void extract(doc.id, "confirm")}>This matches my document</button>}
         </details>}
       </motion.li>;

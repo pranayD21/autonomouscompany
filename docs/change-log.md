@@ -1,5 +1,28 @@
 # Change log
 
+## November 8, 2026 — iPhone audit and fixes
+
+The user asked for a full mobile audit on an iPhone, with problems listed first and then fixed. With no iOS Simulator installed, the audit ran WebKit with the iPhone 15, iPhone SE and iPhone 15 landscape profiles against the local app, using mocked fictional data (`scripts/mobile-audit/`). It found:
+
+- dead safe-area padding (no `viewport-fit=cover`)
+- no error boundary, so one missing document field blanked the app
+- two stacked headers taking 26–47% of the case page
+- a Case info sheet that left the app bar live above its backdrop
+- a landscape chat with about 40px of messages
+- many tap targets under 44pt
+- raw `+1…` phone numbers used as the user's name and avatar
+- a cramped onboarding notice with the stop action louder than the open action
+- the sign-in code hint shown below the button
+- a header status that contradicted the overview
+- `text-transform: capitalize` rewriting user data
+- an ambiguous "Read" chip
+- 9–11px text throughout
+- a landscape landing hero that hid the CTA
+
+Three subagents fixed these in parallel, split by file, and I integrated their work (avatar icon, inset height math). Details are in [frontend.md](frontend.md#iphone-audit-2026-11-08).
+
+Verification: `npm run build` and `tsc --noEmit` passed, and the 19 focused UI tests passed. After the fixes, the audit on all three profiles found no horizontal overflow, no visible input under 16px, and every chat, sheet and overview control at least 44pt. The only targets still under 44pt are the logo links, the label text and the 36px photo-credit links. Not verified on a physical iPhone: safe-area insets, the keyboard and real touch scrolling.
+
 ## November 8, 2026 — Case page audit on the live site
 
 The user asked for the chat background to match the overview and for a general refinement pass. I audited the three live cases in Chrome and made these changes:

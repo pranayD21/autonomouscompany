@@ -21,7 +21,7 @@ export function ClaimComposer({value, onChange, onSubmit, busy, needsAnswer, dis
   return <form className="claim-composer-form" onSubmit={onSubmit} aria-label="Message Assurance" aria-busy={busy}>
     <div className="claim-composer">
       <label className="visually-hidden" htmlFor={messageId}>Message Assurance</label>
-      <textarea ref={textarea} id={messageId} value={value} onChange={event => onChange(event.target.value)} disabled={busy || disabled} readOnly={readOnly} required maxLength={4000} rows={2}
+      <textarea ref={textarea} id={messageId} value={value} onChange={event => onChange(event.target.value)} disabled={busy || disabled} readOnly={readOnly} required maxLength={4000} rows={1}
         placeholder={needsAnswer ? "Share your answer with Assurance…" : "Add an update or ask about your claim…"}
         aria-describedby={hintId}
         onKeyDown={event => {

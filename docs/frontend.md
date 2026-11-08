@@ -14,6 +14,29 @@ The mobile drawer in `src/ui/Sidebar.tsx` exposes a named modal dialog, moves fo
 
 Verification: run `npm run build` with the normal three public `VITE_*` service URLs, and `npx tsx --test scripts/claim-composer.test.tsx scripts/progress.test.ts scripts/activation-state.test.ts`. On November 8, 2026, TypeScript/Vite and all 15 focused tests passed using non-production placeholder public service URLs for the build. A PostCSS AST check confirmed all 110 new style rules are enclosed by the two mobile-only queries. Browser/device layout and keyboard checks have not been run for this change. Before release, check 320/390/480/768/820px widths, landscape, long filenames/case titles, open details, the software keyboard and drawer focus/scroll behavior, then compare desktop at 821px and wider against the existing design. The isolated UI fixture scripts that import only `src/style.css` do not automatically include the new app-entry stylesheet; include `src/mobile.css` when using those fixtures for mobile acceptance.
 
+### iPhone audit (2026-11-08)
+
+The user asked for a full mobile audit on an iPhone. Xcode's iOS Simulator is not installed on the development Mac, so the audit uses Playwright's WebKit engine (Safari's) with the built-in `iPhone 15`, `iPhone SE` and `iPhone 15 landscape` device profiles. These set touch, pixel ratio and the mobile Safari user agent. `scripts/mobile-audit/` serves the real app through `vite.config.ts` on port 4290, with `@neon/realtime-react` swapped for `mock-realtime.tsx`. `audit.ts` mocks every phone-auth and cases API call with fictional data. It captures landing, sign-in, the code step, the overview, the drawer, a case chat (typing, Case info sheet, resolved, empty, new) and the new-case page. On each screen it records horizontal overflow, tap targets under 44pt, inputs under 16px, and text under 12px. Run it with:
+
+```
+npx playwright install webkit
+VITE_CASES_API_URL=https://mock-cases.compute.example.com VITE_NEON_AUTH_URL=https://mock-auth.example.com/auth VITE_NEON_REALTIME_URL=wss://mock-rt.example.com npx vite --config scripts/mobile-audit/vite.config.ts &
+DEVICE="iPhone SE" OUT=test-results/mobile-audit npx tsx scripts/mobile-audit/audit.ts
+```
+
+Fixes from that audit:
+
+- **Safe areas.** `index.html` now has `viewport-fit=cover`. Without it, every `env(safe-area-inset-*)` resolved to 0. The landing and sign-in headers and footers gained insets. `.mobile-bar` is `64px + env(safe-area-inset-top)`, and the case page and `.surface` heights subtract that inset. `theme-color` (#f5f4ef), `apple-mobile-web-app-title` and `public/apple-touch-icon.png` were added.
+- **Error boundary.** `src/ErrorBoundary.tsx` (with `src/error-boundary.css`) wraps `<App/>`. A render error shows a reload card instead of a blank page. `Documents` guards `extraction_result.uncertainties`.
+- **Case page.** At 820px and below the case header is about 57px, with 44px round buttons and a one-line title and status. A short-landscape query (`max-height: 500px`) tightens the header and composer so messages stay visible. Send, the bubble action, the start banner button, Edit, the sheet summaries and the document buttons are all at least 44px. On phones, Case info is a fixed bottom sheet: it dims the whole screen including the app bar, has 22px top corners and a grab handle, and is at most 88dvh tall. When the conversation state has no label of its own, the header shows the overview's `deriveProgress` wording (`fallbackStatus`), not "Your case conversation". The document chip reads "Read by Assurance" with a check, in plain status styling. `.facts dd` no longer capitalises user data.
+- **Names.** `src/format.ts` has `formatPhone` and `isPersonName`. Phone-only accounts show "(415) 555-0123" rather than E.164. The greeting is just "Good morning" when there is no real name, and the drawer avatar shows a person icon instead of "+".
+- **Onboarding notice.** It is one flat card. **Open your case** is a blue 44px pill, and the stop action is a quieter text button below it.
+- **Overview and drawer text.** Labels are at least 12px and the filter pills and legend 13px. The filter bar scrolls inside itself below 640px. Between 360 and 480px the bento is a compact two-column grid. The drawer section label and case initials are 12px, with a status ring on each case initial.
+- **Sign-in.** The code hint sits between the label and the input and is linked with `aria-describedby`. The code field autofocuses and has a "6-digit code" placeholder. The sent number shows formatted. The fine print is 13px on phones.
+- **Landing.** "Open workspace" is 13px. The footer and photo credit are 12px, and the credit links are about 36px tall. The step cards are tighter. A `max-width: 1000px and max-height: 500px` query caps the wordmark at `min(17.1vw, 22svh)`, so the CTA is visible in landscape.
+
+Limits: emulation reports every safe-area inset as 0, so notch and home-indicator spacing, the software keyboard and real touch scrolling are not verified on a physical iPhone. The Case info sheet decides phone or desktop when it renders, not on resize.
+
 ## Hash navigation
 
 Hash routes keep the open view across reloads: `#home` (landing), `#workspace` (overview), `#new` (intake form), `#case/<id>` (one case). While the session check is pending, `#home` renders the landing page immediately and other non-workspace URLs render nothing (plain paper); only `#workspace` and `#case/...` show the "Loading your session…" shell. This stops the shell's header and footer divider lines flashing before the landing page.

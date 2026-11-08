@@ -14,7 +14,8 @@ import {CaseDocumentsProvider, Documents} from "./Documents";
 import {CaseChat} from "./CaseChat";
 import {Autonomy} from "./Autonomy";
 import {Outcomes} from "./Outcomes";
-import {ArrowLeft, Close, Home, Info, LogOut, Plus} from "./Icons";
+import {ArrowLeft, Close, Home, Info, LogOut, Plus, User} from "./Icons";
+import {isPersonName} from "./format";
 import {Sidebar, SidebarLink, SidebarSection, SidebarText} from "./ui/Sidebar";
 import {Overview} from "./Overview";
 import {ClaimProgress} from "./ui/ClaimProgress";
@@ -98,7 +99,7 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
   else { view = <Overview cases={cases} userId={userId} userName={userName} crewEnabled={crewEnabled} live={live}/>; viewKey = "overview"; }
 
   return <div className="shell">
-    <Sidebar footer={<div className="sidebar-user"><span className="avatar" aria-hidden="true">{userName.slice(0, 1).toUpperCase()}</span><SidebarText className="sidebar-user-name">{userName}</SidebarText><button className="icon-button sign-out" onClick={onSignOut} aria-label="Sign out" title="Sign out"><LogOut size={18}/></button></div>}>
+    <Sidebar footer={<div className="sidebar-user"><span className="avatar" aria-hidden="true">{isPersonName(userName) ? userName.trim().slice(0, 1).toUpperCase() : <User size={18}/>}</span><SidebarText className="sidebar-user-name">{userName}</SidebarText><button className="icon-button sign-out" onClick={onSignOut} aria-label="Sign out" title="Sign out"><LogOut size={18}/></button></div>}>
       <SidebarLink href="#workspace" icon={<Home size={20}/>} label="Overview" active={route.view === "overview" && cases.length > 0}/>
       <SidebarLink href="#new" icon={<Plus size={20}/>} label="New case" active={showIntake}/>
       <SidebarSection label={`Your cases · ${cases.length}`}/>
@@ -159,6 +160,8 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
     ["Insurer says you owe", item.eob_cents !== null ? money(item.eob_cents) : undefined],
   ].filter((f): f is [string, string] => !!f[1]);
   const progress = useProgressMap([item], userId, crewEnabled).get(item.id);
+  // On phones the Case info sheet is a full-screen bottom sheet that slides up from the screen edge.
+  const phoneSheet = typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches;
   useEffect(() => {
     if (!infoOpen) return;
     closeRef.current?.focus();
@@ -169,7 +172,7 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
 
   return <CaseDocumentsProvider key={`${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision}><article className="case claim-workspace claim-chat-page" data-case-id={item.id}>
     <Autonomy key={item.id} caseId={item.id} userId={userId} enabled={crewEnabled} compact render={({status, activity, canStart, started, start, busy: starting, error}) => <section id="section-conversation" className="chat-card-wrap" aria-label="Conversation">
-      <CaseChat key={`chat-${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision} title={item.title} pausedNote={!canStart}
+      <CaseChat key={`chat-${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision} title={item.title} pausedNote={!canStart} fallbackStatus={progress?.loaded ? {label: progress.title, owner: progress.owner} : undefined}
         headerStart={<a className="chat-round back-link" href="#workspace" aria-label="All cases" title="All cases"><ArrowLeft size={16} aria-hidden="true"/></a>}
         headerEnd={<motion.button ref={openRef} type="button" className="chat-round chat-info" onClick={() => setInfoOpen(true)} aria-label="Case info" title="Case info" aria-haspopup="dialog" aria-expanded={infoOpen} whileTap={{scale: 0.9}}>
           <Info size={16} aria-hidden="true"/><span className="chat-info-label">Case info</span>{progress?.outcome && <span className="chat-round-dot" aria-hidden="true"/>}
@@ -182,7 +185,8 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
         <AnimatePresence>{infoOpen && <motion.div key="info" className="chat-sheet-layer" initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} transition={{duration: 0.2}}>
           <div className="chat-sheet-backdrop" onClick={() => setInfoOpen(false)} aria-hidden="true"/>
           <motion.div className="chat-sheet" role="dialog" aria-modal="true" aria-labelledby="chat-sheet-title"
-            initial={{y: 24, opacity: 0}} animate={{y: 0, opacity: 1}} exit={{y: 24, opacity: 0}} transition={{type: "spring", bounce: 0.15, duration: 0.45}}>
+            initial={phoneSheet ? {y: "100%"} : {y: 24, opacity: 0}} animate={{y: 0, opacity: 1}} exit={phoneSheet ? {y: "100%"} : {y: 24, opacity: 0}} transition={{type: "spring", bounce: phoneSheet ? 0 : 0.15, duration: phoneSheet ? 0.38 : 0.45}}>
+            <span className="chat-sheet-grab" aria-hidden="true"/>
             <header className="chat-sheet-head">
               <div><h2 id="chat-sheet-title">Case info</h2><p>{caseKind(item)}</p></div>
               <button ref={closeRef} type="button" className="chat-round" onClick={() => setInfoOpen(false)} aria-label="Close case info"><Close size={16}/></button>

@@ -1,0 +1,9 @@
+/* Fallback shown when a render error escapes; uses the shared paper/ink/blue tokens. */
+.error-boundary { display: grid; place-items: center; min-height: 100vh; padding: 32px 16px; background: var(--paper, #f5f4ef); color: var(--ink, #181b18); }
+.error-boundary-card { width: 100%; max-width: 440px; padding: 28px 24px; border: 1px solid var(--rule, #dadbd5); border-radius: 22px; background: #fff; }
+.error-boundary h1 { margin: 0 0 10px; font-size: 24px; font-weight: 650; letter-spacing: -.6px; line-height: 1.25; }
+.error-boundary p { margin: 0 0 22px; color: var(--quiet, #6a6d63); font-size: 15px; line-height: 1.6; }
+.error-boundary-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.error-boundary-actions button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 22px; border: 0; border-radius: 100px; background: var(--ink, #181b18); color: var(--paper, #f5f4ef); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .18s; }
+.error-boundary-actions button:hover { background: var(--blue, #2465ef); }
+.error-boundary-actions a { display: inline-flex; align-items: center; min-height: 44px; color: var(--blue, #2465ef); font-size: 14px; font-weight: 600; text-underline-offset: 4px; }

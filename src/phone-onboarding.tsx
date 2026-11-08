@@ -69,14 +69,17 @@ export function OnboardingCallNotice({userId}:{userId:string}){
  const dismiss=()=>{setDismissed(noticeKey);try{localStorage.setItem(dismissKey,noticeKey);}catch{/* per-browser convenience only */}};
  const settled=!server||['active','cancelled','failed'].includes(server);
  if(!error&&(!message||(settled&&dismissed===noticeKey)))return null;
+ const canStop=!!status&&status.status!=='not_started'&&status.status!=='cancelled';
  return <aside className="onboarding-call-notice" aria-label="Onboarding call">
   {settled&&message&&<button type="button" className="onboarding-dismiss" aria-label="Dismiss" onClick={dismiss}>×</button>}
   {message&&<p role="status">{message}</p>}
   {status?.reason&&<p>{status.reason}</p>}
   {status?.callback_number&&<p>Call us back from this phone at <a className="text-link" href={`tel:${status.callback_number}`}>{status.callback_number.replace(/^\+1(\d{3})(\d{3})(\d{4})$/,'($1) $2-$3')}</a>. Say “workplace injury” or “health insurance,” then tell us what happened. Your case opens here after the call.</p>}
   {error&&<p role="alert">{error}</p>}
-  {status&&status.status!=='not_started'&&status.status!=='cancelled'&&<button type="button" className="text-button" disabled={stopping} onClick={()=>void stop()}>{stopping?'Stopping onboarding…':'Stop onboarding and case work'}</button>}
-  {status?.case_id&&<a className="text-link" href={`#case/${status.case_id}`}>Open your case</a>}
+  {(canStop||status?.case_id)&&<div className="onboarding-actions">
+   {status?.case_id&&<a className="text-link onboarding-open" href={`#case/${status.case_id}`}>Open your case</a>}
+   {canStop&&<button type="button" className="text-button onboarding-stop" disabled={stopping} onClick={()=>void stop()}>{stopping?'Stopping onboarding…':'Stop onboarding and case work'}</button>}
+  </div>}
   {!!status?.transcript?.length&&<details><summary>Onboarding conversation</summary>{status.transcript.map((line,index)=><p key={index}><strong>{line.role==='user'?'You':'Assurance'}:</strong> {line.text}</p>)}</details>}
  </aside>;
 }

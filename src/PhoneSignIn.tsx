@@ -1,4 +1,4 @@
-import {useEffect,useState,type FormEvent} from 'react';
+import {useEffect,useId,useState,type FormEvent} from 'react';
 import {auth} from './services';
 import {requestOnboardingCall} from './phone-onboarding';
 import {sendPhoneCode,verifyPhoneCode,phoneSession,endPhoneSession,phoneBase} from './phone-session';
@@ -17,8 +17,10 @@ export function toE164(input:string){
  const normalized=trimmed.startsWith('+')?`+${digits}`:digits.length===10?`+1${digits}`:digits.length===11&&digits.startsWith('1')?`+${digits}`:'';
  if(!/^\+[1-9]\d{7,14}$/.test(normalized))throw Error('Enter a valid phone number, including its country code outside the US.');return normalized;
 }
+// Shows a sent US number as "(415) 555-0123"; the E.164 value stays in state for API calls.
+function displayPhone(number:string){const us=/^\+1(\d{3})(\d{3})(\d{4})$/.exec(number);return us?`(${us[1]}) ${us[2]}-${us[3]}`:number;}
 export function PhoneSignIn({linkExisting=false,status}:{linkExisting?:boolean;status:PhoneStatus}){
- const [phone,setPhone]=useState(''),[code,setCode]=useState(''),[sent,setSent]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const fieldId=useId();const [phone,setPhone]=useState(''),[code,setCode]=useState(''),[sent,setSent]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const tests=import.meta.env.DEV&&status.enabled&&status.testCode?status.testNumbers:[];
  const fictional=(number:string)=>/^\+1[2-9]\d{2}55501\d{2}$/.test(number);
  const fictionalInput=/^1?[2-9]\d{2}55501\d{2}$/.test(phone.replace(/\D/g,''));
@@ -38,11 +40,11 @@ export function PhoneSignIn({linkExisting=false,status}:{linkExisting?:boolean;s
  async function useTestNumber(number:string){setBusy(true);setError('');try{await sendPhoneCode(number);await finish(number,status.testCode!,false);}catch(e){setError(e instanceof Error?e.message:'Unable to open the test account.');}finally{setBusy(false);}}
  return <section aria-label="Phone sign-in"><h2>{linkExisting?'Link your phone':'Start with your phone'}</h2>
  <p role="status">{!status.enabled?'Phone sign-in is not available yet. Use email sign-in to continue.':status.smsReady?(callReady?'Verify your number and Assurance will call to hear what happened.':linkExisting?'Verify this number to link it to your account.':fictionalInput&&tests.length?'This is a fictional number. No onboarding call will be requested.':'Onboarding calls are unavailable right now. You can still sign in with your phone and use your dashboard.'):tests.length?'Live SMS is not available yet. Only the fictional test numbers below work right now.':'Phone sign-in is waiting for SMS service. Use email sign-in to continue.'}</p>
- <form onSubmit={submit}><label>Phone number<input type="tel" autoComplete="tel" placeholder="(415) 555-0100" value={phone} onChange={e=>setPhone(e.target.value)} required disabled={sent||busy}/></label>{sent&&<label>Verification code<input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={e=>setCode(e.target.value)} required/></label>}<button disabled={busy||!status.enabled||(!status.smsReady&&!tests.length)}>{busy?'Please wait…':submitLabel}</button></form>
+ <form onSubmit={submit}><label>Phone number<input type="tel" autoComplete="tel" placeholder="(415) 555-0100" value={sent?displayPhone(phone):phone} onChange={e=>setPhone(e.target.value)} required disabled={sent||busy}/></label>{sent&&<div className="phone-code-field"><label htmlFor={`${fieldId}-code`}>Verification code</label><p id={`${fieldId}-hint`} className="phone-code-hint">{tests.includes(phone)?`Fictional test code: ${status.testCode}`:'Enter the code sent to your phone.'}</p><input id={`${fieldId}-code`} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} placeholder="6-digit code" enterKeyHint="go" autoFocus aria-describedby={`${fieldId}-hint`} value={code} onChange={e=>setCode(e.target.value)} required/></div>}<button disabled={busy||!status.enabled||(!status.smsReady&&!tests.length)}>{busy?'Please wait…':submitLabel}</button></form>
  {status.smsReady&&<p className="demo-note">We’ll send a sign-in code by text. {callReady&&<>After you verify, you’re asking Assurance to call this number for onboarding. </>}Message and data rates may apply.</p>}
  {callReady&&<p className="demo-note">Verifying also asks Assurance to research your case, contact relevant organizations, submit claim forms and evidence, and follow up on your behalf. You can stop agent work anytime.</p>}
 
- {sent&&<><p>{tests.includes(phone)?`Fictional test code: ${status.testCode}`:'Enter the code sent to your phone.'}</p><button className="text-button" disabled={busy} onClick={()=>{setSent(false);setCode('');}}>Use a different number or request a new code</button></>}
+ {sent&&<><button className="text-button" disabled={busy} onClick={()=>{setSent(false);setCode('');setPhone(displayPhone(phone));}}>Use a different number or request a new code</button></>}
  {!!tests.length&&<div className="test-numbers"><h3>Shared test accounts</h3><p>Shared accounts for fictional records. No text or onboarding call is sent.</p><div>{tests.map(number=><button type="button" className="secondary" key={number} disabled={busy} onClick={()=>void useTestNumber(number)}>{number}</button>)}</div></div>}
  {error&&<p role="alert">{error}</p>}</section>;
 }

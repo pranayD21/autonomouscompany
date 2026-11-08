@@ -10,6 +10,7 @@ import {PhoneIntakes} from "./PhoneIntakes";
 import {ArrowUpRight, Plus} from "./Icons";
 import {OWNER_LABEL, useProgressMap, type Owner, type Progress} from "./progress";
 import {NumberTicker} from "./ui/motion";
+import {isPersonName} from "./format";
 import "./overview.css";
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -23,7 +24,9 @@ const FILTERS: {id: Filter; label: string}[] = [{id: "all", label: "All"}, {id: 
 
 function greeting(name: string) {
   const hour = new Date().getHours();
-  return `${hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"}, ${name.split(" ")[0]}`;
+  const salutation = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  // Phone-only and email-only accounts have no real name; greet them without echoing the number or address.
+  return isPersonName(name) ? `${salutation}, ${name.trim().split(/\s+/)[0]}` : salutation;
 }
 
 function summary(total: number, you: number, done: number, loaded: boolean) {

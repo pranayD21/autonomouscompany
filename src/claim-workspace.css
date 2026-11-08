@@ -88,6 +88,7 @@
 .surface .chat-sheet-head h2 { margin: 0; font-size: 16px; font-weight: 550; line-height: 24px; letter-spacing: -.2px; }
 .surface .chat-sheet-head p { margin: 2px 0 0; font-size: 13px; color: var(--quiet); }
 .chat-sheet-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px 20px 24px; }
+.chat-sheet-grab { display: none; }
 .sheet-block { padding: 20px 0; border-bottom: 1px solid var(--line); }
 .sheet-block:last-child { border-bottom: 0; }
 .surface .sheet-block h3 { margin: 0 0 14px; font-size: 13px; font-weight: 600; letter-spacing: -.1px; color: var(--ink); }
@@ -164,19 +165,21 @@ li[data-kind="wait"] > .activity-marker, li[data-kind="closed"] > .activity-mark
 
 /* Phones: the card becomes the screen */
 @media (max-width: 820px) {
-  .surface:has(.claim-chat-page) { height: calc(100svh - 64px); height: calc(100dvh - 64px); }
+  .surface:has(.claim-chat-page) { height: calc(100svh - 64px - env(safe-area-inset-top, 0px)); height: calc(100dvh - 64px - env(safe-area-inset-top, 0px)); }
   .claim-chat-page { --col: 14px; }
   .surface:has(.claim-chat-page) > .onboarding-call-notice, .surface:has(.claim-chat-page) > .error { margin: 8px 12px; width: auto; }
   .claim-chat-page .case-chat-header { padding: 12px var(--col); gap: 10px; }
   .claim-chat-page .case-chat-heading strong { font-size: 15px; }
-  .surface .claim-chat-page .chat-round, .surface .claim-chat-page a.chat-round { width: 40px; height: 40px; border-radius: 20px; }
+  .surface .claim-chat-page .chat-round, .surface .claim-chat-page a.chat-round { width: 44px; height: 44px; border-radius: 22px; }
   .claim-chat-page .case-chat-log { padding: 18px var(--col); }
   .claim-chat-page .case-chat-bubble { max-width: 86%; }
   .claim-chat-page .case-chat-compose { padding: 0 var(--col) max(12px, env(safe-area-inset-bottom)); }
   .claim-chat-page .claim-composer textarea { font-size: 16px; }
-    .chat-sheet-layer { align-items: flex-end; }
-  .chat-sheet { width: 100%; height: auto; max-height: 92%; border-radius: 22px 22px 0 0; box-shadow: 0 -18px 40px -24px rgb(0 0 0 / .4); }
-  .chat-sheet-head { padding: 16px; }
+  /* Case info becomes a full-screen bottom sheet above the mobile bar (z-index 40) and below the nav drawer (90/100). */
+  .chat-sheet-layer { position: fixed; inset: 0; z-index: 60; align-items: flex-end; }
+  .chat-sheet { width: 100%; height: auto; max-height: 88dvh; overflow: hidden; border-radius: 22px 22px 0 0; box-shadow: 0 -18px 40px -24px rgb(0 0 0 / .4); }
+  .chat-sheet-grab { display: block; position: absolute; top: 8px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--rule); }
+  .chat-sheet-head { padding: 20px 16px 12px; border-top-left-radius: 22px; border-top-right-radius: 22px; }
   .chat-sheet-body { padding: 0 16px max(20px, env(safe-area-inset-bottom)); }
   .sheet-block .facts { grid-template-columns: minmax(0, 1fr); }
 }
@@ -230,7 +233,7 @@ li[data-kind="wait"] > .activity-marker, li[data-kind="closed"] > .activity-mark
 .chat-sheet-backdrop { background: rgb(24 27 24 / .3); }
 .activity-marker { box-shadow: none; }
 
-@media (max-width: 820px) { .surface .claim-chat-page .claim-send { width: 40px; height: 40px; } }
+@media (max-width: 820px) { .surface .claim-chat-page .claim-send { width: 44px; height: 44px; border-radius: 22px; } }
 
 /* Live-site fix: give the composer text room to breathe */
 .claim-chat-page .claim-composer { padding: 14px 14px 12px; }
@@ -274,8 +277,56 @@ li[data-kind="wait"] > .activity-marker, li[data-kind="closed"] > .activity-mark
 .sheet-controls .quiet-button { margin-top: 14px; }
 
 @media (max-width: 640px) {
-  .surface .claim-chat-page .chat-round.chat-info { width: 40px; padding: 0; }
+  .surface .claim-chat-page .chat-round.chat-info { width: 44px; padding: 0; }
   .chat-info-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
 .chat-panel-details .facts { margin-bottom: 20px; }
 .surface .chat-panel-details h2, .surface .chat-panel-details h3:not(:first-child) { font-size: 13px; letter-spacing: -.1px; }
+
+/* Header status line: one line with ellipsis; the dot follows the case's derived progress when the conversation state alone says nothing */
+.claim-chat-page .case-chat-heading p { min-width: 0; }
+.chat-state-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.claim-chat-page .chat-state-dot[data-owner="waiting"] { background: var(--blue); }
+.claim-chat-page .chat-state-dot[data-owner="you"] { background: var(--warn); }
+.claim-chat-page .chat-state-dot[data-owner="done"] { background: var(--ok); }
+
+/* Document reading state reads as a status, not a button */
+.doc-reading { display: inline-flex; align-items: center; gap: 4px; padding: 0; border-radius: 0; background: transparent; font-size: 12px; color: var(--quiet); }
+.doc-reading[data-state="read"], .doc-reading[data-state="confirmed"] { color: var(--ok); }
+.doc-reading svg { flex-shrink: 0; }
+
+/* Mobile audit (2026-11-08): compact case header, 44px touch targets, legible small text */
+@media (max-width: 820px) {
+  .claim-chat-page .case-chat-header { flex-wrap: nowrap; padding: 6px var(--col); gap: 10px; }
+  .claim-chat-page .case-chat-heading strong { font-size: 15px; line-height: 20px; }
+  .claim-chat-page .case-chat-heading p { gap: 6px; margin: 0; font-size: 12px; line-height: 16px; }
+  .surface .claim-chat-page .chat-bubble-action { min-height: 44px; padding: 0 16px; font-size: 13px; }
+  .surface .claim-chat-page .chat-start button { min-height: 44px; padding: 0 18px; }
+  .case-chat-day { font-size: 11px !important; }
+  .claim-chat-page .case-chat-message time { font-size: 12px; }
+  .sheet-block-head { align-items: center; margin: -10px 0 4px; }
+  .surface .sheet-block-head h3 { margin: 0; }
+  .surface .sheet-block-head .text-button { min-width: 44px; min-height: 44px; margin-right: -8px; padding: 0 8px; font-size: 13px; }
+  .sheet-block .documents summary, .sheet-block.sheet-controls .agent-scope summary { min-height: 44px; padding: 12px 0; line-height: 20px; }
+  .sheet-block .doc-head .text-button { min-height: 44px; padding: 0 6px; font-size: 12px; }
+  .sheet-controls .agent-context .status-head { align-items: center; }
+  .sheet-controls .agent-context .status-head > h2 { margin: 0; }
+  .surface .sheet-controls .agent-context .status-head > button.text-button { min-height: 44px; margin-top: 0; padding: 0 16px; }
+  .surface .sheet-controls .agent-context .status-head > form button { min-height: 44px; padding: 0 18px; }
+  .surface .sheet-controls > .quiet-button { min-height: 44px; }
+}
+
+/* Landscape phones: keep at least ~150px of messages visible */
+@media (max-height: 500px) and (orientation: landscape) {
+  .claim-chat-page .case-chat-header { padding: 4px var(--col); }
+  .claim-chat-page .case-chat-heading strong { font-size: 15px; line-height: 20px; }
+  .claim-chat-page .case-chat-heading p { margin: 0; font-size: 12px; line-height: 16px; }
+  .claim-chat-page .case-chat-log { padding-top: 10px; padding-bottom: 10px; }
+  .chat-start { margin-bottom: 6px; padding: 8px 12px; gap: 6px 12px; }
+  .chat-start p { font-size: 12px; line-height: 1.4; }
+  .claim-chat-page .claim-composer { padding: 8px 10px 6px; }
+  .claim-chat-page .claim-composer textarea { min-height: 24px; max-height: 88px; line-height: 20px; overflow-y: auto; }
+  .claim-chat-page .claim-composer-toolbar { margin-top: 4px; }
+  .claim-chat-page .case-chat-compose { padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+  .chat-sheet { max-height: 92dvh; }
+}
