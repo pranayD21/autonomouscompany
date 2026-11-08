@@ -14,7 +14,7 @@ export function Documents({caseId,userId,revision}:{caseId:string;userId:string;
  useEffect(()=>{void refresh().catch(e=>setError(e.message));},[caseId,userId,revision]);
  async function upload(event:FormEvent<HTMLFormElement>){
   event.preventDefault();setBusy(true);setError("");const form=event.currentTarget;
-  try{const data=new FormData(form);data.set("id",uploadId.current);await api(path,{method:"POST",body:data},userId);uploadId.current=crypto.randomUUID();form.reset();setUploads(n=>n+1);await refresh();}
+  try{const data=new FormData(form);data.set("id",uploadId.current);await api(path,{method:"POST",body:data},userId);const savedId=uploadId.current;uploadId.current=crypto.randomUUID();form.reset();setUploads(n=>n+1);await api(`${path}/${savedId}/extraction`,{method:"POST"},userId);await refresh();}
   catch(e){setError(e instanceof Error?e.message:"Upload failed. Retry the same file.");}finally{setBusy(false);}
  }
  async function download(doc:Omit<CaseDocument,"object_key">){
@@ -33,8 +33,8 @@ export function Documents({caseId,userId,revision}:{caseId:string;userId:string;
  <FileDrop name="file" label="Document file" accept="image/png,image/jpeg,image/webp,application/pdf" disabled={busy} resetKey={String(uploads)} onPick={()=>{uploadId.current=crypto.randomUUID();}}/>
  <div className="upload-side">
  <label>Document type<select name="kind" onChange={()=>{uploadId.current=crypto.randomUUID();}}><option value="insurance_card">Insurance card</option><option value="bill">Medical bill</option><option value="eob">Explanation of benefits</option><option value="incident">Incident record</option><option value="other">Other evidence</option></select></label>
- <small>PNG, JPEG, WebP or PDF · up to 5 MB · private to you · can’t be deleted in this prototype</small>
- <button disabled={busy}>{busy?"Uploading…":"Save document"}</button>
+ <small>PNG, JPEG, WebP or PDF · up to 5 MB · private to you</small>
+ <button disabled={busy}>{busy?"Uploading…":"Upload document"}</button>
  </div></form>
  {error&&<p role="alert">{error}</p>}
  {docs.length===0&&<p className="quiet-line">No documents yet.</p>}
@@ -42,13 +42,13 @@ export function Documents({caseId,userId,revision}:{caseId:string;userId:string;
  <div className="doc-head"><span className="doc-icon" aria-hidden="true">{doc.kind.slice(0,1).toUpperCase()}</span><div><strong>{doc.filename}</strong><span>{KIND[doc.kind]??doc.kind.replaceAll("_"," ")}{doc.state==="ready"?"":" · Upload incomplete — retry the same file"}</span></div>
  {doc.state==="ready"&&<button className="text-button" onClick={()=>void download(doc)}>Download {doc.filename}</button>}</div>
  {doc.state==="ready"&&<div className="doc-body">
- <p className="doc-reading" data-state={doc.confirmed_at?"confirmed":doc.extraction_state??"none"}>{doc.confirmed_at?"Confirmed":doc.extraction_result?"Needs your check":["running","preparing","direct_running"].includes(doc.extraction_state??"")?"Reading…":doc.extraction_error?`Couldn’t read: ${doc.extraction_error}`:"Not read yet"}</p>
+ <p className="doc-reading" data-state={doc.confirmed_at?"confirmed":doc.extraction_state??"none"}>{doc.confirmed_at?"Confirmed":doc.extraction_result?"Read from document":["running","preparing","direct_running"].includes(doc.extraction_state??"")?"Reading…":doc.extraction_error?`Couldn’t read: ${doc.extraction_error}`:"Not read yet"}</p>
  {!doc.extraction_state||["source_ready","direct_failed","direct_running"].includes(doc.extraction_state)?<button disabled={busy} onClick={()=>void extract(doc.id,"start")}>Read {doc.filename}</button>:null}
  {["running","preparing","direct_running"].includes(doc.extraction_state??"")&&<button disabled={busy} onClick={()=>void extract(doc.id,"refresh")}>Refresh reading</button>}
- {doc.extraction_result&&<details open={!doc.confirmed_at}><summary>Document transcription{doc.confirmed_at?" · confirmed":" · needs your review"}</summary><p style={{whiteSpace:"pre-wrap"}}>{doc.extraction_result.visible_text}</p>
+ {doc.extraction_result&&<details><summary>Document transcription{doc.confirmed_at?" · confirmed":" · machine extracted"}</summary><p style={{whiteSpace:"pre-wrap"}}>{doc.extraction_result.visible_text}</p>
  <dl>{(["insurer_name","member_name","member_id","group_number","claim_number"] as const).map(key=><div key={key}><dt>{key.replaceAll("_"," ")}</dt><dd>{doc.extraction_result![key]??"Not found"}</dd></div>)}</dl>
  {doc.extraction_result.uncertainties.length>0&&<ul>{doc.extraction_result.uncertainties.map((u,i)=><li key={i}>{u}</li>)}</ul>}
- {!doc.confirmed_at&&<><p className="caveat">Confirm only if it matches the original. Confirming doesn’t establish coverage.</p><button disabled={busy} onClick={()=>void extract(doc.id,"confirm")}>Confirm transcription</button></>}
+ {!doc.confirmed_at&&<><p className="caveat">Optional: confirm that this transcription matches the original.</p><button disabled={busy} onClick={()=>void extract(doc.id,"confirm")}>Confirm transcription matches</button></>}
  </details>}
  </div>}</motion.li>)}</AnimatePresence></ul>
  </div>;

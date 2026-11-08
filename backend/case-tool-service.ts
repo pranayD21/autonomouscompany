@@ -16,7 +16,7 @@ export function caseToolServices(db:NodePgDatabase):CaseToolDependencies{
   const [item]=await db.select().from(cases).where(and(eq(cases.id,identity.case_id),eq(cases.owner_id,identity.owner_id)));
   if(!item)throw Error("NOT_FOUND");
   const files=await db.select({id:documents.id,sha256:documents.sha256}).from(documents).where(eq(documents.case_id,item.id));
-  const transcriptions=await db.select({document_id:documentExtractions.document_id,result:documentExtractions.result,confirmed_at:documentExtractions.confirmed_at}).from(documentExtractions).innerJoin(documents,eq(documentExtractions.document_id,documents.id)).where(and(eq(documents.case_id,item.id),eq(documentExtractions.state,"ready"),isNotNull(documentExtractions.confirmed_at)));
+  const transcriptions=await db.select({document_id:documentExtractions.document_id,result:documentExtractions.result,confirmed_at:documentExtractions.confirmed_at}).from(documentExtractions).innerJoin(documents,eq(documentExtractions.document_id,documents.id)).where(and(eq(documents.case_id,item.id),eq(documentExtractions.state,"ready")));
   const replies=await db.select().from(caseReplies).where(and(eq(caseReplies.case_id,item.id),eq(caseReplies.disposition,"accepted")));
   const actions=await db.select().from(outreachActions).where(eq(outreachActions.case_id,item.id));
   const facts=await db.select().from(caseAgentFacts).where(eq(caseAgentFacts.case_id,item.id));
@@ -24,7 +24,7 @@ export function caseToolServices(db:NodePgDatabase):CaseToolDependencies{
   const sources=await db.select().from(caseSources).where(eq(caseSources.case_id,item.id));
   const authorities=await db.select().from(caseAuthorities).where(eq(caseAuthorities.case_id,item.id));
   const outcomes=await readCaseOutcomes(db,item.id);
-  return {case:item,outcomes,transcriptions,authorities:authorities.map(({lease_id,lease_until,...authority})=>authority),sources:sources.map(publicCitation),call_evidence:calls.map(c=>({...c,trust:"untrusted_reported_speech"})),documents:files,replies,actions,facts,evidence_refs:[...outcomes.filter(o=>o.evidence_current).map(o=>`outcome:${o.id}`),...sources.map(s=>`source:${s.id}:${s.sha256}`),...calls.map(c=>`call:${c.id}:${c.sha256}`),`case:${item.revision}`,...files.map(d=>`document:${d.id}:${d.sha256}`),...replies.map(r=>`reply:${r.id}:${r.sha256}`),...actions.map(a=>`action:${a.id}`)]};
+  return {case:item,outcomes,transcriptions:transcriptions.map(t=>({...t,trust:t.confirmed_at?"owner_confirmed_transcription":"machine_extracted_unverified"})),authorities:authorities.map(({lease_id,lease_until,...authority})=>authority),sources:sources.map(publicCitation),call_evidence:calls.map(c=>({...c,trust:"untrusted_reported_speech"})),documents:files,replies,actions,facts,evidence_refs:[...outcomes.filter(o=>o.evidence_current).map(o=>`outcome:${o.id}`),...sources.map(s=>`source:${s.id}:${s.sha256}`),...calls.map(c=>`call:${c.id}:${c.sha256}`),`case:${item.revision}`,...files.map(d=>`document:${d.id}:${d.sha256}`),...replies.map(r=>`reply:${r.id}:${r.sha256}`),...actions.map(a=>`action:${a.id}`)]};
  }
  return {readSource:async(identity,input)=>{
   const [item]=await db.select({id:cases.id}).from(cases).where(and(eq(cases.id,identity.case_id),eq(cases.owner_id,identity.owner_id)));

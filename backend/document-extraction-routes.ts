@@ -1,3 +1,5 @@
+import {sql} from "drizzle-orm";
+import {resumeCaseAuthority} from "./autonomy-service";
 import {randomUUID} from "node:crypto";
 import {directReaderEnabled,directReaderConfigured,readDocumentDirect} from "./providers/direct-document-reader";
 import {enqueueDocumentNotice} from "./phone-messaging";
@@ -34,7 +36,17 @@ export function extractionRoutes(pool:Pool,direct:{download:(key:string)=>Promis
     const bytes=await direct.download(doc.object_key);
     if(createHash("sha256").update(bytes).digest("hex")!==doc.sha256)throw Error("DOCUMENT_HASH_MISMATCH");
     const result=await direct.read(bytes,doc.mime);
-    const saved=await pool.query("UPDATE advocacy_document_extractions SET state='ready',result=$3,error_code=NULL WHERE document_id=$1 AND session_id=$2 AND state='direct_running' RETURNING document_id",[id,attempt,JSON.stringify(result)]);
+    const saved=await drizzle(pool).transaction(async tx=>{
+     await tx.execute(sql`SELECT id FROM advocacy_cases WHERE id=${doc.case_id} FOR UPDATE`);
+     const saved=await tx.execute(sql`UPDATE advocacy_document_extractions SET state='ready',result=${JSON.stringify(result)}::jsonb,error_code=NULL WHERE document_id=${id} AND session_id=${attempt} AND state='direct_running' RETURNING document_id`);
+     if(saved.rowCount){
+      await tx.execute(sql`UPDATE advocacy_cases SET revision=revision+1,analysis=NULL,status='new' WHERE id=${doc.case_id}`);
+      await queueCaseAgentEvent(tx,doc.case_id,`extraction:${id}:${attempt}`,"document_extracted",{document_id:id,trust:"machine_extracted_unverified"});
+      const waiting=await tx.execute(sql`SELECT authority_id FROM advocacy_direct_case_runs WHERE case_id=${doc.case_id} AND state='human_required'`);
+      if(waiting.rows.length)try{await tx.transaction(async nested=>{await resumeCaseAuthority(nested,doc.case_id,waiting.rows[0].authority_id as string,c.get("userId"));});}catch(e){if(!(e instanceof Error)||!["RUN_BUSY","UNRESOLVED_DISPATCH","PERMISSION_ENDED","NOT_RESUMABLE"].includes(e.message))throw e;}
+     }
+     return saved;
+    });
     return c.json(saved.rowCount?{state:"ready",result,confirmed_at:null}:{state:"direct_running"});
    }catch(e){
     const message=e instanceof Error?e.message:"";

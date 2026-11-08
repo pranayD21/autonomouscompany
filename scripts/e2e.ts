@@ -21,11 +21,21 @@ try {
   console.log("PASS Auth signup/session + authenticated Function + Realtime subscription");
   const title = `Synthetic E2E ${randomUUID()}`;
   await page.getByLabel("Case type",{exact:true}).selectOption("health_insurance");
+  await page.getByLabel("What happened?",{exact:true}).fill("Fictional automated test. Organize this case only. Do not contact anyone, send messages, place calls, or perform external actions.");
+  await page.getByText("Additional details (optional)",{exact:true}).click();
   await page.getByLabel("Case title").fill(title);
   await page.getByLabel("Bill amount ($)").fill("1200");
   await page.getByLabel("EOB responsibility ($)").fill("400");
   await page.getByLabel("Case notes").fill("Synthetic data only; no hospital or patient involved.");
-  await page.getByRole("button", {name:"Save case"}).click();
+  const createdResponse=page.waitForResponse(response=>new URL(response.url()).pathname==="/cases"&&response.request().method()==="POST"&&response.status()===201);
+  await page.getByRole("button", {name:"Start handling my case",exact:true}).click();
+  const created=await (await createdResponse).json();
+  const initialState=await fetch(`${apiBase}/cases/${created.id}/autonomy`,{headers:{Authorization:authorization}});
+  expect(initialState.status).toBe(200);
+  for(const authority of (await initialState.json()).authorities??[]){if(["active","waiting","human_required"].includes(authority.state)){
+    const stopped=await fetch(`${apiBase}/cases/${created.id}/autonomy/${authority.id}/revoke`,{method:"POST",headers:{Authorization:authorization}});expect(stopped.status).toBe(200);
+  }}
+  console.log("PASS one-step creation; auto-start authority immediately revoked under explicit no-outreach fixture instructions");
   const card = page.locator("article").filter({hasText:title});
   await expect(card).toBeVisible({timeout:20000});
   await expect(card.getByText("$800.00", {exact:true})).toBeVisible();
@@ -41,7 +51,7 @@ try {
     const autonomyPath=`${apiBase}/cases/${caseId}/autonomy`;
     await page.route(autonomyPath,route=>route.fulfill({json:{authorities:[],sessions:[{id:randomUUID(),authority_id:randomUUID(),state:"human_required",next_check_at:null,reason:"Synthetic session budget needs review",created_at:new Date().toISOString()}],decisions:[{id:randomUUID(),round:1,state:"finished",decision:{tool:"request_human_help",reason:"Synthetic evidence gap",question:"Confirm the fictional claim number."},result:null}]}}));
     await page.reload();
-    await expect(card.getByText("Case agent session: human required",{exact:true})).toBeVisible();
+    await expect(card.getByText("Needs your attention",{exact:true})).toBeVisible();
     await expect(card.getByText("Confirm the fictional claim number.",{exact:true})).toBeVisible();
     await expect(card.getByText("Recorded requests for human help: 1",{exact:true})).toBeVisible();
     const results=card.getByRole("region",{name:"Case outcomes"});
@@ -78,7 +88,10 @@ try {
   expect(autonomy.status).toBe(200);
   console.log("Autonomy API version:",autonomy.headers.get("x-assurance-autonomy-version"));
   const autonomyState=await autonomy.json();
-  expect(autonomyState).toMatchObject({authorities:[],decisions:[],sessions:[],setups:[]});
+  expect(autonomyState.authorities.length).toBe(1);
+  expect(autonomyState.authorities[0].state).toBe("revoked");
+  expect(autonomyState.sessions.every((s:{state:string})=>s.state==="stopped")).toBe(true);
+  const actionCheck=await fetch(`${apiBase}/cases/${caseId}/actions`,{headers:{Authorization:authorization}});expect(actionCheck.status).toBe(200);expect(await actionCheck.json()).toEqual([]);
   expect(typeof autonomyState.persistent_available).toBe("boolean");
   if(process.env.E2E_EXPECT_PERSISTENT_SETUP)expect(autonomyState.persistent_available).toBe(process.env.E2E_EXPECT_PERSISTENT_SETUP==="true");
   const authorize=await fetch(`${apiBase}/cases/${caseId}/autonomy`,{method:"POST",headers:{Authorization:authorization,"Content-Type":"application/json"},body:JSON.stringify({authorize:true})});

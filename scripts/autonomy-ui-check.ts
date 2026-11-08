@@ -1,3 +1,4 @@
+import {DEFAULT_INTAKE_CONSENT} from "../backend/intake-policy";
 import {expect,type Page} from "@playwright/test";
 export async function checkAutonomyPermissions(page:Page,apiBase:string,caseId:string){
  const stackPath=`${apiBase}/stack/status`,crewPath=`${apiBase}/cases/${caseId}/crew`,path=`${apiBase}/cases/${caseId}/autonomy`;
@@ -14,6 +15,8 @@ export async function checkAutonomyPermissions(page:Page,apiBase:string,caseId:s
   }
   return route.fulfill({json:{authorities,decisions:[],sessions,activation_available:available,persistent_available:true,setups}});
  });
+ const updates:any[]=[];const updatesPath=`${apiBase}/cases/${caseId}/updates`;
+ await page.route(updatesPath,route=>{updates.push(route.request().postDataJSON());sessions=sessions.map(s=>({...s,state:"running",waiting_on:null}));return route.fulfill({json:{saved:true,resumed:true}});});
  const revokePath=`${path}/${authorityId}/revoke`;
  await page.route(revokePath,route=>{revoked.push(authorityId);authorities=authorities.map(a=>({...a,state:"revoked",reason:"Stopped by the owner"}));sessions=sessions.map(s=>({...s,state:"stopped"}));setups=[];return route.fulfill({json:authorities[0]});});
  const resumePath=`${path}/${authorityId}/resume`;
@@ -22,20 +25,20 @@ export async function checkAutonomyPermissions(page:Page,apiBase:string,caseId:s
  async function reload(){await page.reload();await expect(card).toBeVisible({timeout:20000});for(const summary of await card.locator("details.workflow-section > summary").all())if(await summary.locator("..").getAttribute("open")===null)await summary.click();}
  try{
   await reload();const panel=card.getByRole("region",{name:"Case agent activation"}),form=panel.getByRole("form",{name:"Start case agent"});
-  await expect(panel.getByText("Case saved. No active authorization.",{exact:true})).toBeVisible();
-  const permission=form.getByLabel("Your permission",{exact:true}),consent=form.getByRole("checkbox"),start=form.getByRole("button",{name:"Start case agent",exact:true});
-  await expect(start).toBeDisabled();await permission.fill("Research my insurer options and ask me for missing documents.");await consent.check();await expect(start).toBeEnabled();
-  await permission.fill("Research my insurer options; do not contact anyone yet.");await expect(consent).not.toBeChecked();await expect(start).toBeDisabled();
-  await consent.check();await start.click();await expect.poll(()=>posted.length).toBe(1);
-  expect(posted[0]).toEqual({authorize:true,persistent:true,policy:{version:2,consent:"Research my insurer options; do not contact anyone yet."}});
+  await expect(panel.getByText("This saved case has not started yet.",{exact:true})).toBeVisible();
+  await expect(form.getByRole("checkbox")).toHaveCount(0);await expect(form.getByRole("textbox")).toHaveCount(0);
+  await form.getByRole("button",{name:"Start handling my case",exact:true}).click();await expect.poll(()=>posted.length).toBe(1);
+  expect(posted[0]).toEqual({authorize:true,persistent:true,policy:{version:2,consent:DEFAULT_INTAKE_CONSENT}});
   await expect(panel.getByText("Activation queued",{exact:true})).toBeVisible();await expect(form).toHaveCount(0);
   sessions=[{id:runId,authority_id:authorityId,state:"running",engine:"direct_openai",goal:"Find supported claim avenues",finish_condition:"Document an insurer decision and any remaining responsibility",next_check_at:null,reason:null,created_at:new Date().toISOString()}];setups=[];
-  await reload();await expect(panel.getByRole("heading",{name:"Working",exact:true})).toBeVisible();await expect(panel.getByText("Engine: Direct model",{exact:true})).toBeVisible();await expect(panel.getByText("Find supported claim avenues",{exact:true})).toBeVisible();
+  await reload();await expect(panel.getByRole("heading",{name:"Working",exact:true})).toBeVisible();await panel.getByText("Agent details",{exact:true}).click();await expect(panel.getByText("Engine: Direct model",{exact:true})).toBeVisible();await expect(panel.getByText("Find supported claim avenues",{exact:true})).toBeVisible();
   sessions[0]={...sessions[0],state:"human_required",waiting_on:"Please provide the fictional claim reference."};await reload();
   await expect(panel.getByRole("heading",{name:"Needs your attention",exact:true})).toBeVisible();await expect(panel.getByRole("button",{name:"Review pending actions",exact:true})).toHaveCount(0);
+  await panel.getByLabel("Your response",{exact:true}).fill("The incident happened on November 3.");await panel.getByRole("button",{name:"Send response",exact:true}).click();await expect.poll(()=>updates.length).toBe(1);expect(updates[0].text).toBe("The incident happened on November 3.");expect(updates[0].id).toMatch(/^[0-9a-f-]{36}$/);await expect(panel.getByText("Update saved.",{exact:true})).toBeVisible();
+  sessions[0]={...sessions[0],state:"human_required"};await reload();
   await panel.getByRole("button",{name:"Continue with updated information",exact:true}).click();await expect.poll(()=>resumed.length).toBe(1);expect(resumed[0]).toEqual({confirm:true});await expect(panel.getByRole("heading",{name:"Working",exact:true})).toBeVisible();
   await panel.getByRole("button",{name:"Stop agent work",exact:true}).click();await expect.poll(()=>revoked.length).toBe(1);await expect(panel.getByRole("heading",{name:"Stopped",exact:true})).toBeVisible();
-  available=false;await reload();await expect(panel.getByRole("form",{name:"Start case agent"})).toHaveCount(0);await expect(panel.getByText("Automatic work is not enabled for this account right now. Your saved case remains available.",{exact:true})).toBeVisible();
+  available=false;await reload();await expect(panel.getByRole("form",{name:"Start case agent"})).toHaveCount(0);await expect(panel.getByText("Agent work is temporarily unavailable. Your case is saved.",{exact:true})).toBeVisible();
   const hash="a".repeat(64),approvalPath=`${apiBase}/cases/${caseId}/sessions/${runId}/approvals`,decisions:any[]=[];
   sessions=[{id:runId,authority_id:authorityId,state:"human_required",engine:"naive",reason:"Synthetic provider approval",next_check_at:null}];
   await page.route(approvalPath,route=>{
@@ -44,7 +47,7 @@ export async function checkAutonomyPermissions(page:Page,apiBase:string,caseId:s
   });
   await reload();await panel.getByRole("button",{name:"Review pending actions",exact:true}).click();await expect(panel.getByRole("heading",{name:"assurance.case_get",exact:true})).toBeVisible();await panel.getByRole("button",{name:"Approve this action",exact:true}).click();
   await expect.poll(()=>decisions.length).toBe(1);expect(decisions[0]).toEqual({confirm:true,hash,decision:"allow"});await page.unroute(approvalPath);
-  console.log("PASS mocked activation UI: no review prerequisite, explicit v2 permission, edited permission clears consent, queued/running/waiting/stopped statuses, direct engine attribution, owner resume without changing permission, and Naïve-only provider approval. No live grant or outreach created.");
+  console.log("PASS mocked activation UI: no review prerequisite, single-click v2 scope with no permission form, queued/running/waiting/stopped statuses, direct engine attribution, owner resume without changing permission, and Naïve-only provider approval. No live grant or outreach created.");
  }catch(error){console.error("Activation UI failure state:",(await card.innerText()).slice(0,2500));throw error;}
- finally{await page.unroute(stackPath);await page.unroute(crewPath);await page.unroute(path);await page.unroute(revokePath);await page.unroute(resumePath);}
+ finally{await page.unroute(stackPath);await page.unroute(crewPath);await page.unroute(path);await page.unroute(revokePath);await page.unroute(resumePath);await page.unroute(updatesPath);}
 }

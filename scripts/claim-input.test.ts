@@ -10,8 +10,9 @@ test("workplace case can start before employer, insurer, bill, or EOB is known",
 test("unknown and explicit zero amounts stay distinct",()=>{
  assert.equal(potentialDifference(null,0),null);assert.equal(potentialDifference(0,null),null);assert.equal(potentialDifference(0,0),0);assert.equal(potentialDifference(120000,40000),80000);
 });
-test("workplace intake requires claimant contact and incident description",()=>{
- for(const incomplete of [{},{...intake,contact_email:""},{...intake,injury_description:""}])assert.equal(caseInput.safeParse({title:"Work injury",case_type:"workplace_injury",intake:incomplete}).success,false);
+test("workplace intake requires a description but can gather contact details later",()=>{
+ assert.equal(caseInput.safeParse({title:"Work injury",case_type:"workplace_injury",intake:{injury_description:"A burn at work"}}).success,true);
+ for(const incomplete of [{},{...intake,injury_description:""}])assert.equal(caseInput.safeParse({title:"Work injury",case_type:"workplace_injury",intake:incomplete}).success,false);
 });
 test("invalid contact/date and negative amount are rejected",()=>{
  for(const patch of [{contact_email:"not-email"},{incident_date:"2026-02-30"},{contact_phone:"call-me"}])assert.equal(caseInput.safeParse({title:"Burn",case_type:"workplace_injury",intake:{...intake,...patch}}).success,false);

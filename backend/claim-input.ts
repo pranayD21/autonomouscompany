@@ -25,7 +25,6 @@ export const caseInput=z.object({
 }).superRefine((c,ctx)=>{
   if(c.case_type==="workplace_injury") {
     if(!c.intake.injury_description)ctx.addIssue({code:"custom",path:["intake","injury_description"],message:"Describe the injury."});
-    if(!c.intake.contact_name||!(c.intake.contact_email||c.intake.contact_phone))ctx.addIssue({code:"custom",path:["intake","contact_name"],message:"Add a contact name and email or phone number."});
   }
 });
 export type ClaimIntake=z.infer<typeof claimIntake>;

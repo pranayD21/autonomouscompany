@@ -1,3 +1,4 @@
+import {caseToolServices} from "../backend/case-tool-service";
 import {test,before,after} from "node:test";
 import assert from "node:assert/strict";
 import {randomUUID,createHash} from "node:crypto";
@@ -19,10 +20,13 @@ test("concurrent direct starts read once and confirmation changes revision exact
  const f=await fixture();let calls=0,release!:()=>void,started!:()=>void;const begun=new Promise<void>(r=>started=r),held=new Promise<void>(r=>release=r);
  const a=app(async()=>{calls++;started();await held;return result;});const first=request(a,f);await begun;
  assert.equal((await(await request(a,f)).json()).state,"direct_running");assert.equal(calls,1);release();assert.equal((await(await first).json()).state,"ready");
- assert.equal((await pool.query("SELECT revision FROM advocacy_cases WHERE id=$1",[f.caseId])).rows[0].revision,1);
+ assert.equal((await pool.query("SELECT revision FROM advocacy_cases WHERE id=$1",[f.caseId])).rows[0].revision,2);
+ const context=await caseToolServices(drizzle(pool)).getCase({id:randomUUID(),case_id:f.caseId,owner_id:owner});
+ assert.equal((context as any).transcriptions[0].trust,"machine_extracted_unverified");
+ assert.equal((context as any).transcriptions[0].confirmed_at,null);
  assert.equal((await request(a,f,"/confirm",randomUUID())).status,404);
  await Promise.all([request(a,f,"/confirm"),request(a,f,"/confirm")]);
- assert.equal((await pool.query("SELECT revision FROM advocacy_cases WHERE id=$1",[f.caseId])).rows[0].revision,2);
+ assert.equal((await pool.query("SELECT revision FROM advocacy_cases WHERE id=$1",[f.caseId])).rows[0].revision,3);
 });
 test("stale direct attempt is fenced against a later successful retry",async()=>{
  const f=await fixture();let calls=0,release!:()=>void,started!:()=>void;const begun=new Promise<void>(r=>started=r),held=new Promise<void>(r=>release=r);

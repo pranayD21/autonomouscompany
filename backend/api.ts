@@ -1,3 +1,4 @@
+import {submitCase,addOwnerUpdate} from "./intake-service";
 import {isNaiveCapacityError,naiveRetryAt} from "./naive-retry";
 import {requestIdentity} from "./request-identity";
 import {phoneRoutes} from "./phone-routes";
@@ -63,10 +64,17 @@ const owned = (id: string, userId: string) => and(eq(cases.id, id), eq(cases.own
 app.get("/session", (c) => c.json({ userId: c.get("userId") }));
 app.get("/cases", async (c) => c.json(await db.select().from(cases).where(eq(cases.owner_id, c.get("userId"))).orderBy(desc(cases.created_at)).limit(100)));
 app.post("/cases", async (c) => {
-  const parsed = caseInput.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: "Provide a title, valid optional amounts, and contact/injury details for a workplace case." }, 400);
-  const [created] = await db.insert(cases).values({ ...parsed.data, owner_id: c.get("userId") }).returning({ id: cases.id, txid: sql<string>`pg_current_xact_id()::text` });
-  return c.json(created, 201);
+  const body=await c.req.json().catch(()=>null);
+  const parsed=caseInput.safeParse(body);
+  if(!parsed.success||body?.id!==undefined&&!z.uuid().safeParse(body.id).success||body?.start_agent!==undefined&&typeof body.start_agent!=="boolean")return c.json({error:"Provide a description and valid case details."},400);
+  try{return c.json(await submitCase(db,c.get("userId"),parsed.data,body.start_agent===true,body.id),201);}
+  catch(e){if(e instanceof Error&&e.message==="DIRECT_ACTIVATION_UNAVAILABLE")return c.json({error:"Agent work is temporarily unavailable. Your case was not submitted; please try again."},503);if(e instanceof Error&&e.message==="NOT_FOUND")return c.json({error:"Case not found."},404);throw e;}
+});
+app.post("/cases/:id/updates",async c=>{
+ const parsed=z.object({text:z.string().trim().min(1).max(4000),id:z.uuid()}).safeParse(await c.req.json().catch(()=>null));
+ if(!parsed.success||!z.uuid().safeParse(c.req.param("id")).success)return c.json({error:"Provide your update."},400);
+ try{return c.json(await addOwnerUpdate(db,c.req.param("id"),c.get("userId"),parsed.data.text,parsed.data.id));}
+ catch(e){if(e instanceof Error&&e.message==="NOT_FOUND")return c.json({error:"Case not found."},404);if(e instanceof Error&&["NOTES_FULL","UPDATE_CONFLICT","NO_AGENT"].includes(e.message))return c.json({error:e.message==="NO_AGENT"?"Start this case before responding to the agent.":e.message==="NOTES_FULL"?"Your case notes are full. Edit the case details to make room.":"This update request was already used with different text."},409);throw e;}
 });
 app.patch("/cases/:id",async c=>{
   if(!z.uuid().safeParse(c.req.param("id")).success)return c.json({error:"Invalid case ID."},400);

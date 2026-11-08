@@ -166,3 +166,29 @@ test('AgentPhone test login replaces random OTP with public code without sending
   assert.equal((await req('/phone-number/verify',{phoneNumber:p,code:'123456'})).status,400);
  }finally{for(const[k,v]of Object.entries({PHONE_SMS_PROVIDER:previous.provider,PHONE_TEST_NUMBERS:previous.numbers})){if(v===undefined)delete process.env[k];else process.env[k]=v;}}
 });
+
+test('phone case start is atomic, retains call text consent and never restarts a stopped case',async()=>{
+ const prior=process.env.ASSURANCE_DIRECT_ACTIVATION_ENABLED;const user=await signup(),owner=phoneOwner(user.user.id),call=`phone-test:${randomUUID()}`;
+ let caseId:string|undefined;
+ try{
+  for(const said of ['yes','workplace injury','A chemical splash injured my forearm at work.'])await handlePhoneEvent(pool,`phone-test:${randomUUID()}`,event(user.phone,call,said));
+  const {rows:[intake]}=await pool.query('SELECT * FROM advocacy_phone_intakes WHERE call_id=$1',[call]);
+  process.env.ASSURANCE_DIRECT_ACTIVATION_ENABLED='false';
+  await assert.rejects(()=>claimPhoneIntake(pool,owner,intake.id,undefined,true),/DIRECT_ACTIVATION_UNAVAILABLE/);
+  assert.equal((await pool.query('SELECT case_id FROM advocacy_phone_intakes WHERE id=$1',[intake.id])).rows[0].case_id,null);
+  assert.equal((await pool.query('SELECT id FROM advocacy_cases WHERE owner_id=$1',[owner])).rowCount,0);
+  // STOP remains effective even when the original call granted SMS consent.
+  await pool.query('INSERT INTO advocacy_phone_preferences(owner_id,phone,sms_consent) VALUES($1,$2,false)',[owner,user.phone]);
+  process.env.ASSURANCE_DIRECT_ACTIVATION_ENABLED='true';
+  caseId=await claimPhoneIntake(pool,owner,intake.id,undefined,true);caseIds.push(caseId);
+  assert.equal((await pool.query('SELECT sms_consent FROM advocacy_phone_preferences WHERE owner_id=$1',[owner])).rows[0].sms_consent,false);
+  const {rows:[run]}=await pool.query('SELECT * FROM advocacy_direct_case_runs WHERE case_id=$1',[caseId]);assert.equal(run.state,'queued');assert.equal(run.owner_id,owner);
+  const {revokeCaseAuthority}=await import('../backend/autonomy-service');await revokeCaseAuthority(drizzle(pool),caseId,run.authority_id,owner);
+  assert.equal(await claimPhoneIntake(pool,owner,intake.id,undefined,true),caseId);
+  assert.equal((await pool.query('SELECT state FROM advocacy_direct_case_runs WHERE case_id=$1',[caseId])).rows[0].state,'stopped');
+  assert.equal((await pool.query('SELECT id FROM advocacy_case_authorities WHERE case_id=$1',[caseId])).rowCount,1);
+ }finally{
+  if(caseId)await pool.query('DELETE FROM advocacy_case_authorities WHERE case_id=$1',[caseId]);
+  if(prior===undefined)delete process.env.ASSURANCE_DIRECT_ACTIVATION_ENABLED;else process.env.ASSURANCE_DIRECT_ACTIVATION_ENABLED=prior;
+ }
+});

@@ -1,14 +1,20 @@
-# Case activation and status
+# Case intake and agent activity
 
-`src/Autonomy.tsx` separates saving a case from authorizing an agent to work on it. A saved case with no active authority says so explicitly. It does not imply that uploads or saved notes have started a claim workflow.
+The current web flow is sign in → describe the issue or attach documents → **Start handling my case** → follow agent activity. New-case submission sends `POST /cases` with a stable client UUID and `start_agent:true`. The backend creates the case and agent authority atomically. A concise submission disclosure replaces the separate permission textarea and checkbox. `backend/intake-policy.ts` supplies the recorded standard scope; old grants are never silently expanded.
 
-## Owner permission
+`src/CaseForm.tsx` makes the account of what happened the main input. Contact details, title, employer/insurer fields, and amounts are optional and collapsed. A title is derived from the narrative when omitted. Files can substitute for a narrative; the saved account then says which documents the owner asked Assurance to review. Files are uploaded to the returned case ID and reading starts automatically. Failed file processing leaves the existing case visible with an error; it does not create a replacement case. Files over 5 MB are rejected before submission.
 
-The activation form asks the owner to describe permission in their own words. It does not prefill a fixed goal, require a saved crew review, or add legacy synthetic, decision-count, message-count, spacing, or expiry limits. The owner must confirm the current text; editing it clears the confirmation. The server remains responsible for validating identity, permission, and activation readiness.
+`src/Workspace.tsx` places agent work ahead of detailed case information. The optional legacy review and manual outreach controls are collapsed. Repeated prototype/synthetic banners are removed; shared fixed-code login accounts retain a short fictional-record notice. Existing messages and evidence retain their original provenance.
 
-Activation sends `POST /cases/:id/autonomy` with `{authorize:true,persistent:true,policy:{version:2,consent:string}}`. The current permission is trimmed but otherwise preserved. `GET /cases/:id/autonomy` supplies `activation_available`; that value is authoritative when present. The earlier `persistent_available` and component `enabled` values are a compatibility fallback only.
+`src/Autonomy.tsx` shows status, goal, questions, and decisions. Existing saved cases without a current grant offer **Start handling my case**, with the same concise scope disclosure, instead of starting old cases on page view. Scope, engine identity, and finish condition remain available in collapsed details. **Stop agent work** stays directly accessible.
 
-The UI explains that permission can include research, insurer/claims-administrator communications, follow-up, and document requests. It does not authorize payments or accepting settlements and does not guarantee coverage, savings, or approval.
+A human-required direct run offers a response box. `POST /cases/:id/updates` carries `{id,text}` with a stable UUID on retries; the server saves the owner update and resumes only when safe. The UI says **Update saved**, since a busy or uncertain dispatch can prevent immediate resumption. The existing explicit resume control remains available for separately uploaded information.
+
+`src/Documents.tsx` starts reading after upload. Machine-extracted text is shown as **Read from document**, with its provenance in a collapsed transcription. Owner confirmation is an optional attribution upgrade, not a mandatory intake step. Failed reading remains visible with a retry control.
+
+## Submission and compatibility contract
+
+New submission records `DEFAULT_INTAKE_CONSENT` as a version-2 policy. The scope permits organizing evidence, research, relevant organizational contact, and follow-up; it excludes payments, settlement acceptance, and misrepresentation. Existing v2/legacy activation APIs remain compatible. The status API's `activation_available` flag is authoritative. Creation or activation failures must never appear as successful agent work.
 
 ## Runtime feedback and control
 
@@ -18,13 +24,13 @@ A pending setup without a session says that permission was saved but an agent se
 
 `direct_openai` sessions are labeled Direct model; Naïve sessions are labeled Naïve. Only Naïve sessions show provider-action confirmation controls. Legacy records with no engine field retain their earlier Naïve interpretation. Historical bounded authorities retain their original scope and expiry display; the UI does not expand them.
 
-For a direct-model session in `human_required`, the owner can select **Continue with updated information**. This posts `{confirm:true}` to `/cases/:id/autonomy/:authorityId/resume`; the UI explains that the original permission is unchanged. The server must verify ownership, the resumable state, and the existing authorization. This button does not create another grant or clear uncertain dispatches.
+For a direct-model session in `human_required`, the owner can answer in place or select **Continue with updated information**. This posts `{confirm:true}` to `/cases/:id/autonomy/:authorityId/resume`; the UI explains that the original permission is unchanged. The server must verify ownership, the resumable state, and the existing authorization. This button does not create another grant or clear uncertain dispatches.
 
 **Stop agent work** uses the existing revoke endpoint. The UI explains that an in-flight communication may finish, while new work must stop after revocation is recorded. Server-side revocation enforcement is required; hiding the form is not a security control.
 
 ## Verification
 
-Three focused tests in `scripts/activation-state.test.ts` passed: exact version-2 permission serialization, direct/Naïve approval distinction, and truthful completion/error labels. `scripts/activation-ui-fixture.ts` passed a browser flow with mocked auth and API transport: no saved review, explicit permission, checkbox reset after editing, activation queue, direct-engine goal, human-help resume, stop, unavailable-account state, and a separate Naïve pending-action confirmation.
+Earlier verification (before the simplified intake): three focused tests in `scripts/activation-state.test.ts` passed: exact version-2 permission serialization, direct/Naïve approval distinction, and truthful completion/error labels. `scripts/activation-ui-fixture.ts` passed a browser flow with mocked auth and API transport: no saved review, explicit permission, checkbox reset after editing, activation queue, direct-engine goal, human-help resume, stop, unavailable-account state, and a separate Naïve pending-action confirmation.
 
 The reusable `scripts/autonomy-ui-check.ts` export remains compatible with the existing hosted E2E harness, but now tests the version-2 activation contract. These mocked checks do not prove live model execution, insurer contact, or a real claim outcome. Production activation must be verified against the deployed server separately.
 
@@ -63,7 +69,7 @@ The script preserves uncertain creation or activation attempts for inspection in
 
 `npx tsx scripts/hosted-direct-smoke.ts document zero` adds a document proof after the zero-contact agent has parked for owner input (or stopped). It generates and retains a fictional insurance-card PNG in ignored `test-results/`, uploads the same bytes with a persisted document UUID, starts direct extraction, checks the exact fictional member ID and insurer, and confirms the transcription twice. Case revision must advance once on initial confirmation and stay unchanged on the repeated confirmation. Another signed-in account must receive 404 for document listing, download, extraction, refresh, and confirmation. The command checks that no outreach was created. A pending direct extraction returns exit code 2 and can be checked again with the same command. This ordinary random signup is not a legacy Naïve reader operator; an unexpected legacy reader state fails the check. TypeScript passed; the document command has not been executed against production.
 
-The case page has a dedicated **Agent work** section before the optional Naïve review and manual outreach panels. The header links directly to its permission/status controls; saving a case is explicitly distinct from starting work.
+The case page has a dedicated **Agent work** section before detailed case information. Legacy review and manual outreach are under Additional review and communication tools. New UI submission starts work atomically; the legacy save-only API remains available for integrations and test fixtures.
 
 ## Phone sign-in entry
 
@@ -82,3 +88,13 @@ Verification: `npx tsx scripts/phone-ui-check.ts` passed with all external reque
 - `real-verify` reads a six-digit code from the private mode-0600 file named by `PHONE_TEST_CODE_FILE`. It verifies that code, fetches a scoped JWT, checks API identity, opens the hosted dashboard with the phone session, and signs out. It sends no SMS and creates no case. Codes, phone numbers, session tokens, and JWTs are never printed. The private journal records timestamps/status only alongside the seeded phone.
 
 These live commands require the corresponding user-authorized scope. A surviving send lock or attempted marker requires reconciliation, never deletion to force a resend. The script was typechecked only when added; none of its live commands were executed at that point.
+
+## Simplified intake verification
+
+After the intake simplification, TypeScript and the production build passed. The mocked activation browser fixture passed single-click start without permission text or checkbox, standard v2 scope serialization, queued/working/attention/stopped states, collapsed engine details, an owner response with a UUID, saved-update feedback, unchanged-scope resume, stop, unavailable activation, and legacy Naïve-only provider approval. The build retains the existing bundle-size warning. These checks send no external messages and do not establish hosted deployment of this UI.
+
+## Hosted simplified-intake check
+
+`scripts/hosted-intake-smoke.ts` uses two fictional fixed-code identities (no SMS), submits a narrative under the standard scope with a durable UUID, immediately stops the run, and verifies a retried submission cannot restart it. It checks cross-owner denial, uploads the packet's health card, runs real direct extraction without confirmation, and confirms the run remains stopped with zero outreach. The private journal prevents accidental new fixtures; `--resume-existing` is only for reconciled incomplete attempts and reuses the same UUID. This check passed against the deployed backend. It does not test a real insurer conversation.
+
+`scripts/intake-ui-fixture.ts` passed a browser check of the actual CaseForm with a mocked save callback: narrative-only and document-only submission, derived title, optional hidden contact fields, and no permission checkbox. This bounded test does not exercise Workspace's API/upload orchestration. `scripts/e2e.ts` now expands optional details, supplies explicit no-outreach fixture instructions, uses the new submit button, immediately revokes the created authority, and checks zero outreach before continuing isolation/deletion checks. TypeScript passed; this revised live E2E was not executed as part of the UI change.

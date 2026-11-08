@@ -55,10 +55,12 @@ Every repository change must update the relevant documentation in the same chang
 
 - [Direct-model demo fallback](demo-fallback.md): minimal Naïve handoff, local direct inference, exclusive-case requirements, and verification limits.
 
-- [Case activation and status](activation-flow.md): owner-written permission, start/resume/stop controls, engine attribution, and UI verification.
+- [Case activation and status](activation-flow.md): submission scope, owner updates, start/stop controls, engine attribution, and UI verification.
 
 - [Resume handoff](RESUME-HANDOFF.md): deployed release, private test journals, and remaining external gates for a new chat.
 
 - [Hosted direct-model agent](hosted-agent.md): scheduler, durable conversation, research/document tools, engine separation, and hosted verification.
 
 - [Twilio Verify setup](twilio-verify-setup.md): read-only planning and explicit service creation for phone login, separate from AgentPhone voice.
+
+- [Upload artifacts](demo-upload-artifacts.md): coherent fictional incident, insurance card, visit, employer acknowledgment, and pending claim-review files.

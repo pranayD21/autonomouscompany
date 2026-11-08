@@ -79,7 +79,7 @@ function App() {
   if (!isPending && !error && session?.user) return <>{signOutError && <p role="alert" className="error floating-error">{signOutError}</p>}<Dashboard key={session.user.id} userId={session.user.id} userName={session.user.name || session.user.email} onSignOut={() => void signOut()}/></>;
   return <><a className="skip-link" href="#workspace-content">Skip to content</a><header className="app-header"><a href="#home" className="brand" aria-label="Assurance home"><Asterisk strokeWidth={2.5} aria-hidden="true"/>assurance<span className="brand-period">.</span></a></header>
     <main id="workspace-content" className="app-main">{isPending ? <p role="status">Loading your session…</p> : error ? <p role="alert" className="error">Authentication is unavailable. Please reload and try again.</p> : <SignIn/>}</main>
-    <footer className="app-footer"><span>assurance<span className="brand-period">.</span></span><small>Prototype · Synthetic data only</small></footer></>;
+    <footer className="app-footer"><span>assurance<span className="brand-period">.</span></span><small>Your case, handled.</small></footer></>;
 }
 
 createRoot(document.getElementById("root")!).render(<StrictMode><RealtimeProvider client={realtime}><MotionConfig reducedMotion="user"><App/></MotionConfig></RealtimeProvider></StrictMode>);

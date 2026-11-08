@@ -43,7 +43,7 @@ export function documentRoutes(pool: Pool) {
         if(d.state==="ready"){await client.query("COMMIT");return c.json({id:d.id,state:d.state});}
       }else{
         const count=await client.query("SELECT count(*)::int AS count FROM advocacy_documents WHERE case_id=$1",[caseId]);
-        if(count.rows[0].count>=20){await client.query("ROLLBACK");return c.json({error:"This prototype supports 20 documents per case."},409);}
+        if(count.rows[0].count>=20){await client.query("ROLLBACK");return c.json({error:"Each case supports up to 20 documents."},409);}
         await client.query("INSERT INTO advocacy_documents(id,case_id,object_key,filename,mime,byte_size,sha256,kind) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",[id,caseId,key,filename,file.type,bytes.length,hash,kind]);
       }
       await client.query("COMMIT");

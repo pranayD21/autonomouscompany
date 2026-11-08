@@ -1,6 +1,6 @@
 # Phone-first Assurance
 
-The current sign-in path uses a phone number and six-digit code, with fictional shared test accounts and an older-email-account link. The future inbound-call experience remains separately disabled. The user signs in with a phone verification code, reviews the caller-reported intake, and uploads fictional demo documents. Document-validation and extraction failures create a portal notification and queue a generic problem text. No case details or medical information belong in SMS.
+The live SMS feature currently verifies phone sign-in through Twilio Verify. It does not yet deliver upload links, document requests, or case updates. The intended call-first experience is: call Assurance, describe the issue once, receive a secure upload link, verify the phone, and let the agent continue from the saved account. AgentPhone handles voice and those case texts; its carrier registration is still pending, so this separate flow remains disabled. No case details or medical information belong in SMS.
 
 ## Current phone-login configuration
 
@@ -24,7 +24,7 @@ Existing account holders can verify a phone in the dashboard and link it using b
 
 ## Inbound calls and portal requests
 
-`backend/phone-intake.ts` handles a short structured intake: explicit text consent, workplace-injury versus health-insurance path, fictional narrative, then portal link. It stores a pending intake for 24 hours. It does not read private case details based on caller ID. The account owner must verify the matching number and explicitly confirm the intake before a case is created; repeated confirmation reuses that case. The narrative remains caller-reported information and does not authorize insurer outreach.
+`backend/phone-intake.ts` handles a short structured intake: an explanation of case assistance and text consent, workplace-injury versus health-insurance path, the caller’s account, then an upload link. It stores a pending intake for 24 hours. It does not read private case details or start work based on caller ID. The verified owner can submit the intake with `POST /phone/intakes/:id/claim`, `{confirm:true,start_agent:true}`. This creates the case, recorded standard intake scope, authority-bound credential, and direct run atomically. If activation is unavailable, the entire claim transaction rolls back and the call intake remains available to retry. Historical claim requests without `start_agent:true` still only save a case; retrying a claimed intake returns its original case and never starts or restarts permission.
 
 Raw AgentPhone webhook bytes are verified with the documented timestamped HMAC signature and five-minute replay window. Delivery ID plus payload hash prevents duplicate state changes and rejects conflicting reuse. Expected agent and number IDs are checked. Signed outbound events are ignored. This is webhook voice mode, not SIP and not Twilio. Configuration is prepared by `scripts/configure-inbound-phone.ts`; default invocation is a read-only plan. `--apply` requires SMS readiness and the enabled feature before changing the existing agent's inbound routing. It retains a private previous-agent snapshot and makes no call or message.
 
@@ -80,3 +80,21 @@ The updated phone backend passed all 16 disposable-database tests. Six affected 
 ## Current deployment checkpoint
 
 The user subsequently selected Twilio Verify for sign-in codes. Its Assurance service has been created once and read back with six-digit codes. PHONE_LOGIN_ENABLED is true in private deployment configuration; PHONE_FLOW_ENABLED remains false. The frontend is published. Hosted status reports enabled=true, smsReady=true, and five fictional test numbers. Two fictional accounts passed live UI sign-in/re-sign-in and case isolation. One explicitly authorized real SMS code was received and verified; the scoped API and live dashboard worked, and the session signed out. No resend occurred. The older email flow also passed hosted E2E. AgentPhone carrier approval gates future inbound/notification flows, not Twilio Verify login. No Twilio number was purchased and no voice provider was changed.
+
+## Reduced-input phone intake update
+
+The voice prompts and portal-link text no longer repeat fictional/demo instructions. The call opening explains that Assurance will organize the claim, research, contact relevant organizations after phone verification, and send portal links/updates; it excludes payments and settlements. The stored account remains caller-reported evidence, not a claim that a clinician or account owner verified its facts.
+
+`claimPhoneIntake` accepts an optional SMS preference. Omitting it copies the original call opt-in only when no owner preference exists; it never overwrites a later STOP. This removes a redundant checkbox after call consent. An explicit boolean remains compatible with existing clients. Starting the agent uses `DEFAULT_INTAKE_CONSENT` from `backend/intake-policy.ts`; the submission UI must disclose the service scope. The old `sms_consent` field alone is not treated as a historical grant of case-work authority.
+
+Read-only provider checks on November 8, 2026 UTC returned HTTP 200, registration `pending`, and number `outboundSms=registration_required`. No message, call, paid registration, routing change, or flag change occurred. Twilio Verify remains code-only; it cannot substitute for general case texts. `scripts/configure-inbound-phone.ts` contains the revised opening but stays read-only unless explicitly applied after carrier readiness.
+
+The phone suite now covers atomic case-and-agent creation, disabled-activation rollback, retaining STOP, and idempotent retry after revocation. Verification results are recorded in the change log.
+
+## BlueBubbles fallback assessment
+
+The user proposed BlueBubbles if the SMS workarounds are ineffective. Read-only inspection found no BlueBubbles app in the system/user Applications directories, no usual server support directory, no configured BlueBubbles/iMessage environment entries, and no connected BlueBubbles tool. No personal Messages database was opened.
+
+BlueBubbles runs on macOS and relies on the Messages app. Its [server overview](https://docs.bluebubbles.app/server) describes that dependency; its [installation guide](https://bluebubbles.app/install/) covers the server setup. The [official FAQ](https://bluebubbles.app/faq/) currently states that SMS is not supported. Its [REST API documentation](https://docs.bluebubbles.app/server/developer-guides/rest-api-and-webhooks) provides authenticated messaging/webhook integration, but API availability alone does not prove carrier SMS delivery.
+
+It is therefore not a verified replacement for pending AgentPhone SMS. A future Apple Messages integration would require a running reachable server, an explicitly chosen and verified sender identity, and inbound opt-out handling. It must not silently use a personal Apple account or claim to send from Assurance’s AgentPhone number. No adapter, installation, personal-account setup, send, or routing change was made. Twilio Verify continues to handle working login codes; case notification texts remain unavailable until a delivery channel is actually configured and verified.

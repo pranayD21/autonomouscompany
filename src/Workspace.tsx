@@ -1,5 +1,5 @@
 import {PhoneIntakes} from "./PhoneIntakes";
-import {useCallback, useEffect, useState, type ReactNode} from "react";
+import {useCallback, useEffect, useRef, useState, type ReactNode} from "react";
 import {AnimatePresence, motion} from "motion/react";
 import {useLiveQuery} from "@neon/realtime-react";
 import type {SealedLiveQuery} from "@neon/realtime/client";
@@ -41,7 +41,7 @@ function useRoute() {
 
 /** The single most useful thing to do next on a case. */
 function nextStep(_item: BillCase): {title: string; href: string; cta: string} {
-  return {title: "Check agent progress or give permission to begin.", href: "#section-authorization", cta: "Agent permissions and status"};
+  return {title: "See what Assurance is doing for you.", href: "#section-authorization", cta: "View agent activity"};
 }
 
 function LiveStatus({status}: {status: string}) {
@@ -54,16 +54,23 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
   const {data, status, error, utils} = useLiveQuery(sealed, {refreshQuery});
   const [route, go] = useRoute();
   const [notice, setNotice] = useState("");
+  const createId=useRef(crypto.randomUUID());
   const [crewEnabled, setCrewEnabled] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   useEffect(() => { api<{naive: {configured: boolean; enabledForUser: boolean}}>("/stack/status", {}, userId).then(s => setCrewEnabled(s.naive.configured && s.naive.enabledForUser)).catch(() => {}); }, [userId]);
 
-  async function saveDetails(details: CaseInput, existing?: BillCase) {
+  async function saveDetails(details: CaseInput, existing?: BillCase, files:File[] = []) {
     setBusy(existing?.id ?? "create"); setNotice("");
     try {
-      const result = await api<{id: string; txid: string}>(existing ? `/cases/${existing.id}` : "/cases", {method: existing ? "PATCH" : "POST", body: JSON.stringify({...details, ...existing ? {revision: existing.revision} : {}})}, userId);
-      await utils.awaitTxId(result.txid, 15000);
+      const result = await api<{id: string; txid: string}>(existing ? `/cases/${existing.id}` : "/cases", {method: existing ? "PATCH" : "POST", body: JSON.stringify({...details, ...existing ? {revision: existing.revision} : {id:createId.current,start_agent:true}})}, userId);
+      if(!existing)createId.current=crypto.randomUUID();
       if (!existing) go(`#case/${result.id}`);
+      await utils.awaitTxId(result.txid, 15000).catch(()=>setNotice("Your changes are saved. Live updates are reconnecting."));
+      for(const file of files){
+        const body=new FormData();body.set("file",file);body.set("kind","other");const documentId=crypto.randomUUID();body.set("id",documentId);
+        try{await api(`/cases/${result.id}/documents`,{method:"POST",body},userId);await api(`/cases/${result.id}/documents/${documentId}/extraction`,{method:"POST"},userId);}
+        catch{setNotice(`Your case is saved and queued. ${file.name} could not finish processing; check Documents below before retrying.`);}
+      }
     } catch (err) { setNotice(message(err)); throw err; } finally { setBusy(null); }
   }
   async function act(id: string, action: "analyze" | "delete") {
@@ -84,7 +91,7 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
   let view: ReactNode;
   let viewKey: string;
   if (data === undefined) { view = <p role="status" className="loading-line">Connecting to your cases…</p>; viewKey = "loading"; }
-  else if (showIntake) { view = <Intake hasCases={cases.length > 0} disabled={busy !== null} onCancel={() => go("#workspace")} onSave={d => saveDetails(d)} live={live}/>; viewKey = "new"; }
+  else if (showIntake) { view = <Intake hasCases={cases.length > 0} disabled={busy !== null} onCancel={() => go("#workspace")} onSave={(d,files) => saveDetails(d,undefined,files)} live={live}/>; viewKey = "new"; }
   else if (route.view === "case" && !selected) { view = <div className="empty"><p>This case isn’t available. It may have been deleted.</p><a className="text-link" href="#workspace">Back to all cases</a></div>; viewKey = "missing"; }
   else if (selected) { view = <CaseView key={selected.id} item={selected} userId={userId} crewEnabled={crewEnabled} busy={busy} live={live} onSave={d => saveDetails(d, selected)} onAct={action => act(selected.id, action)}/>; viewKey = `case-${selected.id}`; }
   else { view = <Overview cases={cases} userName={userName} live={live}/>; viewKey = "overview"; }
@@ -105,7 +112,7 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
       <AnimatePresence mode="wait">
         <motion.div key={viewKey} className="view" initial={{opacity: 0, y: 8}} animate={{opacity: 1, y: 0}} exit={{opacity: 0}} transition={{duration: 0.22, ease: [0.16, 1, 0.3, 1]}}>{view}</motion.div>
       </AnimatePresence>
-      <footer className="surface-footer"><span>assurance<span className="brand-period">.</span></span><small>Prototype · Synthetic data only</small></footer>
+      <footer className="surface-footer"><span>assurance<span className="brand-period">.</span></span><small>Your case, handled.</small></footer>
     </main>
   </div>;
 }
@@ -163,10 +170,10 @@ function Overview({cases, userName, live}: {cases: readonly BillCase[]; userName
   </>;
 }
 
-function Intake({hasCases, disabled, onCancel, onSave, live}: {hasCases: boolean; disabled: boolean; onCancel: () => void; onSave: (d: CaseInput) => Promise<void>; live: ReactNode}) {
+function Intake({hasCases, disabled, onCancel, onSave, live}: {hasCases: boolean; disabled: boolean; onCancel: () => void; onSave: (d: CaseInput,files?:File[]) => Promise<void>; live: ReactNode}) {
   return <>
     <div className="page-head">
-      <div>{hasCases && <button className="back-link" onClick={onCancel}><ArrowLeft size={16} aria-hidden="true"/>All cases</button>}<h1>{hasCases ? "Open a new case." : "Open your first case."}</h1><p className="lede">Use made-up details only — this is a prototype.</p></div>
+      <div>{hasCases && <button className="back-link" onClick={onCancel}><ArrowLeft size={16} aria-hidden="true"/>All cases</button>}<h1>{hasCases ? "Open a new case." : "Open your first case."}</h1><p className="lede">Tell us what happened or upload your documents. Assurance takes it from there.</p></div>
       {live}
     </div>
     <div className="intake-card"><CaseForm disabled={disabled} onSave={onSave}/></div>
@@ -177,8 +184,6 @@ const SECTIONS = [
   {id: "section-overview", label: "Overview"},
   {id: "section-documents", label: "Documents"},
   {id: "section-authorization", label: "Agent work"},
-  {id: "section-review", label: "Optional review"},
-  {id: "section-outreach", label: "Outreach"},
   {id: "section-outcomes", label: "Outcomes"},
 ];
 
@@ -230,6 +235,8 @@ function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}: {item:
 
     <SectionNav sections={SECTIONS}/>
 
+    <CrewReview key={`${item.id}-${item.revision}`} revision={item.revision} id={item.id} userId={userId} enabled={crewEnabled} quickAnalysis={item.analysis}/>
+
     <CaseSection id="section-overview" title="Overview" aside={<button className="text-button" onClick={() => setEditing(e => !e)} aria-expanded={editing}>{editing ? "Cancel editing" : "Update case details"}</button>}>
       <AnimatePresence initial={false}>
         {editing && <motion.div className="edit-panel" initial={{height: 0, opacity: 0}} animate={{height: "auto", opacity: 1}} exit={{height: 0, opacity: 0}} transition={{duration: 0.3, ease: [0.16, 1, 0.3, 1]}}>
@@ -246,6 +253,5 @@ function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}: {item:
       <Documents key={`documents-${item.id}`} caseId={item.id} userId={userId} revision={item.revision}/>
     </CaseSection>
 
-    <CrewReview key={`${item.id}-${item.revision}`} revision={item.revision} id={item.id} userId={userId} enabled={crewEnabled} quickAnalysis={item.analysis}/>
   </article>;
 }

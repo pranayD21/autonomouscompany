@@ -36,7 +36,7 @@ export function Landing() {
 
       <section className="questions" aria-label="Common questions"><h2>Questions</h2><div><details><summary>What can I use Assurance for?<span aria-hidden="true">+</span></summary><p>Workplace injury claims and health-insurance disputes.</p></details><details><summary>Does Assurance send things automatically?<span aria-hidden="true">+</span></summary><p>No. Nothing is sent without your approval.</p></details><details><summary>Can I use a real claim?<span aria-hidden="true">+</span></summary><p>Not yet. This is a prototype, so use made-up details only.</p></details></div></section>
 
-      <footer className="site-footer"><a className="brand" href="#">assurance<span className="brand-period">.</span></a><span>Prototype · Synthetic data only</span></footer>
+      <footer className="site-footer"><a className="brand" href="#">assurance<span className="brand-period">.</span></a><span>Your case, handled.</span></footer>
     </main>
   );
 }
