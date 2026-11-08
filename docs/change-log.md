@@ -978,4 +978,4 @@ Merged the 20 redesign commits from `main` into the `phone-first-snapshot` branc
 - Version 2 authorities reply through the conversation link. Inline reply and provider approval remain only for earlier authorities. The legacy `PhoneIntakes` panel is no longer mounted.
 - Reported savings shows "Not yet known" until an insurer decision is recorded, rather than $0.
 
-This merge changes frontend and documentation only and deploys nothing. Verification results are in the merge commit message. Live phone-to-advocate continuation remains unverified.
+This merge changes frontend and documentation only. At the user's request it was fast-forwarded to `main`, and Vercel's push-triggered build published commit `57cdeb0` to assurance.claims. The Vercel commit status reported success and the live page loaded with phone entry. Backend functions, migrations, and feature flags were not changed by this release, so onboarding calls remain unavailable. Verification results are in the merge commit message. Live phone-to-advocate continuation remains unverified.
