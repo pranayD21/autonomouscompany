@@ -509,3 +509,8 @@ Added one database integration test covering a reply and due timer together, fol
 ### Establish credential-renewal constraints
 
 Inspected the installed Managed Agents vault API: rotation requires create-new/delete-old and cannot be implemented by extending the Neon expiry alone. Prepared an isolated live rotation experiment under the existing zero-outbound synthetic scope. Provisioning succeeded, but the pre-start identity check returned HTTP 429; no session or rotation started. Remote cleanup also returned 429 after the shared cooldown. Read-only database verification confirmed no remote session, revoked authority, revoked credential, and zero outbound rows. Remote vault/identity deletion remains pending; resume cleanup using the ignored rotation-runner and rotation-live-smoke state, without creating another fixture. No production source, schema, auth configuration, or budget changed.
+
+
+### Complete renewal-experiment cleanup
+
+Resumed the same fixture cleanup after the shared capacity cooldown. The command completed successfully, removed remote vault/identity resources and local fixture rows, confirmed zero outbound rows, and marked the saved fixture cleaned. No replacement fixture, session, budget, or outbound action was created. Credential rotation remains unverified. Concurrent phone authentication changes were preserved.
