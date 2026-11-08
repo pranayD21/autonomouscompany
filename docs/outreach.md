@@ -77,3 +77,5 @@ Manual action refresh imports completed transcripts. The existing five-minute au
 Both bounded decision inputs and MCP `case_get` include saved transcripts and `call:<id>:<sha256>` references. The case workspace’s action UI still displays status/duration; a transcript viewer is not yet implemented. The coordinator treats transcripts as untrusted reported information and cannot use them to add contacts or expand authority.
 
 Run database suites sequentially on a shared disposable branch: `npx tsx --test --test-concurrency=1 scripts/call-evidence-service.test.ts scripts/autonomy-runner.test.ts`. The autonomy scheduler intentionally scans all due authority rows, so running fixture-producing suites concurrently lets it consume another suite’s fixtures. These tests never contact a live provider. Parser and transport tests can run concurrently.
+
+Native MCP action tools now share the same authority validation, dispatch records, email-thread preservation, and uncertain-send handling as the bounded decision workflow. They do not bypass destination restrictions or increase the existing grant. See agent-tools.md for operation IDs, leases, and scheduler recovery.

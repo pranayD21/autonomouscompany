@@ -11,7 +11,20 @@ export default defineConfig({
   auth: true,
   aiGateway: true,
   functions: {
-    tools: { name: "Assurance case tools", source: "./backend/case-tools-worker.ts", env: { CREW_ALLOWED_USER_IDS: process.env.CREW_ALLOWED_USER_IDS ?? "" } },
+    tools: { name: "Assurance case tools", source: "./backend/case-tools-worker.ts", env: {
+      CREW_ALLOWED_USER_IDS: process.env.CREW_ALLOWED_USER_IDS ?? "",
+      AGENTMAIL_API_KEY: process.env.AGENTMAIL_API_KEY ?? "",
+      AGENTMAIL_INBOX_ID: process.env.AGENTMAIL_INBOX_ID ?? "",
+      AGENTPHONE_API_KEY: process.env.AGENTPHONE_API_KEY ?? "",
+      AGENTPHONE_AGENT_ID: process.env.AGENTPHONE_AGENT_ID ?? "",
+      AGENTPHONE_NUMBER_ID: process.env.AGENTPHONE_NUMBER_ID ?? "",
+      ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY ?? "",
+      ELEVENLABS_OUTREACH_AGENT_ID: process.env.ELEVENLABS_OUTREACH_AGENT_ID ?? "",
+      ELEVENLABS_PHONE_NUMBER_ID: process.env.ELEVENLABS_PHONE_NUMBER_ID ?? "",
+      OUTREACH_ALLOWED_EMAILS: process.env.OUTREACH_ALLOWED_EMAILS ?? "",
+      OUTREACH_ALLOWED_PHONES: process.env.OUTREACH_ALLOWED_PHONES ?? "",
+      OUTREACH_VOICE_PROVIDER: process.env.OUTREACH_VOICE_PROVIDER ?? "elevenlabs",
+    } },
     autopoll: {
       name: "Assurance autonomous case worker",
       source: "./backend/autonomy-worker.ts",

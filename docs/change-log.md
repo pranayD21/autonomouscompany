@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-07 — Native case action tools
+
+Added send_email, place_call, schedule_followup, request_human, and stop_case to the deployed MCP service. They reuse existing authority validation, typed decisions, send-once dispatch, email threading, and reply monitoring. Per-authority leases serialize tool retries with scheduled work. The scheduler recovers reserved native decisions without another inference request. Case reads expose authority/counters; bounded decision snapshots now include saved citations and statements. Existing grant limits and spending caps remain unchanged. The tools Function now receives server-only outreach credentials and allowlists.
+
+Verification: nine protocol/configuration tests, five native-action database tests, and eleven existing autonomy tests pass; build passes. JSONB key ordering initially broke retry equality and was corrected through schema normalization. Six Functions deployed. A live temporary-case check proved tool discovery, human-help state change, idempotent retry, and inactive-authority send rejection with zero outbound records; its fixture was removed. The existing own-inbox test is human_required after three decisions and one email; a direct provider read returned capacity HTTP 429, and no new session or grant was created. Naïve MCP wiring remains blocked by setup-key scope.
+
 ## 2026-11-07 — Agent-directed public-source citations
 
 Added `cite_source` to the deployed case MCP service, with per-case ownership, immutable source snapshots, exact short-quote checks, idempotent operations, and evidence references usable by recorded facts. Public HTTPS retrieval validates DNS and every redirect, pins the connection to a validated address, bounds downloads, and supports HTML/plain text/PDF text layers. Added ipaddr.js directly; its older transitive version remains nested for proxy-addr. Prepared Naïve web search/fetch and citation permissions without changing budgets or publishing the agent configuration.

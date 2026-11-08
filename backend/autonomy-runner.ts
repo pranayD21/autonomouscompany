@@ -14,7 +14,7 @@ type Authority=typeof caseAuthorities.$inferSelect;
 type Round=typeof caseDecisions.$inferSelect;
 type DecisionSession=Pick<Awaited<ReturnType<ReturnType<typeof naiveClient>["sessions"]["get"]>>,"status"|"stop_reason"|"pending_actions"|"structured_output">;
 export type AutonomyDependencies={start:(id:string,input:Record<string,unknown>)=>Promise<{id:string}>;read:(id:string)=>Promise<DecisionSession>;send:typeof sendOutreach;allowed:typeof destinationAllowed};
-const defaults:AutonomyDependencies={start:startCaseDecision,read:id=>naiveClient().sessions.get(id),send:sendOutreach,allowed:destinationAllowed};
+export const autonomyDependencies:AutonomyDependencies={start:startCaseDecision,read:id=>naiveClient().sessions.get(id),send:sendOutreach,allowed:destinationAllowed};
 const live=(id:string)=>and(eq(caseAuthorities.id,id),inArray(caseAuthorities.state,["active","waiting"]));
 
 async function finish(db:NodePgDatabase,authority:Authority,round:Round,state:Authority["state"],reason:string,nextWake:Date|null){
@@ -35,7 +35,7 @@ async function executeContact(db:NodePgDatabase,authority:Authority,round:Round,
  }else await finish(db,authority,round,"human_required",result?.state==="draft"?"Authority or case changed before dispatch.":"Dispatch needs reconciliation before another contact.",null);
 }
 
-async function applyDecision(db:NodePgDatabase,authority:Authority,round:Round,decision:CaseDecision,deps:AutonomyDependencies){
+export async function applyDecision(db:NodePgDatabase,authority:Authority,round:Round,decision:CaseDecision,deps:AutonomyDependencies){
  const prepared=await db.transaction(async tx=>{
   const [current]=await tx.select().from(caseAuthorities).where(eq(caseAuthorities.id,authority.id)).for("update");
   const [item]=await tx.select().from(cases).where(eq(cases.id,authority.case_id)).for("update");
@@ -75,7 +75,7 @@ async function applyDecision(db:NodePgDatabase,authority:Authority,round:Round,d
  if(prepared?.state==="executing")await executeContact(db,authority,prepared,deps);
 }
 
-export async function advanceCaseAuthority(db:NodePgDatabase,id:string,deps:AutonomyDependencies=defaults){
+export async function advanceCaseAuthority(db:NodePgDatabase,id:string,deps:AutonomyDependencies=autonomyDependencies){
  let [authority]=await db.select().from(caseAuthorities).where(eq(caseAuthorities.id,id));
  if(!authority||!["active","waiting"].includes(authority.state))return;
  if(new Date(authority.policy.expires_at)<=new Date()){
@@ -100,6 +100,10 @@ export async function advanceCaseAuthority(db:NodePgDatabase,id:string,deps:Auto
  }
  if(round.state==="executing"){await executeContact(db,authority,round,deps);return;}
  if(round.state==="unknown")return;
+ if(round.input.native_tool===true){
+  if(!round.decision)throw Error("NATIVE_DECISION_MISSING");
+  await applyDecision(db,authority,round,round.decision,deps);return;
+ }
  if(!round.session_id){
   const session=await deps.start(round.id,round.input);
   await db.update(caseDecisions).set({session_id:session.id,state:"running"}).where(and(eq(caseDecisions.id,round.id),sql`${caseDecisions.session_id} IS NULL`));
@@ -116,7 +120,7 @@ export async function advanceCaseAuthority(db:NodePgDatabase,id:string,deps:Auto
  await applyDecision(db,authority,round,parsed.data.decision,deps);
 }
 
-export async function pollAutonomousCases(db:NodePgDatabase,deps:AutonomyDependencies=defaults){
+export async function pollAutonomousCases(db:NodePgDatabase,deps:AutonomyDependencies=autonomyDependencies){
  const stats={checked:0,failed:0};
  for(let n=0;n<3;n++){
   const claimed=await db.execute(sql`WITH due AS (

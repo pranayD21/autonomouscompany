@@ -36,3 +36,12 @@ test("citation tool refuses another case before fetching a URL",async()=>{
  const response=await sourceApp.request("/mcp",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json, text/event-stream",Authorization:"Bearer valid"},body:rpc("tools/call",{name:"cite_source",arguments:{case_id:other,operation_id:caseId,url:"https://example.com/",quote:"A fictional quote that must not be fetched"}})});
  assert.equal((await response.json()).result.isError,true);assert.equal(fetches,0);
 });
+
+test("native email tool requires its authenticated case and passes a fixed channel",async()=>{
+ const actions:unknown[]=[];const nativeApp=caseTools({authenticate:async()=>({id:"credential",case_id:caseId,owner_id:"owner"}),getCase:async()=>({}),recordFact:async()=>({}),takeAction:async(_identity,input)=>{actions.push(input);return {state:"finished",action:{state:"submitted"}};}});
+ const args={case_id:other,operation_id:caseId,authority_id:caseId,contact_id:"customer",role:"customer",subject:"Synthetic test",body:"Fictional question?",reason:"Missing detail",evidence_refs:["case:1"]};
+ const call=async(input:unknown)=>{const res=await nativeApp.request("/mcp",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json, text/event-stream",Authorization:"Bearer valid"},body:rpc("tools/call",{name:"send_email",arguments:input})});return (await res.json()).result;};
+ assert.equal((await call(args)).isError,true);assert.equal(actions.length,0);
+ assert.notEqual((await call({...args,case_id:caseId})).isError,true);assert.equal((actions[0] as {channel:string}).channel,"email");
+ assert.equal((await call({...args,case_id:caseId,subject:"Unsafe\r\nHeader"})).isError,true);assert.equal(actions.length,1);
+});
