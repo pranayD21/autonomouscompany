@@ -261,3 +261,7 @@ Added explicit OUTREACH_VOICE_PROVIDER selection, defaulting to existing ElevenL
 ## AgentPhone fallback account verified
 
 Verified the existing hosted agent and active number by authenticated readback, and $26.83 balance in refreshed billing. Upgraded the fallback diagnostic from credential-presence checking to hosted-agent/active-number verification. Build passed. Full diagnostics also exposed a Naïve rate limit and the existing disabled gateway models, so the overall check correctly exited 1. No call, purchase, deployment, or live routing switch occurred.
+
+## Fallback backend deployment
+
+Deployed the tested provider selector and AgentPhone transport to Neon production. Verified pre-deploy selection remains ElevenLabs and its number ID is absent, so new calling stays disabled. All five functions updated successfully; unsigned worker and unauthenticated case-status requests returned 401 after deployment. No routing switch, purchase, call, or env pull occurred. Provider-neutral frontend confirmation is committed but not yet deployed; update it before activating AgentPhone to avoid misleading consent wording.

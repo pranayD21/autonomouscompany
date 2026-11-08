@@ -1,6 +1,6 @@
 # ElevenLabs voice with native Twilio telephony
 
-Current instruction: do not purchase a Twilio number. If Twilio encounters another issue, switch to AgentPhone directly without ElevenLabs, using its existing balance. This preference supersedes the earlier request to avoid AgentPhone. An explicit provider selector is implemented locally; the deployed adapter and live selection remain unchanged. Verify direct AgentPhone calling access before use, preserve case authorization and limits, and never retry an ambiguous Twilio call through another provider.
+Current instruction: do not purchase a Twilio number. If Twilio encounters another issue, switch to AgentPhone directly without ElevenLabs, using its existing balance. This preference supersedes the earlier request to avoid AgentPhone. The explicit provider selector is deployed; the live selection remains ElevenLabs. The frontend confirmation change awaits deployment before a switch. Verify direct AgentPhone calling access before use, preserve case authorization and limits, and never retry an ambiguous Twilio call through another provider.
 
 ## Selected replacement
 
@@ -58,7 +58,7 @@ The operator supplied a funding receipt. After leaving the stale upgrade wizard 
 
 `OUTREACH_VOICE_PROVIDER` defaults to `elevenlabs`. Set it to `agentphone` only when applying the user’s fallback instruction. Invalid values disable calling. AgentPhone mode uses the existing key, agent, and number directly, without ElevenLabs or SIP. Requests preserve the synthetic discussion plan and disable audio recording. There is no automatic provider failover or redial. Receipt status reads remain tied to their original provider across configuration changes. The scheduler and API configuration both declare the selector and required provider variables. The UI confirmation now describes the configured provider instead of naming ElevenLabs unconditionally.
 
-Eleven combined voice transport tests passed, including direct AgentPhone routing, timeout/no-retry behavior, uncertain receipt handling, invalid configuration, and historical ElevenLabs status after selection changes. Build passed. These changes are local and not deployed; no live call or provider switch occurred. Current AgentPhone account access still needs readback and an authorized test before claiming readiness.
+Eleven combined voice transport tests passed, including direct AgentPhone routing, timeout/no-retry behavior, uncertain receipt handling, invalid configuration, and historical ElevenLabs status after selection changes. Build passed. The backend changes are deployed; the frontend confirmation change remains undeployed. No live call or provider switch occurred. Current AgentPhone account access still needs readback and an authorized test before claiming readiness.
 
 ## Direct AgentPhone readback
 
