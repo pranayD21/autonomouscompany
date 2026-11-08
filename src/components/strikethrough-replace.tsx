@@ -15,7 +15,10 @@ type Settle = { fromW: number; toW: number; dx: number; dy: number; inDy: number
 // Extra room after the settled word: the script "s" tail runs past its advance.
 const TO_GAP = 0.11;
 // Gap between the settled word's baseline and the top of the dropped word's ink, in em.
-const FROM_DROP_GAP = 0.06;
+const FROM_DROP_GAP = 0.16;
+// How far below the rest of the word's baseline the settled replacement sits, in em.
+// The script letters read as floating when merely level with the heavy sans.
+const TO_DROP = 0.1;
 // Horizontal padding on the struck word (cancelled by negative margin in CSS) so
 // its fade mask also covers the strike line, which overhangs the letters.
 const FROM_PAD = 0.12;
@@ -66,7 +69,7 @@ export function StrikethroughReplace({ from, to, lineColor = "currentColor", spe
       const belowGap = below ? below.getBoundingClientRect().top - (rootTop + fromBaseline) : 0.45 * em;
       setGeo({
         fromW: f.offsetWidth / em - FROM_PAD * 2, toW: tb.offsetLeft / em + TO_GAP, dx: -t.offsetLeft / em,
-        dy: (fromBaseline - toBaseline + inLine) / em, inDy: inDy / em,
+        dy: (fromBaseline - toBaseline + inLine) / em + TO_DROP, inDy: inDy / em,
         // Mask stops in the struck word's resting box; CSS offsets them by its
         // current slide so the fade stays fixed on the page while it moves.
         fadeStart: (base + FROM_DROP_GAP * em) / em, fadeEnd: (base + Math.max(belowGap, 0.2 * em)) / em,
