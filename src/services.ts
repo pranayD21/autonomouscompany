@@ -28,6 +28,8 @@ export async function api<T>(path: string, options: RequestInit = {}, expectedUs
   });
   const body = await response.json();
   if (!response.ok) throw new Error(body.error ?? `Request failed (${response.status})`);
+  const changed = (options.method ?? "GET") !== "GET" ? path.match(/^\/cases\/([\w-]+)/) : null;
+  if (changed) window.dispatchEvent(new CustomEvent("assurance:case-changed", {detail: changed[1]}));
   return body as T;
 }
 export const sealCases = (userId: string) => api<SealedLiveQuery<BillCase>>("/cases/live", { method: "POST" }, userId);

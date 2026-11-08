@@ -7,6 +7,7 @@ import {AnimatePresence,motion} from "motion/react";
 const KIND:Record<string,string>={insurance_card:"Insurance card",bill:"Medical bill",eob:"EOB",incident:"Incident record",other:"Other evidence"};
 type DocumentView=Omit<CaseDocument,"object_key"> & {extraction_state:string|null;extraction_result:DocumentExtraction|null;extraction_error:string|null;confirmed_at:string|null};
 export function Documents({caseId,userId,revision}:{caseId:string;userId:string;revision:number}){
+ const [adding,setAdding]=useState(false);
  const [docs,setDocs]=useState<DocumentView[]>([]),[error,setError]=useState(""),[busy,setBusy]=useState(false),[uploads,setUploads]=useState(0);
  const uploadId=useRef(crypto.randomUUID());
  const path=`/cases/${caseId}/documents`;
@@ -14,7 +15,7 @@ export function Documents({caseId,userId,revision}:{caseId:string;userId:string;
  useEffect(()=>{void refresh().catch(e=>setError(e.message));},[caseId,userId,revision]);
  async function upload(event:FormEvent<HTMLFormElement>){
   event.preventDefault();setBusy(true);setError("");const form=event.currentTarget;
-  try{const data=new FormData(form);data.set("id",uploadId.current);await api(path,{method:"POST",body:data},userId);const savedId=uploadId.current;uploadId.current=crypto.randomUUID();form.reset();setUploads(n=>n+1);await api(`${path}/${savedId}/extraction`,{method:"POST"},userId);await refresh();}
+  try{const data=new FormData(form);data.set("id",uploadId.current);await api(path,{method:"POST",body:data},userId);const savedId=uploadId.current;uploadId.current=crypto.randomUUID();form.reset();setUploads(n=>n+1);setAdding(false);await api(`${path}/${savedId}/extraction`,{method:"POST"},userId);await refresh();}
   catch(e){setError(e instanceof Error?e.message:"Upload failed. Retry the same file.");}finally{setBusy(false);}
  }
  async function download(doc:Omit<CaseDocument,"object_key">){
@@ -28,14 +29,15 @@ export function Documents({caseId,userId,revision}:{caseId:string;userId:string;
  async function extract(id:string,action:"start"|"refresh"|"confirm"){
   setBusy(true);setError("");try{await api(`${path}/${id}/extraction${action==="start"?"":`/${action}`}`,{method:"POST",...(action==="confirm"?{body:JSON.stringify({confirm:true})}:{})},userId);await refresh();}catch(e){setError((e as Error).message);await refresh().catch(()=>{});}finally{setBusy(false);}
  }
- return <div className="documents">
- <form className="upload-form" onSubmit={upload}>
+ const showForm=docs.length===0||adding;
+ const uploader=showForm?<><form className="upload-form" onSubmit={upload}>
  <FileDrop name="file" label="Document file" accept="image/png,image/jpeg,image/webp,application/pdf" disabled={busy} resetKey={String(uploads)} onPick={()=>{uploadId.current=crypto.randomUUID();}}/>
  <div className="upload-side">
  <label>Document type<select name="kind" onChange={()=>{uploadId.current=crypto.randomUUID();}}><option value="insurance_card">Insurance card</option><option value="bill">Medical bill</option><option value="eob">Explanation of benefits</option><option value="incident">Incident record</option><option value="other">Other evidence</option></select></label>
  <small>PNG, JPEG, WebP or PDF · up to 5 MB · private to you</small>
  <button disabled={busy}>{busy?"Uploading…":"Upload document"}</button>
- </div></form>
+ </div></form></>:<button className="text-button add-doc" onClick={()=>setAdding(true)}>+ Add another document</button>;
+ return <div className="documents">
  {error&&<p role="alert">{error}</p>}
  {docs.length===0&&<p className="quiet-line">No documents yet.</p>}
  <ul className="doc-list"><AnimatePresence initial={false}>{docs.map(doc=><motion.li layout key={doc.id} id={`document-${doc.id}`} className="doc-card" initial={{opacity:0,y:10}} animate={{opacity:1,y:0}}>
@@ -51,5 +53,6 @@ export function Documents({caseId,userId,revision}:{caseId:string;userId:string;
  {!doc.confirmed_at&&<><p className="caveat">Optional: confirm that this transcription matches the original.</p><button disabled={busy} onClick={()=>void extract(doc.id,"confirm")}>Confirm transcription matches</button></>}
  </details>}
  </div>}</motion.li>)}</AnimatePresence></ul>
+ {uploader}
  </div>;
 }

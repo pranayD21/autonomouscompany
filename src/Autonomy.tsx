@@ -51,8 +51,8 @@ export function Autonomy({caseId,userId,enabled}:{caseId:string;userId:string;en
   {data.authorities.map(a=><div key={a.id}><p>{a.state.replaceAll("_"," ")}</p>{a.policy.version===2?<p>{a.policy.consent}</p>:<p>Earlier authorization retains its original scope and expiry.</p>}{a.reason&&<p>{a.reason}</p>}</div>)}
   </details>
   {(data.setups??[]).map(setup=><div key={setup.id}><p>Case agent setup: {setup.state.replaceAll('_',' ')}</p>{setup.reason&&<p>{setup.reason}</p>}</div>)}
-  {(data.sessions??[]).map(session=>{const status=sessionStatus(session);return <article key={session.id} aria-label="Case agent status">
-   <h5>{status.label}</h5><p>{status.detail}</p>
+  {(data.sessions??[]).map(session=>{const status=sessionStatus(session);return <article key={session.id} aria-label="Case agent status" className="agent-session" data-state={session.state}>
+   <div className="agent-session-head"><h5>{status.label}</h5><p>{status.detail}</p></div>
    {session.goal&&<><strong>Agent goal</strong><p>{session.goal}</p></>}
    <details><summary>Agent details</summary><p>Engine: {engineLabel(session.engine)}</p>{session.finish_condition&&<p>Finish condition: {session.finish_condition}</p>}</details>
    {session.waiting_on&&<><strong>Waiting for</strong><p>{session.waiting_on}</p></>}

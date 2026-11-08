@@ -4,7 +4,7 @@ Updated November 8, 2026 UTC. This document supersedes older milestone descripti
 
 ## Hosted release
 
-Assurance is live at https://assurance.claims. Main commit `d4f535e` published the new frontend automatically; the public HTML serves the expected `index-iqqqwjLX.js` bundle. The production Neon branch has all 25 migrations (0000–0024), and all seven Functions were explicitly deployed. Autopoll runs every minute, claims one due direct run, and makes no inference requests for idle cases.
+Assurance is live at https://assurance.claims. The baseline hosted workflow was verified at `d4f535e`; the subsequent submission/progress revision is documented in the change log. GitHub main publishes the frontend automatically. The production Neon branch has all 25 migrations (0000–0024), and all seven Functions were explicitly deployed. Autopoll runs every minute, claims one due direct run, and makes no inference requests for idle cases.
 
 A person can sign in by phone, use a fictional shared demo number, or open the older-email-account sign-in link. Workplace-injury and health-insurance paths stay separate. The revised submission flow starts a persistent run with a standard handling scope. Documents are read automatically and supplied as explicitly unverified machine observations; owner confirmation remains optional provenance. The updated backend passed hosted submission, retry/stop, owner-isolation, and real PDF extraction checks with zero outreach. The agent records a stable goal/finish condition, retrieves public sources, uses case-scoped tools, sends authorized communications, monitors replies, follows up, requests input, and records evidence-backed reported outcomes.
 
