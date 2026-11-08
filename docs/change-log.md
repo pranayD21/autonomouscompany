@@ -241,3 +241,7 @@ Rechecked providers after the live reply test. Postgres, Auth signing keys, five
 ## Twilio upgrade blocker diagnosed
 
 The operator reported filled details failing to submit. Inspected one UI retry: Trust Hub returned an unapproved primary compliance profile error. Opened the Individual Profile identity-verification flow and handed the Persona biometric-consent step to the operator. No address or identity-document contents are retained in the repository, and no payment or call was made.
+
+## Twilio identity approved and payment prepared
+
+Verified the operator-completed Individual compliance profile is Approved. Submitted the supplied account/tax details and reached Payment with a displayed $20 total and auto-recharge disabled. Asked the operator to complete the new charge directly; no payment, number purchase, or call occurred. Separately verified Neon Free has zero gateway credits and its $250 offer requires a paid-plan change; left the plan unchanged. Updated voice setup, readiness, and stack documentation without retaining address or payment details.

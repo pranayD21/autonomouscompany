@@ -98,3 +98,7 @@ The dedicated `replypoll` Function uses the existing scoped AgentMail key and in
 ## Autonomous case execution
 
 The production backend now includes a scheduled Naïve decision worker and owner-scoped standing authorization endpoints. Coordinator version 17 uses intake version 7 and the other specialists at version 6, with all approved budget caps unchanged. Only the operator setup inbox is allowlisted for email. The approved own-inbox grant is active, and the first model-selected email was delivered. Reply-driven continuation remains under verification; see [autonomy.md](autonomy.md).
+
+## Gateway billing check
+
+The production catalog returned 63 models with zero enabled, all reporting `paid_plan_required`. The linked organization Billing page shows Free plan and $0 AI gateway balance. Its $250 credit offer requires selecting a paid plan and updating billing information; it is not an already usable gateway balance. No plan upgrade or credit purchase was made. Naïve credits are separate and continue to support the configured crew.

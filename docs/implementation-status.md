@@ -17,7 +17,7 @@ Updated November 7, 2026. See [stack operations](stack.md) for account configura
 
 ## Blocked or incomplete
 
-- User-selected AgentPhone replacement: deployed new-call code uses ElevenLabs native Twilio, with six transport tests and build passing. The dedicated outreach agent is provisioned. Twilio Trust Hub identity verification, funding, number import, and a newly authorized live case-linked test are pending. The entered individual/tax details were blocked by an unapproved compliance profile, not a missing address; Persona verification is open for the operator. AgentPhone SIP is not required for this replacement. See [voice setup](voice-twilio.md).
+- User-selected AgentPhone replacement: deployed new-call code uses ElevenLabs native Twilio, with six transport tests and build passing. The dedicated outreach agent is provisioned. Twilio identity verification is approved and account/tax details were accepted. A $20 starting balance with auto-recharge off is prepared at Payment for the operator. Funding, number import, and a newly authorized live case-linked test remain pending. AgentPhone SIP is not required for this replacement. See [voice setup](voice-twilio.md).
 
 - Neon AI Gateway has no enabled models because gateway credits are missing. E2E verifies the unavailable message, not successful inference.
 - AgentPhone initially rejected the test with HTTP 402. The operator added $25, then the authorized retry completed (46 seconds; no recording URL), and the user confirmed receipt. SIP access request remains pending; ElevenLabs routing is not verified.
