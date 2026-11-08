@@ -6,7 +6,8 @@ import type { BillCase } from "../backend/schema";
 
 const managedAuth = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL, { adapter: BetterAuthReactAdapter() });
 export const auth = {
- ...managedAuth,
+ signUp:managedAuth.signUp,
+ signIn:managedAuth.signIn,
  getSession:async()=>phoneSelected()?{data:await phoneSession(),error:null}:managedAuth.getSession(),
  signOut:async()=>{if(phoneSelected()){await endPhoneSession();return {error:null};}return managedAuth.signOut();},
  useSession:()=>{const managed=managedAuth.useSession();const phone=usePhoneSession();return phoneSelected()||phone.pending?{data:phone.data,isPending:phone.pending,error:phone.error}:managed;},
