@@ -5,6 +5,7 @@ import {api} from "./services";
 import {activationRequest, sessionNeedsProviderApproval, sessionStatus, type AgentSession} from "./activation-state";
 import type {caseDecisions, CaseReply, OutreachAction} from "../backend/schema";
 import {ClaimComposer} from "./ui/ClaimComposer";
+import {plainWaiting} from "./progress";
 import {Check, Clock, Inbox, Mail, Phone, Question} from "./Icons";
 
 type Authority = {id: string; state: string; reason: string | null; policy: {version?: number}};
@@ -85,7 +86,7 @@ export function Autonomy({caseId, userId, enabled, between, compact = false, ren
   const working = !!current && ["running", "queued", "starting", "direct_running"].includes(session?.state ?? "queued");
 
   let label: string, detail: ReactNode, tone: string;
-  if (session) { const s = sessionStatus(session); label = s.label; detail = session.waiting_on && ["idle", "waiting"].includes(session.state) ? `Waiting on ${session.waiting_on.replace(/^waiting (on|for) /i, "")}` : s.detail; tone = session.state; }
+  if (session) { const s = sessionStatus(session); label = s.label; detail = session.waiting_on && ["idle", "waiting"].includes(session.state) ? plainWaiting(session.waiting_on) : s.detail; tone = session.state; }
   else if (current) { label = "Getting started"; detail = "Assurance is reading your case. This usually takes a minute."; tone = "queued"; }
   else if (history.authorities.length) { label = "Stopped"; detail = "Assurance is not working on this case. A message that was already sending may still finish."; tone = "stopped"; }
   else { label = "Not started"; detail = "This saved case has not started yet."; tone = "idle"; }

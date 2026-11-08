@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {deriveProgress, type Snapshot} from "../src/progress";
+import {plainWaiting, deriveProgress, type Snapshot} from "../src/progress";
 import type {BillCase} from "../backend/schema";
 
 const base = {id: "c", owner_id: "u", title: "Case", case_type: "health_insurance", intake: {injury_description: "ER bill", insurer_name: "Northwind"}, revision: 1, bill_cents: 120000, eob_cents: 40000, notes: "", status: "new", analysis: null, created_at: new Date()} as unknown as BillCase;
@@ -43,3 +43,9 @@ test("progress is not marked loaded until the snapshot arrives", () => {
 });
 
  test("direct activation availability overrides legacy crew access",()=>{const p=deriveProgress(base,{...empty,autonomy:{activation_available:true}},false);assert.equal(p.owner,"you");assert.equal(p.title,"Start handling this case");});
+
+test("internal waiting reasons are shown in plain words", () => {
+  const autonomy = {authorities: [{state: "active"}], sessions: [{state: "waiting", waiting_on: "Authority, credential, ownership, or operator access is no longer active."}]};
+  assert.equal(deriveProgress(base, {...empty, docs: [doc], autonomy}, true).title, "Waiting on something on our side");
+  assert.equal(plainWaiting("waiting for Northwind’s reply"), "Waiting on Northwind’s reply");
+});

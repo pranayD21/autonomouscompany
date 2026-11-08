@@ -32,6 +32,13 @@ export const STEP_ORDER: StepId[] = ["details", "documents", "agent", "outcome"]
 export const OWNER_LABEL: Record<Owner, string> = {you: "Needs you", waiting: "Waiting", done: "Resolved"};
 const WORKING = ["start_pending", "queued", "running", "rescheduling"];
 
+/** Turns an agent's "waiting on" note into words a customer understands; internal system reasons become one plain line. */
+const INTERNAL = /\b(authority|authorit(y|ies)|credential|operator|ownership|access|token|session|lease|budget|staffing|scheduler|engine|provider)\b/i;
+export function plainWaiting(note: string) {
+  const text = note.trim().replace(/^waiting (on|for) /i, "").replace(/[.\s]+$/, "");
+  return INTERNAL.test(text) ? "Waiting on something on our side" : `Waiting on ${text}`;
+}
+
 const counterpart = (c: BillCase) => c.intake?.insurer_name || c.intake?.employer_name || (c.case_type === "workplace_injury" ? "the employer" : "the insurer");
 
 const ACTIVE_AUTHORITY = ["active", "waiting", "human_required"];
@@ -81,7 +88,7 @@ export function deriveProgress(c: BillCase, s: Snapshot | undefined, agentEnable
   }
   if (latest && SESSION_FAILED.includes(latest.state)) return make("agent", "you", "Restart agent work", agentCta, "The agent stopped before finishing. Nothing was completed for you.");
   if (agentActive && latest && SESSION_WORKING.includes(latest.state)) return make("agent", "waiting", "The agent is working on your case", agentCta, "Nothing needed from you. Add new documents anytime.");
-  if (agentActive) return make("agent", "waiting", latest?.waiting_on ? `Waiting on ${latest.waiting_on}` : replies.length ? `Agent is reviewing ${who}’s reply` : sent.length ? `Waiting on ${who}’s reply` : "The agent is on your case", agentCta, "Nothing needed from you. We’ll flag anything that needs you.");
+  if (agentActive) return make("agent", "waiting", latest?.waiting_on ? plainWaiting(latest.waiting_on) : replies.length ? `Agent is reviewing ${who}’s reply` : sent.length ? `Waiting on ${who}’s reply` : "The agent is on your case", agentCta, "Nothing needed from you. We’ll flag anything that needs you.");
   if (replies.length) return make("agent", "you", `Read ${who}’s reply`, {label: "Read reply", target: "#section-outreach"});
   if (sent.length) return make("agent", "waiting", `Waiting on ${who}’s reply`, undefined, "We’ll show their reply here when it arrives.");
   if (reviewRunning) return make("agent", "waiting", "Review in progress", undefined, "Usually a minute or two. Nothing needed from you.");

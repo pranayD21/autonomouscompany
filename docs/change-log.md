@@ -1,5 +1,11 @@
 # Change log
 
+## November 8, 2026 — Fixes found on the live case page
+
+The user asked for checks against the live site rather than the local fixture. In Chrome on assurance.claims, a real case's progress step showed internal text ("Waiting on Authority, credential, ownership, or operator access is no longer active."). The composer placeholder also sat only 12px from the corner. Added `plainWaiting` (`src/progress.ts`), used by `deriveProgress` and the `Autonomy` status, so internal waiting reasons read "Waiting on something on our side". Gave the composer more padding. A test was added in `scripts/progress.test.ts`. The faded user bubbles in the first live screenshot were the message fade-in caught mid-animation; computed styles showed solid ink. The backend state behind that note (an active authority whose session says access is no longer active, shown as "Getting started") is unchanged and still needs a backend look. See [frontend.md](frontend.md).
+
+Verification: the 19 focused UI tests passed (one new), and the build passed. The live desktop page was inspected in Chrome before and after deployment. The live phone layout was not checked, because Chrome would not resize the window.
+
 ## November 8, 2026 — Case chat matches the site theme; Add documents pill fixed
 
 The user said the **Add documents** pill did not fit: its square left corner and floating tile clashed with the rounded right side. They also asked for the chat to match the website. The pill is now fully rounded with a round blue tile, on paper with a rule border. The case chat now uses the landing tokens: paper page, header and composer area, rule lines, white bordered Assurance bubbles, ink owner bubbles, white round buttons that turn blue on hover, and a blue-period empty-state title. The composer is a white card with a soft blue focus ring, and Send is the landing page's blue arrow circle. The changes are CSS overrides appended to `src/claim-workspace.css`. See [frontend.md](frontend.md).
