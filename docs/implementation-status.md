@@ -1,6 +1,13 @@
 # Implementation status and next steps
 
-Updated November 7, 2026. See [stack operations](stack.md) for account configuration and test details.
+Updated November 8, 2026 (UTC). See [stack operations](stack.md) for account configuration and test details.
+
+## Current release status
+
+The live frontend is clean commit c3cf6fd at assurance.claims. The updated hosted E2E passed authentication, persistence, Realtime, readiness, cross-user isolation, deletion, and password sign-in. AgentPhone is the only new-call provider; Twilio, ElevenLabs, and SIP setup are no longer activation work. Migrations through 0019 and the owner-approval API are deployed. The approval UI is committed but unpublished, and live confirmation through that API remains unverified.
+
+Case-specific Naïve identity/vault isolation and a same-session evidence wake passed live synthetic tests; those fixtures and temporary setup keys were removed. Public customer activation and credential renewal remain unfinished. The original own-inbox grant remains human-required and must not be reset. AI Gateway inference has no enabled model. Payments remain hypothetical. The sections below retain earlier milestone evidence; these current decisions supersede older provider and activation descriptions.
+
 
 ## Verified
 
@@ -17,7 +24,7 @@ Updated November 7, 2026. See [stack operations](stack.md) for account configura
 
 ## Blocked or incomplete
 
-- User-selected AgentPhone replacement: deployed new-call code uses ElevenLabs native Twilio, with six transport tests and build passing. The dedicated outreach agent is provisioned. Twilio identity verification is approved and account/tax details were accepted. The refreshed console confirms Active status and $20.00 available; the previous payment wizard was stale. The operator declined the $1.15/month number purchase and instructed AgentPhone-only fallback if Twilio encounters another issue. Number purchase/import and a newly authorized live case-linked test remain pending. AgentPhone SIP is not required for this replacement. See [voice setup](voice-twilio.md).
+- AgentPhone-only dispatch and authenticated readiness are verified. A newly authorized case-linked live call remains unverified. Historical ElevenLabs/Twilio receipts remain readable; no number purchase or SIP setup is required. See [voice setup](voice-agentphone.md).
 
 - Neon AI Gateway has no enabled models because gateway credits are missing. E2E verifies the unavailable message, not successful inference.
 - AgentPhone initially rejected the test with HTTP 402. The operator added $25, then the authorized retry completed (46 seconds; no recording URL), and the user confirmed receipt. SIP access request remains pending; ElevenLabs routing is not verified.
@@ -29,7 +36,7 @@ Updated November 7, 2026. See [stack operations](stack.md) for account configura
 
 ## Next work
 
-Obtain a compatible Naïve setup credential, verify two-case vault isolation, and activate the prepared persistent-session path with a newly scoped synthetic test. The existing own-inbox grant is human_required and must not be reset. Twilio is funded and identity-approved, but the user declined the number purchase. If another Twilio issue occurs, the requested fallback is direct AgentPhone without ElevenLabs. Case-linked calling still needs an authorized test. Resolve gateway access before claiming inference works. GitHub auto-deployment still needs a working Vercel account connection.
+Publish and live-test the owner approval UI/API, implement customer activation and credential renewal, and verify a complete synthetic insurer exchange with documented outcomes. Compatible setup credentials and case-specific isolation were already proven; temporary setup keys were revoked. The existing own-inbox grant must not be reset. Case-linked calling still needs an authorized test. Resolve gateway access before claiming inference works. GitHub auto-deployment still needs a working Vercel account connection.
 
 The team still needs a real interview participant. No customer savings or testimonial has been established. See [demo and research](demo-and-research.md).
 

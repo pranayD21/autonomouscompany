@@ -26,12 +26,14 @@ export type CaseSessionDependencies={verifyBinding:(binding:CaseBinding)=>Promis
 const defaults:CaseSessionDependencies={verifyBinding:verifyCaseBinding,start:(input,key)=>naiveClient().sessions.create(input,{idempotencyKey:key}),read:id=>naiveClient().sessions.get(id),send:(id,message,key)=>naiveClient().sessions.send(id,{message},{idempotencyKey:key}),cancel:id=>naiveClient().sessions.cancel(id)};
 const nextCheck=()=>new Date(Date.now()+300000);
 export async function advanceCaseAgentSession(db:NodePgDatabase,id:string,deps:CaseSessionDependencies=defaults){
- const [run]=await db.select().from(caseAgentSessions).where(eq(caseAgentSessions.id,id));if(!run||run.state==="stopped"||run.state==="human_required")return;
+ const [run]=await db.select().from(caseAgentSessions).where(eq(caseAgentSessions.id,id));if(!run||run.state==="stopped")return;
  const [authority]=await db.select().from(caseAuthorities).where(eq(caseAuthorities.id,run.authority_id));
  const [credential]=await db.select().from(caseToolCredentials).where(eq(caseToolCredentials.id,run.credential_id));
  const [item]=await db.select().from(cases).where(eq(cases.id,run.case_id));
  const permitted=authority&&item&&credential&&credential.case_id===item.id&&credential.issued_by===item.owner_id&&authority.approved_by===item.owner_id&&!credential.revoked_at&&credential.expires_at>new Date()&&["active","waiting"].includes(authority.state)&&new Date(authority.policy.expires_at)>new Date()&&(process.env.CREW_ALLOWED_USER_IDS??"").split(",").includes(item.owner_id);
  if(!permitted){if(run.session_id)await deps.cancel(run.session_id);await db.update(caseAgentSessions).set({state:"stopped",next_check_at:null,reason:"Authority, credential, ownership, or operator access is no longer active."}).where(eq(caseAgentSessions.id,id));return;}
+ // A review pause blocks reasoning, but must not bypass revocation or expiry.
+ if(run.state==="human_required")return;
  if(!run.session_id){
   if(!await deps.verifyBinding(run)){
    await db.update(caseAgentSessions).set({state:"human_required",next_check_at:null,reason:"Case identity, connector, pinned version, or approved budget does not match. No session started."}).where(eq(caseAgentSessions.id,id));return;
@@ -84,7 +86,13 @@ export async function pollCaseAgentSessions(db:NodePgDatabase,deps:CaseSessionDe
  const stats={checked:0,failed:0};
  for(let n=0;n<3;n++){
   const result=await db.execute(sql`WITH due AS (SELECT s.id FROM advocacy_case_agent_sessions s JOIN advocacy_case_authorities a ON a.id=s.authority_id
-   WHERE s.state IN ('starting','running','idle') AND (s.next_check_at<=now() OR (s.state='idle' AND a.next_wake_at<=now()) OR a.state NOT IN ('active','waiting') OR (a.policy->>'expires_at')::timestamptz<=now())
+   JOIN advocacy_cases c ON c.id=s.case_id JOIN advocacy_case_tool_credentials k ON k.id=s.credential_id
+   WHERE s.state IN ('starting','running','idle','human_required') AND (
+    (s.state<>'human_required' AND (s.next_check_at<=now() OR (s.state='idle' AND a.next_wake_at<=now())))
+    OR a.state NOT IN ('active','waiting') OR (a.policy->>'expires_at')::timestamptz<=now()
+    OR k.revoked_at IS NOT NULL OR k.expires_at<=now() OR k.case_id<>c.id
+    OR k.issued_by<>c.owner_id OR a.approved_by<>c.owner_id
+    OR NOT (c.owner_id=ANY(string_to_array(${process.env.CREW_ALLOWED_USER_IDS??""},','))))
    AND (s.lease_until IS NULL OR s.lease_until<now()) ORDER BY s.created_at LIMIT 1 FOR UPDATE OF s SKIP LOCKED)
    UPDATE advocacy_case_agent_sessions s SET lease_id=gen_random_uuid(),lease_until=now()+interval '10 minutes' FROM due WHERE s.id=due.id RETURNING s.id,s.lease_id`);
   const claim=result.rows[0] as {id:string;lease_id:string}|undefined;if(!claim)break;

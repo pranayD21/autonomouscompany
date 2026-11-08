@@ -444,3 +444,11 @@ Approval-workflow validation completed locally: the full E2E passed after correc
 Applied production migration 0019 and deployed all six Neon Functions after the pinned frontend deployment handed control back. The owner-approval UI remains unpublished. Extended the hosted isolation test to cover GET and POST of another user's session-approval endpoint. No live provider confirmation was submitted during this deployment.
 
 The updated committed-source hosted E2E (`E2E_BASE_URL=https://assurance.claims npm run test:e2e`) exited 0 after backend deployment. It passed signup, authenticated Functions, Realtime, persistence, readiness, authorization denial, cross-user isolation including both approval routes, deletion, sign-out, and password sign-in. AI inference remained unavailable because the gateway has no enabled model. This run did not enable the optional mocked UI fixture or submit a provider confirmation.
+
+### Stop paused sessions when authorization ends
+
+Moved authorization validation ahead of the human-required early return and expanded scheduler selection to include invalid paused bindings. Added seven database scenarios for unchanged authorization, revocation/expiry of authority and credentials, ownership change, and operator removal. The unchanged case must make no provider calls; invalid cases must cancel the existing session without inference or a wake. Validation and deployment results follow.
+
+All 29 session/approval database tests passed against the disposable branch; `npm run build` passed (273 modules, existing chunk-size warning). Updated the implementation-status summary to distinguish the current AgentPhone-only deployment and verified Naïve setup from superseded milestones.
+
+Deployed all six production Neon Functions successfully with the existing environment preserved. Read-only post-deploy checks passed: public frontend HTTP 200, anonymous case API HTTP 401, forged scheduler delivery HTTP 401. Paused-session cancellation behavior is covered by the disposable-database tests with fake provider transports; no live cancellation fixture or new external communication was created for this change. Approval frontend publication remains pending.

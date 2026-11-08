@@ -148,3 +148,27 @@ test("local capacity deferral does not record an uncertain confirmation",async()
  assert.equal((await readCaseApprovals(db,f.item.id,f.run.id,owner,f.provider)).history.length,0);
  assert.deepEqual(await confirmCaseApproval(db,f.item.id,f.run.id,owner,pendingHash(f.action),"allow",f.provider),{state:"confirmed"});assert.equal(f.count(),1);
 });
+
+for(const change of ["none","authority","authority_expiry","credential","credential_expiry","operator","owner"] as const){
+ test(`paused session scheduler honors ${change} authorization change without inference`,async()=>{
+  // Isolate this scheduler check from earlier paused fixtures.
+  if(ids.length)await db.update(caseAgentSessions).set({state:"stopped"}).where(inArray(caseAgentSessions.case_id,ids));
+  const f=await fixture();await advanceCaseAgentSession(db,f.run.id,deps);
+  const sessionId=(await get(f.run.id)).session_id;
+  await db.update(caseAgentSessions).set({state:"human_required",next_check_at:null}).where(eq(caseAgentSessions.id,f.run.id));
+  let cancelled=0;
+  try{
+   if(change==="authority")await db.update(caseAuthorities).set({state:"revoked"}).where(eq(caseAuthorities.id,f.authority.id));
+   if(change==="authority_expiry")await db.update(caseAuthorities).set({policy:{...policy,expires_at:new Date(0).toISOString()}}).where(eq(caseAuthorities.id,f.authority.id));
+   if(change==="credential")await db.update(caseToolCredentials).set({revoked_at:new Date()}).where(eq(caseToolCredentials.id,f.credential.id));
+   if(change==="credential_expiry")await db.update(caseToolCredentials).set({expires_at:new Date(0)}).where(eq(caseToolCredentials.id,f.credential.id));
+   if(change==="operator")process.env.CREW_ALLOWED_USER_IDS="";
+   if(change==="owner")await db.update(cases).set({owner_id:randomUUID()}).where(eq(cases.id,f.item.id));
+   const guarded={...deps,start:async()=>{throw Error("No new inference");},read:async()=>{throw Error("No remote status polling");},send:async()=>{throw Error("No wake");},cancel:async(id:string)=>{assert.equal(id,sessionId);cancelled++;}};
+   const result=await pollCaseAgentSessions(db,guarded);
+   assert.equal(result.failed,0);assert.equal(result.checked,change==="none"?0:1);
+   assert.equal(cancelled,change==="none"?0:1);
+   assert.equal((await get(f.run.id)).state,change==="none"?"human_required":"stopped");
+  }finally{process.env.CREW_ALLOWED_USER_IDS=owner;}
+ });
+}
