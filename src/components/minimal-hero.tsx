@@ -16,7 +16,7 @@ export function MinimalHero({ children }: { children: ReactNode }) {
       particle.x = Math.random() * canvas.width;
       particle.y = Math.random() * canvas.height;
       particle.speed = Math.random() / 5 + 0.1;
-      particle.opacity = 0.24;
+      particle.opacity = 0.14;
       particle.fadeStart = Date.now() + Math.random() * 2000 + 1000;
       particle.fadingOut = false;
     };

@@ -26,7 +26,7 @@ function SignIn() {
       window.location.assign("/#workspace");
     } catch (err) { setError(message(err)); } finally { setBusy(false); }
   }
-  return <section className="auth-card"><p className="eyebrow">YOUR CLAIM WORKSPACE</p><h1>A clearer path through your insurance claim.</h1><p>Keep your case, questions, and next steps together.</p>
+  return <section className="auth-card"><h1>{signup ? "Create your account." : "Sign in to your cases."}</h1>
     <form onSubmit={submit}>
       {signup && <label>Name<input name="name" required autoComplete="name" maxLength={100}/></label>}
       <label>Email<input name="email" type="email" required autoComplete="email"/></label>
@@ -71,7 +71,7 @@ function App() {
   if (!isPending && !error && session?.user) return <>{signOutError && <p role="alert" className="error floating-error">{signOutError}</p>}<Dashboard key={session.user.id} userId={session.user.id} userName={session.user.name || session.user.email} onSignOut={() => void signOut()}/></>;
   return <><a className="skip-link" href="#workspace-content">Skip to content</a><header className="app-header"><a href="#home" className="brand" aria-label="Assurance home"><Asterisk strokeWidth={2.5} aria-hidden="true"/>assurance<span className="brand-period">.</span></a></header>
     <main id="workspace-content" className="app-main">{isPending ? <p role="status">Loading your session…</p> : error ? <p role="alert" className="error">Authentication is unavailable. Please reload and try again.</p> : <SignIn/>}</main>
-    <footer className="app-footer"><span>assurance<span className="brand-period">.</span></span><span>On your side. Not in your way.</span><small>Prototype · Synthetic data only</small></footer></>;
+    <footer className="app-footer"><span>assurance<span className="brand-period">.</span></span><small>Prototype · Synthetic data only</small></footer></>;
 }
 
 createRoot(document.getElementById("root")!).render(<StrictMode><RealtimeProvider client={realtime}><MotionConfig reducedMotion="user"><App/></MotionConfig></RealtimeProvider></StrictMode>);

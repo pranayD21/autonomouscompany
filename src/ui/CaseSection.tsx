@@ -1,12 +1,8 @@
 import type {ReactNode} from "react";
-import {Reveal} from "./motion";
 
-export function CaseSection({id, number, title, description, aside, children}: {id: string; number: string; title: string; description?: string; aside?: ReactNode; children: ReactNode}) {
-  return <Reveal id={id} className="case-section" ariaLabel={title}>
-    <header className="case-section-head">
-      <div><span className="step-index">{number}</span><h3>{title}</h3>{description && <p>{description}</p>}</div>
-      {aside}
-    </header>
+export function CaseSection({id, title, aside, children}: {id: string; title: string; aside?: ReactNode; children: ReactNode}) {
+  return <section id={id} className="case-section" aria-label={title}>
+    <header className="case-section-head"><h3>{title}</h3>{aside}</header>
     <div className="case-section-body">{children}</div>
-  </Reveal>;
+  </section>;
 }

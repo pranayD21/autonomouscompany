@@ -8,7 +8,7 @@ export function Outcomes({caseId,userId,revision}:{caseId:string;userId:string;r
  const [data,setData]=useState<OutcomesData>([]),[error,setError]=useState("");
  useEffect(()=>{let live=true;setData([]);setError("");const read=()=>api<OutcomesData>(`/cases/${caseId}/outcomes`,{},userId).then(rows=>{if(live){setData(rows);setError("");}}).catch(()=>{if(live)setError("Could not refresh outcomes. Previously loaded results may be out of date.");});void read();const timer=setInterval(()=>void read(),15000);return()=>{live=false;clearInterval(timer);};},[caseId,userId,revision]);
  return <section className="outcomes" aria-label="Case outcomes">
- <p className="section-lede">These are the agent’s interpretations of case evidence, not independently verified payouts. New reports preserve earlier results.</p>
+ <p className="caveat">Agent-reported from your evidence. Not verified payouts.</p>
  {error&&<p role="alert">{error}</p>}
  {!data.length&&!error&&<p>No outcome has been recorded.</p>}
  <Timeline>{[...data].sort((a,b)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime()).map(row=><TimelineItem key={row.id} label={`${new Date(row.created_at).toLocaleString()} · Agent-reported`}><div className="outcome-report">

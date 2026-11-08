@@ -3,7 +3,7 @@
 // Rewritten for this app's plain-CSS theme (no Tailwind) and to keep
 // accessible names stable for screen readers and Playwright tests.
 import {useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode} from "react";
-import {AnimatePresence, animate, motion, stagger, useAnimate, useReducedMotion, useScroll, useTransform} from "motion/react";
+import {AnimatePresence, animate, motion, stagger, useAnimate, useReducedMotion} from "motion/react";
 import {Check, Spinner} from "../Icons";
 
 /** Aceternity "Text Generate Effect": words fade in from a blur, one after another. */
@@ -58,20 +58,13 @@ export function StatefulButton({onAction, children, className = "", disabled, ..
   </motion.button>;
 }
 
-/** Aceternity "Timeline": a vertical rail whose blue beam fills as you scroll past entries. */
+/** Timeline rail for outcome and decision history (Aceternity Timeline layout, static). */
 export function Timeline({children, className = ""}: {children: ReactNode; className?: string}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const {scrollYProgress} = useScroll({target: ref, offset: ["start 75%", "end 55%"]});
-  const scaleY = useTransform(scrollYProgress, [0, 1], [0, 1]);
-  const opacity = useTransform(scrollYProgress, [0, 0.08], [0, 1]);
-  return <div ref={ref} className={`timeline ${className}`}>
-    <div className="timeline-rail" aria-hidden="true"><motion.div className="timeline-beam" style={{scaleY, opacity}}/></div>
-    {children}
-  </div>;
+  return <div className={`timeline ${className}`}><div className="timeline-rail" aria-hidden="true"/>{children}</div>;
 }
 
 export function TimelineItem({children, label}: {children: ReactNode; label?: ReactNode}) {
-  return <motion.div className="timeline-item" initial={{opacity: 0, y: 14}} whileInView={{opacity: 1, y: 0}} viewport={{once: true, margin: "-40px"}} transition={{duration: 0.45, ease: [0.16, 1, 0.3, 1]}}>
+  return <motion.div className="timeline-item">
     <span className="timeline-dot" aria-hidden="true"/>
     {label && <p className="timeline-label">{label}</p>}
     {children}
