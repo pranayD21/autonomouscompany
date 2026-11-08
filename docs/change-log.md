@@ -1,5 +1,9 @@
 # Change log
 
+## 2026-11-07 — Verify dashboard setup-key compatibility
+
+Used the user-requested Dia dashboard to create a temporary setup key. The existing Managed Agents API rejected it with HTTP 401, so it was revoked and its private local file deleted. Confirmed REVOKED in the dashboard. No existing keys, app credentials, budgets, or agents changed. See agent-tools.md for the remaining organization/scope requirement.
+
 ## 2026-11-07 — Shared case MCP endpoint and Naïve connection preparation
 
 Deployed a credential-scoped `/mcp` endpoint alongside the original case URL. Added identity/version-pinned session configuration, optional blueprint MCP tools, `NAIVE_CASE_TOOLS_URL`, and a resumable two-case live smoke script. The setup key is read from a private file and never replaces the runtime key on disk. Detailed operation and remaining work are in agent-tools.md.
