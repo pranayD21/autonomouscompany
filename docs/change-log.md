@@ -1,5 +1,9 @@
 # Change log
 
+## November 8, 2026 — Home-screen app on iPhone
+
+The user wanted to use Assurance as an app on an iPhone, as simply as possible. Added `public/manifest.webmanifest` (standalone display, Assurance name, existing 180px icon) and the `apple-mobile-web-app-capable` / status-bar meta tags in `index.html`, so Safari's Add to Home Screen opens it full-screen. No App Store build, native wrapper or service worker. Not built locally (the local build needs the Vercel-only `VITE_*` service URLs and fails on main without them) and not yet checked on a physical iPhone.
+
 ## November 8, 2026 — iPhone audit and fixes
 
 The user asked for a full mobile audit on an iPhone, with problems listed first and then fixed. With no iOS Simulator installed, the audit ran WebKit with the iPhone 15, iPhone SE and iPhone 15 landscape profiles against the local app, using mocked fictional data (`scripts/mobile-audit/`). It found:
