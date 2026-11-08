@@ -10,7 +10,7 @@ import {advanceCaseAgentSession} from "../backend/case-agent-session";
 import {queueCaseAgentEvent} from "../backend/case-agent-events";
 import {naiveClient} from "../backend/providers/naive";
 config({path:[".env.local",".env"],quiet:true});
-const mode=process.argv[2],path="test-results/persistent-live-smoke.json";
+const mode=process.argv[2],path=process.env.PERSISTENT_SMOKE_STATE_FILE??"test-results/persistent-live-smoke.json";
 const state=existsSync(path)?JSON.parse(readFileSync(path,"utf8")):{caseId:randomUUID(),authorityId:randomUUID()};
 const save=()=>writeFileSync(path,JSON.stringify(state,null,2),{mode:0o600});save();
 if(process.env.NAIVE_SETUP_KEY_FILE)process.env.NAIVE_API_KEY=readFileSync(process.env.NAIVE_SETUP_KEY_FILE,"utf8").trim();
@@ -43,17 +43,18 @@ try{
   });console.log("Queued one synthetic evidence event");
  }else if(mode==="verify"){
   const [run]=await db.select().from(caseAgentSessions).where(eq(caseAgentSessions.id,state.runId));
-  const remote=await client.sessions.get(run.session_id!);
   const evidence=await client.sessions.events(run.session_id!,{limit:100});
-  writeFileSync("test-results/persistent-live-events.json",JSON.stringify(evidence,null,2),{mode:0o600});
+  writeFileSync(path.replace(/\.json$/, "")+"-events.json",JSON.stringify(evidence,null,2),{mode:0o600});
+  const remote=await client.sessions.get(run.session_id!);
   const reads=evidence.data.filter(e=>e.type==="tool.completed").flatMap(e=>{
    const raw=e.data.output??e.data.result;if(typeof raw!=="string")return [];
    try{const value=JSON.parse(raw);return value.case?[value.case]:[];}catch{return [];}
   });
   const events=await db.select().from(caseAgentEvents).where(eq(caseAgentEvents.run_id,run.id));
   if(reads.some(c=>c.id!==state.caseId))throw Error("CASE_ISOLATION_FAILURE");
-  if(!reads.some(c=>c.revision===2)||events.length!==1||!events[0].delivered_at||remote.stop_reason!=="end_turn")throw Error("PERSISTENT_WAKE_NOT_YET_VERIFIED");
-  state.verified={sessionId:run.session_id,acceptedSeq:events[0].accepted_seq,costMicroUsd:remote.consumed_micro_usd,revision:2};save();
+  const evidenceEvents=events.filter(e=>e.event_key==="synthetic-lifecycle:2");
+  if(!reads.some(c=>c.revision===2)||evidenceEvents.length!==1||!evidenceEvents[0].delivered_at||remote.stop_reason!=="end_turn")throw Error("PERSISTENT_WAKE_NOT_YET_VERIFIED");
+  state.verified={sessionId:run.session_id,acceptedSeq:evidenceEvents[0].accepted_seq,costMicroUsd:remote.consumed_micro_usd,revision:2};save();
   console.log("PASS same persistent session consumed revision 2 after the queued event and ended its turn");
  }else if(mode==="cleanup"){
   await db.update(caseToolCredentials).set({revoked_at:new Date()}).where(eq(caseToolCredentials.case_id,state.caseId));

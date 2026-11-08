@@ -456,3 +456,11 @@ Deployed all six production Neon Functions successfully with the existing enviro
 ### Published owner approval controls
 
 Released commit 5b37141 to assurance.claims as Vercel deployment dpl_BLKVRRBirHEN3hY5Ee81Y7WZbaB8. Build and the full hosted E2E with optional mocked permission/approval checks passed. This resolves the earlier optional-fixture timeout; it does not establish live provider confirmation. HTML and JS returned 200 with the expected bundle. The temporary project-only token was revoked, denied access with 403, and removed locally; the setup tab was closed. Updated hosting, session, and implementation-status documentation.
+
+### Live approval integration preparation
+
+Added a separate-state option to the persistent smoke script and an owner-authenticated HTTP approval smoke command. The new check rejects non-synthetic or outbound-enabled authorities and confirms only known fixture reads/timers. Build passed. Live verification and cleanup are in progress; this entry does not claim a provider confirmation succeeded.
+
+The live owner API returned a real pending `assurance.case_get`, confirmed it using the deployed runtime key, and returned the same confirmed receipt for a duplicate POST. Production contained exactly one approval audit row. The same session had accepted the revision-2 evidence event at sequence 29 before requesting approval. Subsequent session/event reads returned provider HTTP 429 capacity errors, so post-confirmation completion is not claimed. Local fixture authority and credentials were revoked; remote cleanup is waiting for the shared cooldown. No outbound contact occurred.
+
+Remote cleanup cancellation also returned HTTP 429 after cooldown. Local authority/credentials remain revoked and remote cleanup IDs are recorded privately. The setup key disappeared from the dashboard after revocation; its private file and the owner authorization copy were deleted, and both tabs closed. Remote session/vault/identity cleanup remains outstanding. No new application deployment is needed for these test-script/documentation changes. Build passed.

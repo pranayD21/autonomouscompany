@@ -4,7 +4,7 @@ Updated November 8, 2026 (UTC). See [stack operations](stack.md) for account con
 
 ## Current release status
 
-The live frontend is commit 5b37141 at assurance.claims. The updated hosted E2E passed authentication, persistence, Realtime, readiness, cross-user isolation, deletion, and password sign-in. AgentPhone is the only new-call provider; Twilio, ElevenLabs, and SIP setup are no longer activation work. Migrations through 0019 and the owner-approval API are deployed. The approval UI is published and its mocked hosted interaction passed; live confirmation through that API remains unverified.
+The live frontend is commit 5b37141 at assurance.claims. The updated hosted E2E passed authentication, persistence, Realtime, readiness, cross-user isolation, deletion, and password sign-in. AgentPhone is the only new-call provider; Twilio, ElevenLabs, and SIP setup are no longer activation work. Migrations through 0019 and the owner-approval API are deployed. The approval UI is published and its mocked hosted interaction passed; a real synthetic case-read confirmation through that API passed with the runtime key and one audit receipt. Post-confirmation continuation remains unverified because Naïve returned capacity errors.
 
 Case-specific Naïve identity/vault isolation and a same-session evidence wake passed live synthetic tests; those fixtures and temporary setup keys were removed. Public customer activation and credential renewal remain unfinished. The original own-inbox grant remains human-required and must not be reset. AI Gateway inference has no enabled model. Payments remain hypothetical. The sections below retain earlier milestone evidence; these current decisions supersede older provider and activation descriptions.
 
@@ -36,7 +36,7 @@ Case-specific Naïve identity/vault isolation and a same-session evidence wake p
 
 ## Next work
 
-Live-test provider confirmation through the owner approval API, implement customer activation and credential renewal, and verify a complete synthetic insurer exchange with documented outcomes. Compatible setup credentials and case-specific isolation were already proven; temporary setup keys were revoked. The existing own-inbox grant must not be reset. Case-linked calling still needs an authorized test. Resolve gateway access before claiming inference works. GitHub auto-deployment still needs a working Vercel account connection.
+Verify post-approval continuation, implement customer activation and credential renewal, and verify a complete synthetic insurer exchange with documented outcomes. Compatible setup credentials and case-specific isolation were already proven; temporary setup keys were revoked. The existing own-inbox grant must not be reset. Case-linked calling still needs an authorized test. Resolve gateway access before claiming inference works. GitHub auto-deployment still needs a working Vercel account connection.
 
 The team still needs a real interview participant. No customer savings or testimonial has been established. See [demo and research](demo-and-research.md).
 
