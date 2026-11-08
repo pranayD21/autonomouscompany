@@ -39,3 +39,5 @@ Deferred-work status refers to the shared Naïve request queue. A local occupied
 The session scheduler retries a local admission rejection up to three more times within the same invocation, waiting at most five seconds each time. These rejections never reached Naïve, and session start uses a stable idempotency key, so a retry cannot duplicate work. Other session failures log only the run ID, status, and provider code.
 
 A session request Naïve rejects, or one that fails without a capacity signal, retries after one minute with the same session and event identity. The saved reason includes Naïve's status, code, and message.
+
+An advocate session stays idle until every action in a pending batch is confirmed. The session scheduler now confirms the whole visible batch in one pass, rechecking the session before each confirmation, instead of one action per pass.

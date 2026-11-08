@@ -334,3 +334,13 @@ test("v2 auto approval admission rejection preserves safe same-action retry",asy
  assert.equal((await readCaseApprovals(db,f.item.id,f.run.id,owner,f.provider)).history.length,0);
  assert.equal((await automaticallyConfirmCaseTool(db,f.item.id,f.run.id,owner,f.provider)).state,"confirmed");assert.equal(calls,1);assert.equal(f.calls(),1);
 });
+test("v2 auto approval clears a visible batch in one pass and stops when the session moves on",async()=>{
+ const f=await openApprovalFixture();const pending=(n:number)=>({status:"idle",stop_reason:"awaiting_approval",pending_actions:Array.from({length:n},()=>({}))});
+ const states=[pending(3),pending(2),pending(1)];let approvals=0;let reads=0;
+ await advanceCaseAgentSession(db,f.run.id,{...deps,read:async()=>states[reads++]??{status:"running",stop_reason:null,pending_actions:[]},autoApprove:async()=>{approvals++;return {state:"confirmed"};}} as CaseSessionDependencies);
+ assert.equal(approvals,3);
+ const moved=[pending(3),{status:"running",stop_reason:null,pending_actions:[]}];let movedApprovals=0,movedReads=0;
+ await advanceCaseAgentSession(db,f.run.id,{...deps,read:async()=>moved[movedReads++],autoApprove:async()=>{movedApprovals++;return {state:"confirmed"};}} as CaseSessionDependencies);
+ assert.equal(movedApprovals,1);
+});
+

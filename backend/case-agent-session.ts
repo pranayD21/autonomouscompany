@@ -91,7 +91,13 @@ export async function advanceCaseAgentSession(db:NodePgDatabase,id:string,deps:C
   await db.update(caseAgentSessions).set({state:"human_required",reason:`The provider session is ${remote.status} and cannot resume. Review the case outcome before authorizing further work; no replacement session or budget was created.`,next_check_at:null}).where(eq(caseAgentSessions.id,id));return;
  }
  if(openPermission&&remote.status==="idle"&&remote.stop_reason==="awaiting_approval"&&remote.pending_actions.length&&deps.autoApprove){
-  const approval=await deps.autoApprove(db,run.case_id,run.id,item!.owner_id);
+  let approval=await deps.autoApprove(db,run.case_id,run.id,item!.owner_id);
+  // A session stays idle until its whole batch is confirmed, so clear the batch instead of one action per scheduler pass.
+  for(let i=1;i<remote.pending_actions.length&&approval.state==="confirmed";i++){
+   const next=await deps.read(run.session_id);
+   if(next.status!=="idle"||next.stop_reason!=="awaiting_approval"||!next.pending_actions.length)break;
+   approval=await deps.autoApprove(db,run.case_id,run.id,item!.owner_id);
+  }
   if(approval.state==="confirmed")return;
   await db.update(caseAgentSessions).set({state:"human_required",next_check_at:null,reason:approval.state==="uncertain"?"Provider confirmation was uncertain; reconciliation is required before resume.":"Provider requested an unsupported action outside the case tool boundary."}).where(eq(caseAgentSessions.id,id));return;
  }

@@ -1151,3 +1151,9 @@ At the user's direction, hiring no longer creates a dedicated inbox and new case
 
 Verification: AgentMail ingress, email routing, and firm suites passed on the disposable database with mocked providers. Two `scripts/outreach.test.ts` tests fail with `EMAIL_INBOX_NOT_CONFIGURED`, the same as on clean main, because that test setup has no inbox configured. No email was sent.
 
+## 2026-11-08 — First advocate exchange on a real case; faster approvals
+
+On the first real phone case the advocate asked its question at 12:18 UTC, the owner replied through website chat at 12:23, the same session resumed, and it posted a chat message at 12:36:24, with zero outreach. That delay exposed slow approvals: four pending actions took about eight minutes because each scheduler pass confirmed only one. The scheduler now clears the batch. `read_public_source` also returned one generic error for every failure; it now gives the reason and suggests another source. Direct checks read DWC, Wikipedia, CDC's NIOSH page, and example.com; nolo.com returned HTTP 403 to a plain request, and the CDC topic URL the advocate chose failed with `SOURCE_TEXT_SIZE`.
+
+Verification: case session suite on the disposable database with mocked provider. The batch change has not yet been observed on production.
+
