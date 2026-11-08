@@ -1360,3 +1360,9 @@ Replaced the README clarification with two sentences in our first-person voice: 
 ## 2026-11-08 — Note consented Claire clips in the demo video
 
 Updated the two-sentence README clarification and corresponding verification and showcase copy to reflect that our demo video includes short call clips with Claire’s permission, while full records remain withheld for privacy. Verification: reviewed the Markdown diff and passed `git diff --check`; no application tests were run for this documentation-only change.
+
+## 2026-11-08 — README one-liner
+
+Added a one-line description of Assurance under the README title for the hackathon submission's "What it does in one line" field. The owner asked for it to present Assurance as a fully autonomous, AI-native patient advocacy firm that works out which insurers a person can claim from, files and disputes the medical claims itself, and deals with insurers directly, rather than as a personal agent. Documentation only.
+
+Verification: `git diff --check` passed. No build or test was run because only Markdown changed.
