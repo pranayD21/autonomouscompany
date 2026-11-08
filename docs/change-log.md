@@ -1057,3 +1057,11 @@ The user reported old demo cases colliding with real calls and asked that real w
 - At the user's direction, removed the opening AI statement from call greetings and the "not verified" captions from the website. Voice agents still answer truthfully if asked whether they are AI and never claim to be human. Transcript notices, the "reported" and "estimated" names on amounts, and the rule against presenting a fictional case as real remain.
 
 Verification is recorded in that release's commit message. This does not establish healthcare privacy compliance for real data.
+
+
+## 2026-11-08 — Role sessions continue after transient tool errors
+
+The first real phone case stalled at staffing. Its CEO and Front Desk sessions each hit a transient tool result (`FIRM_TOOL_NOT_COMPLETED`, "is waiting for approval") and ended their turn, and the runner parked both events `human_required` with no budget or advocate. The runner now messages the same session up to three times, naming the missing tool, before escalating. See [firm runtime](firm-runtime.md).
+
+Verification: the firm runner suite covers three continuations followed by escalation, with a mocked provider. Hosted continuation is not yet verified. The fixture's onboarding proof passed on production after the earlier budget fix: budget recorded, advocate bound, session started, first goal saved, onboarding events finished, zero outreach.
+

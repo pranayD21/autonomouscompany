@@ -64,12 +64,19 @@ test('ended hiring session without a hired advocate records unmet work and never
  await pool.query("INSERT INTO advocacy_cases(id,owner_id,title) VALUES($1,'firm-result-owner','Fictional completion check')",[caseId]);
  await pool.query("INSERT INTO advocacy_case_authorities(id,case_id,approved_by,policy) VALUES($1,$2,'firm-result-owner','{\"version\":2,\"consent\":\"Handle this fictional case\"}')",[authorityId,caseId]);
  await pool.query("INSERT INTO advocacy_firm_staffing(case_id,authority_id,state,budget_micro_usd,budget_reason) VALUES($1,$2,'budgeted',1000,'Recorded CEO allocation')",[caseId,authorityId]);
- const {rows:[event]}=await pool.query("INSERT INTO advocacy_firm_events(id,event_key,role,kind,case_id,state,session_id,lease_until) VALUES($1,$2,'frontdesk','budget_allocated',$3,'running',$4,date_trunc('milliseconds',now())+interval '3 minutes') RETURNING *",[id,`test:${id}`,caseId,sessionId]);
- let reads=0;const provider:FirmProvider={request:async(method)=>{assert.equal(method,'GET');reads++;return {id:sessionId,agent_id:registry.frontdesk.agent_id,identity_id:registry.frontdesk.identity_id,status:'idle',stop_reason:'end_turn'};}};
+ await pool.query("INSERT INTO advocacy_firm_events(id,event_key,role,kind,case_id,state,session_id,lease_until) VALUES($1,$2,'frontdesk','budget_allocated',$3,'running',$4,date_trunc('milliseconds',now())+interval '3 minutes')",[id,`test:${id}`,caseId,sessionId]);
+ let reads=0;const sends:{path:string;body:any;key?:string}[]=[];const provider:FirmProvider={request:async(method,path,body,key)=>{if(method==='POST'){sends.push({path,body,key});return {accepted_seq:sends.length};}assert.equal(method,'GET');reads++;return {id:sessionId,agent_id:registry.frontdesk.agent_id,identity_id:registry.frontdesk.identity_id,status:'idle',stop_reason:'end_turn'};}};
  try{
-  await advanceFirmEvent(db,event,provider);
+  for(let n=1;n<=3;n++){
+   const {rows:[current]}=await pool.query('SELECT * FROM advocacy_firm_events WHERE id=$1',[id]);
+   await advanceFirmEvent(db,current,provider);
+   const during=(await pool.query('SELECT state,session_id FROM advocacy_firm_events WHERE id=$1',[id])).rows[0];
+   assert.equal(during.state,'running');assert.equal(during.session_id,sessionId);assert.equal(sends.length,n);assert.equal(sends[n-1].path,`/v1/sessions/${sessionId}/messages`);assert.match(sends[n-1].body.message,/firm\.hire_advocate/);assert.equal(sends[n-1].key,`firm-continue:${id}:${n}`);
+  }
+  const {rows:[last]}=await pool.query('SELECT * FROM advocacy_firm_events WHERE id=$1',[id]);
+  await advanceFirmEvent(db,last,provider);
   const saved=(await pool.query('SELECT state,reason,session_id FROM advocacy_firm_events WHERE id=$1',[id])).rows[0];
-  assert.equal(saved.state,'human_required');assert.match(saved.reason,/advocate not hired/);assert.equal(saved.session_id,sessionId);assert.equal(reads,1);
+  assert.equal(saved.state,'human_required');assert.match(saved.reason,/advocate not hired/);assert.equal(saved.session_id,sessionId);assert.equal(reads,4);assert.equal(sends.length,3);
   assert.equal((await pool.query("SELECT count(*)::int n FROM advocacy_firm_records WHERE key=$1",[`firm-business-unmet:${id}`])).rows[0].n,1);
   assert.equal((await pool.query('SELECT agent_id FROM advocacy_firm_staffing WHERE case_id=$1',[caseId])).rows[0].agent_id,null);
  }finally{

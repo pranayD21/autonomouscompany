@@ -38,7 +38,7 @@ export async function approveFirmPending(db:NodePgDatabase,role:FirmRole,session
  }catch(error){if(isNaiveAdmissionRejected(error)){await db.delete(firmOperations).where(eq(firmOperations.id,id));throw error;}return {state:'uncertain'};}
 }
 // Provider turn termination is separate from the requested business result.
-export async function firmBusinessResult(db:NodePgDatabase,event:typeof firmEvents.$inferSelect):Promise<{state:'finished'|'running'|'human_required';reason:string|null}>{
+export async function firmBusinessResult(db:NodePgDatabase,event:typeof firmEvents.$inferSelect):Promise<{state:'finished'|'running'|'human_required';reason:string|null;nudge?:string}>{
  const staffingEvent=event.role==='frontdesk'&&['new_case','budget_allocated'].includes(event.kind);
  const budgetEvent=event.role==='ceo'&&event.kind==='budget_needed';
  if(!staffingEvent&&!budgetEvent)return {state:'finished',reason:null};
@@ -54,18 +54,19 @@ export async function firmBusinessResult(db:NodePgDatabase,event:typeof firmEven
  LEFT JOIN advocacy_case_agent_sessions r ON r.authority_id=s.authority_id
  LEFT JOIN advocacy_case_tool_credentials c ON c.id=r.credential_id
  WHERE s.case_id=${event.case_id}`)).rows[0];
- const unmet=(reason:string)=>({state:'human_required' as const,reason:`Business result unmet: ${reason}. Preserve the existing session and reconcile; do not create a replacement agent or session.`});
+ const unmet=(reason:string,nudge?:string)=>({state:'human_required' as const,nudge,reason:`Business result unmet: ${reason}. Preserve the existing session and reconcile; do not create a replacement agent or session.`});
  if(!row)return unmet('staffing request missing');
  if(!row.owner_bound||!['active','waiting','human_required'].includes(String(row.authority_state)))return unmet('owner authority is no longer active');
- if(budgetEvent)return Number(row.budget_micro_usd)>0&&!!row.budget_reason?{state:'finished',reason:null}:unmet('CEO budget and rationale not recorded');
+ if(budgetEvent)return Number(row.budget_micro_usd)>0&&!!row.budget_reason?{state:'finished',reason:null}:unmet('CEO budget and rationale not recorded',`No budget is saved for case ${event.case_id}. Earlier tool errors or approval waits were temporary. Call firm.set_case_budget for this case now with a new operation ID and your reason.`);
  if(event.kind==='new_case'&&row.staffing_state!=='active'&&row.dependency_pending)return {state:'running',reason:'Waiting for the existing CEO allocation or budgeted hiring event; onboarding is not complete.'};
  if(row.staffing_state==='hiring'&&row.provision_pending)return {state:'running',reason:'Waiting for the existing durable advocate provisioning job; onboarding is not complete.'};
- if(row.staffing_state!=='active'||!row.agent_id||!row.run_bound||!row.credential_bound)return unmet('advocate not hired and bound to this case authority');
+ if(row.staffing_state!=='active'||!row.agent_id||!row.run_bound||!row.credential_bound)return unmet('advocate not hired and bound to this case authority',`No advocate is hired for case ${event.case_id}. Earlier tool errors or approval waits were temporary. Call firm.hire_advocate for this case now with a new operation ID.`);
  if(row.run_state==='stopped')return unmet('advocate stopped before onboarding completed');
  if(['human_required','idle'].includes(String(row.run_state))&&!row.first_turn)return unmet('advocate cannot complete its first turn');
  if(!row.session_id||!row.first_turn)return {state:'running',reason:'Waiting for the bound advocate to persist its first goal; hiring alone is not completed onboarding.'};
  return {state:'finished',reason:null};
 }
+const MAX_ROLE_CONTINUATIONS=3;
 export async function advanceFirmEvent(db:NodePgDatabase,event:typeof firmEvents.$inferSelect,provider:FirmProvider){
  const role=event.role as FirmRole,registered=firmRegistry()[role];
  if(!firmRoles.includes(role)||!registered?.agent_id||!registered.identity_id)throw Error('FIRM_ROLE_NOT_CONFIGURED');
@@ -92,11 +93,24 @@ export async function advanceFirmEvent(db:NodePgDatabase,event:typeof firmEvents
  }
  const ended=remote.status==='completed'||remote.status==='idle'&&['end_turn','awaiting_input'].includes(remote.stop_reason);
  const result=ended?await firmBusinessResult(db,event):{state:(['running','queued'].includes(remote.status)||remote.stop_reason==='awaiting_delegation'?'running':'human_required') as 'running'|'human_required',reason:null as string|null};
+ const nudge='nudge' in result?result.nudge:undefined;
+ // A role session can end its turn on a transient tool error. Tell the same session what is missing before escalating.
+ if(result.state==='human_required'&&nudge&&remote.status==='idle'){
+  const key=`firm-continue:${event.id}`;
+  const [saved]=await db.select().from(firmRecords).where(eq(firmRecords.key,key));
+  const sent=Number(saved?.payload.count??0);
+  if(sent<MAX_ROLE_CONTINUATIONS){
+   await provider.request('POST',`/v1/sessions/${encodeURIComponent(event.session_id)}/messages`,{message:nudge},`${key}:${sent+1}`);
+   const payload={count:sent+1,session_id:event.session_id};
+   await db.insert(firmRecords).values({key,kind:'role_continuation',actor:role,case_id:event.case_id,payload}).onConflictDoUpdate({target:firmRecords.key,set:{payload,updated_at:new Date()}});
+   await db.update(firmEvents).set({state:'running',reason:'The role session ended without its required result; it was told to continue.',lease_until:new Date(Date.now()+30000)}).where(fence);return;
+  }
+ }
  if(result.state==='human_required'){
   result.reason??=`Existing provider session ${remote.status} (${remote.stop_reason??'no stop reason'}); no replacement created.`;
   await db.insert(firmRecords).values({key:`firm-business-unmet:${event.id}`,kind:'business_intervention',actor:role,case_id:event.case_id,payload:{event_id:event.id,session_id:event.session_id,reason:result.reason}}).onConflictDoUpdate({target:firmRecords.key,set:{payload:{event_id:event.id,session_id:event.session_id,reason:result.reason},updated_at:new Date()}});
  }
- await db.update(firmEvents).set({...result,lease_until:result.state==='running'?new Date(Date.now()+30000):null}).where(fence);
+ await db.update(firmEvents).set({state:result.state,reason:result.reason,lease_until:result.state==='running'?new Date(Date.now()+30000):null}).where(fence);
 }
 export async function discoverScheduledApprovals(db:NodePgDatabase,provider:FirmProvider){
  const key='firm-approval-discovery';
