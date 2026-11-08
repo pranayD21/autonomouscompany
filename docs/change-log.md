@@ -1352,3 +1352,7 @@ Verification: the preceding repository assessment independently passed `npm run 
 The owner explicitly confirmed that Claire, the Reddit user, had a real run and call, and that the call records were withheld from GitHub for privacy. Added a prominent README section stating that the run and call occurred and explaining the intentional omission of confidential records. Updated verification and showcase copy to distinguish this team confirmation from the separately documented, inbox-restricted production exchange. No private records, new outcome claims, or promises of access were added.
 
 Verification: reviewed the Markdown diff against the owner’s confirmation, checked the changed documents’ local file links, and ran `git diff --check`. No application tests were run for this documentation-only change. The underlying confidential calls were not independently inspected.
+
+## 2026-11-08 — Shorten the Claire privacy clarification
+
+Replaced the README clarification with two sentences in our first-person voice: the run and call took place, and the records were deliberately withheld for privacy. Removed reviewer-directed language and shortened the corresponding verification and showcase copy. Verification: reviewed the Markdown diff and passed `git diff --check`; no application tests were needed for these text edits.

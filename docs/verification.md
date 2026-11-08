@@ -2,11 +2,9 @@
 
 Assurance has been run with a real user on production. This page separates that evidence from the automated tests, which check logic without contacting outside services.
 
-## Claire’s run: team confirmation and confidential records
+## Claire’s run and private call records
 
-The team confirms that Claire, the Reddit user acquired through the Naïve GTM agent, actually used Assurance and that her run and call occurred. Call logs, recordings, transcripts, and private case details were intentionally excluded from the public repository because of privacy concerns. Missing public call artifacts must be read as a confidentiality decision, not as a statement that no call or run took place.
-
-This is the team’s direct confirmation of the real-user run. The confidential underlying records are not available here for independent inspection. No insurer decision, claim resolution, or financial savings are asserted by this confirmation. The timestamped production exchange below is a separately documented record; its events and outreach restriction should not be attributed to Claire without supporting records.
+We ran Assurance with Claire, our first user acquired through Reddit by our Naïve GTM agent, and the call took place. We deliberately kept her call logs, recordings, transcripts, and private case details out of this public repository to protect her privacy.
 
 ## Separately documented restricted production run
 
@@ -25,7 +23,7 @@ Call transcripts and case contents stay out of this repository to protect the us
 
 ## First user
 
-The GTM agent works: a Naïve GTM agent found Assurance's first user, Claire, on Reddit. The team confirms that her subsequent run and call occurred, as described above. Its acquisition messages and her confidential call records are not stored in this repository. [Permanent company agents](firm-blueprint.md) describes the go-to-market workflow.
+The GTM agent works: a Naïve GTM agent found Assurance's first user, Claire, on Reddit. We ran Assurance with her and the call took place, as described above. Its acquisition messages and her confidential call records are not stored in this repository. [Permanent company agents](firm-blueprint.md) describes the go-to-market workflow.
 
 ## GTM discovery
 
