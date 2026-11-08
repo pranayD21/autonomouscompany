@@ -248,3 +248,15 @@ export const caseAgentApprovals=pgTable("advocacy_case_agent_approvals",{
  state:text("state").$type<"confirmed"|"uncertain">().notNull(),
  created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
 },t=>[uniqueIndex("advocacy_case_approval_pending_idx").on(t.run_id,t.pending_hash)]);
+
+export const caseAgentSetups=pgTable("advocacy_case_agent_setups",{
+ id:uuid("id").primaryKey().defaultRandom(),
+ case_id:uuid("case_id").notNull().references(()=>cases.id,{onDelete:"cascade"}),
+ authority_id:uuid("authority_id").notNull().references(()=>caseAuthorities.id,{onDelete:"cascade"}),
+ requested_by:text("requested_by").notNull(),
+ state:text("state").$type<"queued"|"ready"|"stopped">().notNull().default("queued"),
+ attempts:integer("attempts").notNull().default(0),
+ next_check_at:timestamp("next_check_at",{withTimezone:true}).defaultNow().notNull(),
+ lease_id:uuid("lease_id"),lease_until:timestamp("lease_until",{withTimezone:true}),
+ reason:text("reason"),created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
+},t=>[uniqueIndex("advocacy_case_agent_setup_authority_idx").on(t.authority_id)]);

@@ -17,9 +17,9 @@ export const crewOutput = z.object({
   human_help_required: z.boolean(),
   human_help_reason: z.string(),
 });
-export function naiveClient() {
-  if (!process.env.NAIVE_API_KEY) throw new Error("NaiveNotConfigured");
-  return createClient({ baseUrl: "https://api.vetta.sh", apiKey: process.env.NAIVE_API_KEY,
+export function naiveClient(apiKey=process.env.NAIVE_API_KEY) {
+  if (!apiKey) throw new Error("NaiveNotConfigured");
+  return createClient({ baseUrl: "https://api.vetta.sh", apiKey,
     fetch: naiveFetch(),
   });
 }

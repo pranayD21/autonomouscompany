@@ -1,3 +1,4 @@
+import {pollCaseAgentSetups} from "./case-agent-setup";
 import {pollCaseAgentSessions} from "./case-agent-session";
 import {pollCallEvidence} from "./call-evidence-service";
 import {Hono} from "hono";
@@ -14,9 +15,10 @@ app.post("/poll",async c=>{
  const parsed=await parseTriggerDelivery(c.req.raw);
  if(!parsed.ok)return c.json({error:"A verified scheduler delivery is required."},401);
  if(parsed.invocation.type!=="schedule"||parsed.invocation.trigger.name!=="case-autonomy")return c.json({error:"Unexpected trigger."},403);
+ const setups=await pollCaseAgentSetups(drizzle(pool));
  const calls=await pollCallEvidence(drizzle(pool));
  const sessions=await pollCaseAgentSessions(drizzle(pool));
- const result={...await pollAutonomousCases(drizzle(pool)),calls,sessions};console.log("Case autonomy",JSON.stringify({invocationId:parsed.invocation.invocationId,...result}));return c.json(result);
+ const result={...await pollAutonomousCases(drizzle(pool)),calls,sessions,setups};console.log("Case autonomy",JSON.stringify({invocationId:parsed.invocation.invocationId,...result}));return c.json(result);
 });
 app.onError(()=>Response.json({error:"Autonomous case checks temporarily unavailable."},{status:503}));
 export default app;

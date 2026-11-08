@@ -127,9 +127,10 @@ app.post("/cases/:id/autonomy",async c=>{
  if(!crewAllowed(c.get("userId")))return c.json({error:"Standing authorization is limited to configured test operators."},403);
  const body=await c.req.json().catch(()=>null);
  if(body?.authorize!==true)return c.json({error:"Explicit standing authorization is required."},400);
- try{return c.json(await authorizeCase(db,c.req.param("id"),c.get("userId"),body.policy),201);}
+ if(body.persistent!==undefined&&typeof body.persistent!=="boolean")return c.json({error:"Persistent setup selection must be true or false."},400);
+ try{return c.json(await authorizeCase(db,c.req.param("id"),c.get("userId"),body.policy,undefined,body.persistent===true),201);}
  catch(error){const code=error instanceof Error?error.message:"INVALID_AUTHORITY";
-  return c.json({error:code==="AUTHORITY_ALREADY_EXISTS"?"Stop the existing authority before creating another.":code==="REVIEW_REQUIRED"?"Save a review for the current case details first.":code==="CONTACT_NOT_ALLOWED"?"Every contact must be an approved synthetic test recipient.":"Provide a valid bounded authority expiring within 30 days."},409);}
+  return c.json({error:code==="PERSISTENT_SETUP_UNAVAILABLE"?"Persistent case setup is not configured. No authorization was created.":code==="AUTHORITY_ALREADY_EXISTS"?"Stop the existing authority before creating another.":code==="REVIEW_REQUIRED"?"Save a review for the current case details first.":code==="CONTACT_NOT_ALLOWED"?"Every contact must be an approved synthetic test recipient.":"Provide a valid bounded authority expiring within 30 days."},409);}
 });
 app.post("/cases/:id/autonomy/:authorityId/revoke",async c=>{
  if(!await ownedCase(c.req.param("id"),c.get("userId"))||!z.uuid().safeParse(c.req.param("authorityId")).success)return c.json({error:"Authority not found."},404);

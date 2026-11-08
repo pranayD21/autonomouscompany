@@ -7,7 +7,7 @@ export async function checkAutonomyPermissions(page:Page,apiBase:string,caseId:s
  await page.route(crewPath,route=>route.fulfill({json:{status:"idle",saved_at:new Date().toISOString(),result:{summary:"Synthetic permission UI fixture",missing_information:[],next_actions:[],evidence:[],human_help_required:false,human_help_reason:"",potential_discrepancy_cents:null}}}));
  await page.route(path,route=>{
   if(route.request().method()==="POST"){posted.push(route.request().postDataJSON());return route.fulfill({status:201,json:{}});}
-  return route.fulfill({json:{authorities:[],decisions:[],sessions}});
+  return route.fulfill({json:{authorities:[],decisions:[],sessions,persistent_available:true,setups:[{id:"synthetic-setup",state:"queued",reason:null}]}});
  });
  try{
   await page.reload();
@@ -16,13 +16,14 @@ export async function checkAutonomyPermissions(page:Page,apiBase:string,caseId:s
   for(const summary of await card.locator("details.workflow-section > summary").all())if(await summary.locator("..").getAttribute("open")===null)await summary.click();
   const scope=form.getByLabel("Communication permission"),consent=form.getByRole("checkbox");
   await expect(scope).toHaveValue("research");await expect(form.getByLabel("Customer test email",{exact:true})).toHaveCount(0);
+  await expect(card.getByText("Case agent setup: queued",{exact:true})).toBeVisible();
   console.log("UI check: switching review permission to email");
   await consent.check();await scope.selectOption("email");await expect(consent).not.toBeChecked();
   await form.getByLabel("Customer test email",{exact:true}).fill("fictional@example.com");
   console.log("UI check: switching back to review-only");
   await consent.check();await scope.selectOption("research");await expect(consent).not.toBeChecked();
   await consent.check();await form.getByRole("button",{name:"Authorize review only",exact:true}).click();
-  await expect.poll(()=>posted.length).toBe(1);expect(posted[0].policy.contacts).toEqual([]);expect(posted[0].policy.max_outbound).toBe(0);
+  await expect.poll(()=>posted.length).toBe(1);expect(posted[0].persistent).toBe(true);expect(posted[0].policy.contacts).toEqual([]);expect(posted[0].policy.max_outbound).toBe(0);
   await scope.selectOption("email");await form.getByLabel("Customer test email",{exact:true}).fill("fictional@example.com");await consent.check();
   await form.getByRole("button",{name:"Authorize autonomous email test",exact:true}).click();
   await expect.poll(()=>posted.length).toBe(2);expect(posted[1].policy.max_outbound).toBe(2);expect(posted[1].policy.contacts).toEqual([{id:"customer",role:"customer",channel:"email",destination:"fictional@example.com"}]);

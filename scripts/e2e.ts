@@ -76,7 +76,10 @@ try {
   const autonomy=await fetch(`${apiBase}/cases/${caseId}/autonomy`,{headers:{Authorization:authorization}});
   expect(autonomy.status).toBe(200);
   console.log("Autonomy API version:",autonomy.headers.get("x-assurance-autonomy-version"));
-  expect(await autonomy.json()).toEqual({authorities:[],decisions:[],sessions:[]});
+  const autonomyState=await autonomy.json();
+  expect(autonomyState).toMatchObject({authorities:[],decisions:[],sessions:[],setups:[]});
+  expect(typeof autonomyState.persistent_available).toBe("boolean");
+  if(process.env.E2E_EXPECT_PERSISTENT_SETUP)expect(autonomyState.persistent_available).toBe(process.env.E2E_EXPECT_PERSISTENT_SETUP==="true");
   const authorize=await fetch(`${apiBase}/cases/${caseId}/autonomy`,{method:"POST",headers:{Authorization:authorization,"Content-Type":"application/json"},body:JSON.stringify({authorize:true})});
   expect(authorize.status).toBe(403);
   console.log("PASS owner can read autonomy history; unlisted signup cannot authorize autonomous spending");
@@ -111,6 +114,7 @@ try {
   await card.getByRole("button", {name:/^Delete(?: case)?$/}).click();
   await expect(card).toHaveCount(0, {timeout:20000});
   console.log("PASS case deletion and live query removal");
+  if(await page.getByRole("navigation",{name:"Workspace navigation",exact:true}).count())await page.getByRole("navigation",{name:"Workspace navigation",exact:true}).hover();
   await page.getByRole("button", {name:"Sign out",exact:true}).click();
   await page.getByRole("link",{name:"Open workspace",exact:true}).click({timeout:20000});
   await expect(page.getByRole("button", {name:"Sign in",exact:true})).toBeVisible({timeout:15000});
@@ -119,6 +123,7 @@ try {
   await page.getByLabel("Password",{exact:true}).fill(password);
   await page.getByRole("button",{name:"Sign in",exact:true}).click();
   await expect(page.getByText("Live updates connected",{exact:true})).toBeVisible({timeout:45000});
+  if(await page.getByRole("navigation",{name:"Workspace navigation",exact:true}).count())await page.getByRole("navigation",{name:"Workspace navigation",exact:true}).hover();
   await page.getByRole("button",{name:"Sign out",exact:true}).click();
   await page.getByRole("link",{name:"Open workspace",exact:true}).click({timeout:20000});
   await expect(page.getByRole("button",{name:"Sign in",exact:true})).toBeVisible({timeout:15000});

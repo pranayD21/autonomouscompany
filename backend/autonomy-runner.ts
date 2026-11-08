@@ -130,6 +130,7 @@ export async function pollAutonomousCases(db:NodePgDatabase,deps:AutonomyDepende
   const claimed=await db.execute(sql`WITH due AS (
    SELECT a.id FROM advocacy_case_authorities a JOIN advocacy_cases c ON c.id=a.case_id
    WHERE a.state IN ('active','waiting') AND (a.next_wake_at<=now() OR (a.state='waiting' AND c.revision>a.observed_revision))
+    AND (NOT EXISTS (SELECT 1 FROM advocacy_case_agent_setups p WHERE p.authority_id=a.id) OR EXISTS (SELECT 1 FROM advocacy_case_decisions d WHERE d.authority_id=a.id AND d.input->>'native_tool'='true' AND d.state IN ('running','executing')))
     AND (NOT EXISTS (SELECT 1 FROM advocacy_case_agent_sessions s WHERE s.authority_id=a.id) OR EXISTS (SELECT 1 FROM advocacy_case_decisions d WHERE d.authority_id=a.id AND d.input->>'native_tool'='true' AND d.state IN ('running','executing')))
     AND (a.lease_until IS NULL OR a.lease_until<now()) ORDER BY a.next_wake_at,a.id LIMIT 1 FOR UPDATE OF a SKIP LOCKED
   ) UPDATE advocacy_case_authorities a SET lease_id=gen_random_uuid(),lease_until=now()+interval '10 minutes'
