@@ -193,3 +193,41 @@ for(const change of ["owner","operator","credential_owner","credential_case","au
   }finally{process.env.CREW_ALLOWED_USER_IDS=owner;}
  });
 }
+
+test("reply and due followup survive together through one session until final stop",async()=>{
+ const f=await fixture(),sessionId=`ses_${randomUUID()}`;
+ let starts=0,cancels=0;
+ const deliveries:{session:string;key:string;message:string}[]=[];
+ const provider:CaseSessionDependencies={...deps,
+  start:async(input)=>{starts++;assert.equal(input.budget_micro_usd,250000);return {id:sessionId};},
+  send:async(session,message,key)=>{deliveries.push({session,message,key});return {accepted_seq:deliveries.length};},
+  cancel:async(id)=>{assert.equal(id,sessionId);cancels++;}
+ };
+ await advanceCaseAgentSession(db,f.run.id,provider);
+ await advanceCaseAgentSession(db,f.run.id,provider);
+ assert.equal((await get(f.run.id)).state,"idle");
+ // A reply arrives while an already scheduled followup becomes due.
+ await queueCaseAgentEvent(db,f.item.id,"reply:lifecycle","reply_received",{fictional:true});
+ const due=new Date(Date.now()-1000);
+ await db.update(caseAuthorities).set({state:"waiting",next_wake_at:due}).where(eq(caseAuthorities.id,f.authority.id));
+ await advanceCaseAgentSession(db,f.run.id,provider);
+ await advanceCaseAgentSession(db,f.run.id,provider);
+ await advanceCaseAgentSession(db,f.run.id,provider);
+ const events=await db.select().from(caseAgentEvents).where(eq(caseAgentEvents.run_id,f.run.id));
+ assert.deepEqual(events.map(e=>e.kind).sort(),["followup_due","reply_received"]);
+ assert.ok(events.every(e=>e.delivered_at&&e.accepted_seq));
+ assert.equal(deliveries.length,2);assert.equal(new Set(deliveries.map(d=>d.key)).size,2);
+ assert.ok(deliveries.every(d=>d.session===sessionId));
+ const [authority]=await db.select().from(caseAuthorities).where(eq(caseAuthorities.id,f.authority.id));
+ assert.equal(authority.next_wake_at,null);assert.deepEqual(authority.policy,f.authority.policy);
+ assert.equal(authority.decisions_used,f.authority.decisions_used);assert.equal(authority.outbound_used,f.authority.outbound_used);
+ // A late reply cannot restart a case whose existing authority has ended.
+ await db.update(caseAuthorities).set({state:"stopped",reason:"Synthetic lifecycle complete"}).where(eq(caseAuthorities.id,f.authority.id));
+ await queueCaseAgentEvent(db,f.item.id,"reply:late","reply_received",{fictional:true});
+ await advanceCaseAgentSession(db,f.run.id,provider);
+ await advanceCaseAgentSession(db,f.run.id,provider);
+ assert.equal(starts,1);assert.equal(cancels,1);assert.equal(deliveries.length,2);
+ assert.equal((await get(f.run.id)).state,"stopped");
+ const late=(await db.select().from(caseAgentEvents).where(eq(caseAgentEvents.run_id,f.run.id))).find(e=>e.event_key==="reply:late");
+ assert.equal(late?.delivered_at,null);
+});

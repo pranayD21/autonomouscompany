@@ -143,3 +143,7 @@ The activation fixture was cancelled and its vault credentials, vault, identity,
 Before sending a queued event, the worker rereads the case, authority, and tool credential after the remote status request. A changed owner, removed operator, mismatched credential case/issuer, or changed authority approver stops the existing session and leaves the event undelivered. This extends the existing expiry and revocation check to ownership and operator access. It does not reset a session, grant, or budget.
 
 A `request_human` tool action still changes the authority to `human_required`. The scheduler cancels that session under the existing authorization rules; a later case edit or email cannot reactivate it. A separate owner-reviewed recovery flow remains unfinished. Ordinary evidence updates continue the same session only while its authorization remains active or waiting.
+
+### Combined reply and follow-up lifecycle regression
+
+The disposable-database test `reply and due followup survive together through one session until final stop` exercises a reply arriving when a scheduled follow-up is due. It verifies that both events receive distinct delivery receipts in the same provider session, the timer clears, and authorization policy/counters remain unchanged. A late reply after the authority stops stays undelivered; the worker cancels once and creates no replacement session. The provider is simulated, so this test does not establish live delivery or claim resolution.

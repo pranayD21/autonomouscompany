@@ -499,3 +499,8 @@ The real 05:05 UTC trigger provisioned the queued authority and started one case
 Added a fresh case/owner/operator and credential-binding check after the provider status request, before sending a queued event to the existing session. Previously, that second check covered authority state and credential expiry/revocation but omitted owner and operator changes. Five database regression cases cover changes to the owner, operator allowlist, credential issuer, credential case, and authority approver during the remote read. The worker cancels the existing session and leaves its event undelivered when any check fails. No grants, caps, or session identities are reset. Human-required recovery remains a separate unfinished flow.
 
 Validation: all 34 session/approval database tests passed on the disposable branch, and `npm run build` passed. Targeted production `autopoll` deployment 28 completed; no environment changes or outbound tests were made. Other Functions and the phone-flow work were untouched.
+
+
+### Verify combined reply and follow-up lifecycle
+
+Added one database integration test covering a reply and due timer together, followed by authority termination and a late reply. The focused test passed on the disposable branch (1 passed, 0 failed). It proves both events survive and use the same session without resetting policy or counters, and that a stopped case cannot restart through a late reply. Provider calls are simulated; no external communications occurred. This change affects tests/documentation only and requires no backend deployment. Concurrent phone-authentication files were excluded.
