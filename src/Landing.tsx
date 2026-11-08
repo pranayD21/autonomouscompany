@@ -1,4 +1,4 @@
-import { ArrowUpRight, Logo, ShieldCheck } from "./Icons";
+import { ArrowUpRight, Logo } from "./Icons";
 import { MinimalHero } from "./components/minimal-hero";
 import { StrikethroughReplace } from "./components/strikethrough-replace";
 
@@ -24,7 +24,7 @@ export function Landing() {
                     <h1 className="hero-wordmark" aria-label="Assurance"><span aria-hidden="true"><StrikethroughReplace from="in" to="as" /><span className="wordmark-rest">surance</span><span className="wordmark-dot">.</span></span></h1>
           <div className="hero-bottom">
             <div className="hero-message"><h2>Insurance is complicated.<br /><span>Getting help shouldn’t be.</span></h2></div>
-            <div className="hero-action"><a className="primary-button" href={workspaceUrl}><span>Open a case</span><span className="button-arrow"><ArrowUpRight size={21} aria-hidden="true" /></span></a><span className="action-note"><ShieldCheck size={13} aria-hidden="true" /> Nothing is sent without your OK.</span></div>
+            <div className="hero-action"><a className="primary-button" href={workspaceUrl}><span className="button-label">Open a case</span><span className="button-arrow"><ArrowUpRight size={26} aria-hidden="true" /></span></a></div>
           </div>
         </div>
       </MinimalHero>
