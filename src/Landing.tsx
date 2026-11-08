@@ -1,4 +1,3 @@
-import {PhoneEntry} from "./PhoneEntry";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ArrowUpRight, Logo } from "./Icons";
 import { HeroBackdrop } from "./components/hero-backdrop";
@@ -8,8 +7,8 @@ import { StrikethroughReplace } from "./components/strikethrough-replace";
 const workspaceUrl = "#workspace";
 
 const steps = [
-  { number: "01", title: "Verify your number. Open your dashboard." },
-  { number: "02", title: "Your advocate gathers the details." },
+  { number: "01", title: "Tell us what happened." },
+  { number: "02", title: "Add your bills and EOBs." },
   { number: "03", title: "We handle the rest." },
 ];
 
@@ -51,7 +50,7 @@ function useBackdropLayout() {
 export function Landing() {
   const backdrop = useBackdropLayout();
   return (
-    <main ref={backdrop.pageRef} className={`landing-page phone-landing${backdrop.atTop ? " is-at-top" : ""}`} style={backdrop.style}>
+    <main ref={backdrop.pageRef} className={`landing-page${backdrop.atTop ? " is-at-top" : ""}`} style={backdrop.style}>
       <HeroBackdrop />
       <a className="skip-link" href="#main-content">Skip to content</a>
       <header className="site-header">
@@ -64,7 +63,7 @@ export function Landing() {
                     <h1 className="hero-wordmark" aria-label="Assurance"><span aria-hidden="true"><StrikethroughReplace from="in" to="as" fadeBelow=".hero-message h2" /><span className="wordmark-rest">surance</span><span className="wordmark-dot">.</span></span></h1>
           <div className="hero-bottom">
             <div className="hero-message"><h2>Insurance is complicated.<br /><span>Getting help shouldn’t be.</span></h2></div>
-            <div className="hero-action phone-hero-action"><PhoneEntry/></div>
+            <div className="hero-action"><a className="primary-button" href={workspaceUrl}><span className="button-label">Open a case</span><span className="button-arrow"><ArrowUpRight size={26} aria-hidden="true" /></span></a></div>
           </div>
         </div>
       </MinimalHero>

@@ -220,19 +220,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .phone-entry form > button { min-height: 48px; }
 .phone-entry > .text-button { margin-top: 18px; text-align: left; }
 .phone-entry .demo-note { font-size: .8rem; }
-.hero-action.phone-hero-action { width: min(420px, 100%); align-items: stretch; text-align: left; }
 .onboarding-call-notice { padding: 16px 20px; margin-bottom: 24px; border: 1px solid var(--border, #dadbd5); border-radius: 14px; background: var(--surface, #f6f7f2); }
 .onboarding-call-notice p { margin: 0 0 5px; }
 .onboarding-call-notice small { color: var(--muted, #6a6d63); }
-@media (max-width: 760px) { .hero-action.phone-hero-action { align-self: stretch; } }
 .surface .case-key-numbers { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 22px; margin: 0 0 10px; font-size: 13px; }
 .case-key-numbers div { display: flex; align-items: baseline; gap: 6px; }
 .case-key-numbers dt, .case-key-numbers small { color: var(--quiet); }
 .case-key-numbers dd { margin: 0; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
-.phone-landing .hero-wordmark { font-size: clamp(72px, 12vw, 180px); margin-top: 48px; margin-bottom: 28px; }
-.phone-landing .hero-bottom { align-items: flex-start; }
-.phone-landing .hero-message { padding-top: 18px; }
-@media (max-width: 640px) { .phone-landing .hero-wordmark { font-size: 17.1vw; margin-top: 48px; margin-bottom: 24px; } }
 .phone-entry input { padding: 12px 14px; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); color: var(--ink); }
 .phone-entry form > button { padding: 12px 20px; border: 0; border-radius: 10px; color: white; background: var(--blue); font-weight: 600; }
 .phone-entry .text-button { padding: 8px 0; border: 0; background: transparent; color: var(--quiet); font-size: .85rem; text-decoration: underline; text-underline-offset: 4px; }

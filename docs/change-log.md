@@ -1,5 +1,11 @@
 # Change log
 
+## November 8, 2026 — Restore the landing design
+
+Reverted only the landing-page portion of the phone-first snapshot and merge, at the user's request before redesigning the integration together. `src/Landing.tsx` restores the original three-step copy and animated **Open a case** workspace link instead of embedding phone sign-in. Removed landing-only phone layout overrides from `src/style.css`, restoring the existing wordmark proportions and hero spacing in `src/landing.css`. Phone authentication, onboarding services, case chat, and other workspace changes remain intact. Updated `scripts/phone-ui-check.ts` to assert the landing CTA and navigate through it before testing phone entry. See [frontend.md](frontend.md).
+
+Verification: `src/Landing.tsx` matches commit `a278e24` exactly. `git diff --check` passed. `npm run build` passed (TypeScript and Vite) with non-production placeholder public service URLs; the first build attempt lacked the required public URLs. Existing large-bundle and mixed static/dynamic import warnings remain. The updated browser acceptance check has not been run; no production deployment or live provider actions are included.
+
 ## November 8, 2026 — Integrate all local commits for main
 
 Merged the two local main commits and `compact-case-view` into current remote main without rewriting published history. Preserved the sidebar clipping fix, extracted overview redesign, compact case amounts, short-title helper, newer phone onboarding, Gmail connection, and persistent version-2 conversation. Resolved overlapping composer changes in favor of the newer shared composer with unique accessible IDs and uncertain-send retry controls. The status header keeps a compact animated orb and inline detail; scoped CSS prevents older conversation and definition-list rules from overriding the compact layout. See [frontend.md](frontend.md).
