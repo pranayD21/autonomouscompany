@@ -265,3 +265,7 @@ Verified the existing hosted agent and active number by authenticated readback, 
 ## Fallback backend deployment
 
 Deployed the tested provider selector and AgentPhone transport to Neon production. Verified pre-deploy selection remains ElevenLabs and its number ID is absent, so new calling stays disabled. All five functions updated successfully; unsigned worker and unauthenticated case-status requests returned 401 after deployment. No routing switch, purchase, call, or env pull occurred. Provider-neutral frontend confirmation is committed but not yet deployed; update it before activating AgentPhone to avoid misleading consent wording.
+
+## assurance.claims reachability fixed on operator Mac
+
+Diagnosed cached NXDOMAIN in the local Tailscale resolver while multiple public resolvers and Vercel HTTPS were healthy. Applied the explicitly approved domain-only macOS resolver file using Cloudflare DNS and flushed local caches. Dia now loads Assurance. The complete hosted E2E passed through normal DNS; gateway inference remains blocked by model access. No hosting deployment or public DNS changes were needed.
