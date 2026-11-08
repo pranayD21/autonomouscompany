@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-08 — Remove landing FAQ section
+
+Removed the "Questions" (FAQ) section from `src/Landing.tsx` and its `.questions` styles from `src/landing.css`, as the user requested. The page now goes from the "How it works" steps to the footer. See frontend.md.
+
+Verification: `tsc --noEmit` passed. The full `npm run build` needs the `VITE_*` service URLs and was not run. The page was not visually checked in a browser.
+
 ## 2026-11-08 — New logo and settling hero wordmark
 
 Replaced the asterisk mark with the new two-stroke "A" logo (blue, rounded corners) across the app, README icon and a new favicon. The hero animation now finishes by dropping the handwritten "as" onto the same line as "surance" (dipping slightly below its bottom so the script reads as part of the word), while the struck "in" slides behind the heading below and fades out. The heading and call to action sit lower to give the dropped "in" more room. The handwritten "as" is larger and heavier. See frontend.md.

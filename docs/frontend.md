@@ -24,6 +24,7 @@ The landing hero (`src/components/strikethrough-replace.tsx`, styles in `src/lan
 
 Two rounds of a persona-based design review set these rules (verdicts were kept outside the repository):
 
+- The landing page has no FAQ/questions section; it was removed on 2026-11-08 at the user's request. After the hero and "How it works" steps it goes straight to the footer.
 - The landing keeps two signature lines, "Insurance is complicated. Getting help shouldn't be." and "You've got enough on your plate.", and drops other slogans.
 - Relevant qualifications appear under money and AI output, and a concise scope disclosure accompanies submission. Repeated prototype banners are removed.
 - The optional review's "Run agent team" button is secondary (outlined).
