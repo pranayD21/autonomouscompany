@@ -3,7 +3,7 @@ import {api, auth} from "./services";
 import type {DocumentExtraction} from "../backend/providers/document-reader";
 import type {CaseDocument} from "../backend/schema";
 import {AnimatePresence, motion} from "motion/react";
-import {FileIcon, Plus} from "./Icons";
+import {FileIcon} from "./Icons";
 import {FileDrop} from "./ui/FileDrop";
 
 type DocumentView = Omit<CaseDocument, "object_key"> & {extraction_state: string | null; extraction_result: DocumentExtraction | null; extraction_error: string | null; confirmed_at: string | null};
@@ -82,20 +82,7 @@ function useDocumentManager(caseId: string, userId: string, revision: number) {
 
 export function CaseDocumentUpload() {
   const {busy, uploading, upload} = useDocuments();
-  return <FileDrop label="Add files" accept={ACCEPT} disabled={busy} busy={uploading} onFiles={files => void upload(files)}/>;
-}
-
-/** Round "+" that opens the file picker and uploads straight away. */
-export function CaseDocumentPlus() {
-  const {busy, uploading, upload} = useDocuments();
-  const input = useRef<HTMLInputElement>(null);
-  return <>
-    <input ref={input} type="file" accept={ACCEPT} multiple hidden onChange={event => { const files = [...(event.target.files ?? [])]; event.target.value = ""; void upload(files); }}/>
-    <motion.button type="button" className="chat-plus" onClick={() => input.current?.click()} disabled={busy} aria-label={uploading ?? "Add files"} title="Add files"
-      whileHover={{rotate: 90}} whileTap={{scale: 0.88}} transition={{type: "spring", bounce: 0.4, duration: 0.4}}>
-      {uploading ? <span className="chat-plus-spinner" aria-hidden="true"/> : <Plus size={16} aria-hidden="true"/>}
-    </motion.button>
-  </>;
+  return <FileDrop label="Add documents" accept={ACCEPT} disabled={busy} busy={uploading} onFiles={files => void upload(files)}/>;
 }
 
 export function CaseDocumentFeedback() {

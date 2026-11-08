@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useRef,useState,type FormEvent,type ReactNode} from 'react';
 import {api} from './services';
 import {ClaimComposer} from './ui/ClaimComposer';
-import {CaseDocumentFeedback, CaseDocumentPlus} from './Documents';
+import {CaseDocumentFeedback, CaseDocumentUpload} from './Documents';
 import {Logo} from './Icons';
 export type CaseMessage={id:string;role:'user'|'assistant';text:string;created_at:string;kind?:string};
 export type CaseConversation={messages:CaseMessage[];state?:string;waiting_on?:string|null;can_send?:boolean};
@@ -37,14 +37,14 @@ export function CaseChat({caseId,userId,revision,title,headerStart,headerEnd,bef
    {loaded&&!conversation.messages.length&&<div className="chat-welcome">
     <span className="welcome-mark" aria-hidden="true"><Logo size={20}/></span>
     <p className="chat-welcome-title">Let’s take it from here.</p>
-    <p className="chat-welcome-text">Tell us anything new, ask a question, or add a letter with the + button.</p>
+    <p className="chat-welcome-text">Tell us anything new, ask a question, or tap Add documents to share a letter or bill.</p>
    </div>}
    {conversation.messages.map(message=><article key={message.id} className={`case-chat-message case-chat-message--${message.role}`} aria-label={`${message.role==='user'?'You':'Assurance'} message`}><div className="case-chat-bubble"><span className="case-chat-author">{message.role==='user'?'You':'Assurance'}</span><p>{message.text}</p>{message.kind?.startsWith('document_request')&&<button type="button" className="chat-bubble-action" onClick={attach}>Add the document</button>}</div><time dateTime={message.created_at}>{timestamp(message.created_at)}</time></article>)}
   </div>
   {stopped&&pausedNote&&<p className="case-chat-note">Assurance is paused on this case. Your messages are still saved, but they won’t restart the work.</p>}
   {beforeCompose}
   <div className="case-chat-compose">
-   <ClaimComposer value={draft} onChange={value=>{setDraft(value);setNotice('');}} onSubmit={send} busy={busy} disabled={!loaded||conversation.can_send===false} readOnly={pending.current!==null} needsAnswer={conversation.state==='human_required'} sendLabel={pending.current?'Retry message':'Send message'} attachment={<CaseDocumentPlus/>}/>
+   <ClaimComposer value={draft} onChange={value=>{setDraft(value);setNotice('');}} onSubmit={send} busy={busy} disabled={!loaded||conversation.can_send===false} readOnly={pending.current!==null} needsAnswer={conversation.state==='human_required'} sendLabel={pending.current?'Retry message':'Send message'} attachment={<CaseDocumentUpload/>}/>
    <CaseDocumentFeedback/>
    {notice&&<p className="case-chat-feedback" role="status">{notice}</p>}
    {error&&<p className="case-chat-feedback" role="alert">{error}</p>}

@@ -1,5 +1,11 @@
 # Change log
 
+## November 8, 2026 — Full-page case chat and Add documents button
+
+The user asked for the animated upload pill back in place of the round "+", labelled so people know what it does, and for the chat to be the whole page instead of a card on the page. The composer again uses `CaseDocumentUpload` (`src/ui/FileDrop.tsx`), now labelled **Add documents**. The unused `CaseDocumentPlus` was removed. When a case is open, `.surface` drops its margin, border, radius and padding and becomes a white, full-height page. Content sits in a centred 760px column, and the header rule spans the full width. The empty-state hint now points to **Add documents**. CSS changes are in `src/claim-workspace.css`. See [frontend.md](frontend.md).
+
+Verification: `tsc --noEmit`, `npm run build` and the 18 focused UI tests passed. Playwright screenshots of the synthetic claim-page fixture at 1400×900 and 390×780 were inspected, including the hover state of **Add documents** (tile lifts out of the dashed outline). There was no page overflow in either direction. Not checked on a real device.
+
 ## November 8, 2026 — Case page rebuilt as a simple chat card
 
 The user found the dark full-window layout ugly and supplied the 21st.dev "AI Chat Card" to base the page on. They also asked that it work on mobile and show a non-technical person only what they need. The case page is now one white chat card: a round back button, the title and a plain status line, and one **Case info** button. It has soft grey and ink bubbles, a calm empty state, a start/restart banner when needed, and a grey composer with a round **+** upload and black send button. Progress, result, documents, activity, details, Stop/Start and Delete moved into a Case info sheet (right-side dialog on desktop, bottom sheet on phones). Removed from view: the claim-number eyebrow, progress meter, tabs, goal/scope text, claim stage, keyboard hint and refresh button. `src/claim-workspace.css` was rewritten from scratch, and `ClaimProgressMeter` was removed. `CaseChat` copy now says "Paused" instead of "Agent work is stopped". See [frontend.md](frontend.md).
