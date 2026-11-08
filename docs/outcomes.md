@@ -22,3 +22,10 @@ Migration 0017 and the tool are deployed. Twelve tests and the build passed. `np
 `GET /cases/:id/outcomes` requires an authenticated owner and returns 404 for another user’s case. `src/Outcomes.tsx` displays reports newest first, distinguishes unknown amounts from zero, shows supporting quotes, and warns when evidence is no longer current. It refreshes every 15 seconds and when the case revision changes; responses from an old case or signed-in user are discarded on cleanup. A failed refresh is visible and does not silently present old results as current. The component is included in the case workspace independently of whether an agent review has finished.
 
 `E2E_OUTCOMES_UI=1 npm run test:e2e` adds an explicitly mocked outcome response to exercise populated amounts, unknown refunds, stale evidence, quote expansion, and the empty state. The same test independently calls the real API for owner access and cross-user denial. The fixture UI check does not prove real outcome ingestion; that is covered by the separate live MCP smoke test.
+
+
+## Ending a synthetic scenario
+
+`stop_case` accepts `synthetic_demo_completed` separately from `goal_met`. It requires synthetic standing authority, a referenced recorded outcome whose supporting quotes are still current, and no uncertain dispatch. The worker rechecks outcome evidence while applying the decision. The stored stop reason explicitly says that the synthetic scenario ended and no real payout was verified. This does not close a real claim, verify coverage or savings, receive money, or create a payment. Real `goal_met` retains its separate verification requirement and remains unavailable without verified completion.
+
+Current outcomes appear in case reads and decision snapshots with `outcome:<id>` evidence references. A quote becoming stale removes the reference from current evidence. The bounded decision prompt now asks one question per message, as specified in the progressive-intake plan.

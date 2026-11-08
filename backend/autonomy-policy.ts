@@ -22,12 +22,12 @@ export const caseDecision=z.discriminatedUnion("tool",[
  z.object({tool:z.literal("contact_customer"),...rationale,contact_id:z.string(),subject:z.string().trim().min(1).max(160).refine(s=>!/[\r\n]/.test(s)),body:z.string().trim().min(1).max(4000)}).strict(),
  z.object({tool:z.literal("contact_insurer"),...rationale,contact_id:z.string(),subject:z.string().trim().min(1).max(160).refine(s=>!/[\r\n]/.test(s)),body:z.string().trim().min(1).max(4000)}).strict(),
  z.object({tool:z.literal("wait_for_reply"),...rationale,minutes:z.number().int().min(5).max(10080)}).strict(),
- z.object({tool:z.literal("stop_case"),...rationale,outcome:z.enum(["goal_met","no_supported_next_step","customer_requested_stop"]),summary:z.string().trim().min(1).max(1600)}).strict(),
+ z.object({tool:z.literal("stop_case"),...rationale,outcome:z.enum(["goal_met","synthetic_demo_completed","no_supported_next_step","customer_requested_stop"]),summary:z.string().trim().min(1).max(1600)}).strict(),
  z.object({tool:z.literal("request_human_help"),...rationale,question:z.string().trim().min(1).max(1000)}).strict(),
 ]);
 export type CaseDecision=z.infer<typeof caseDecision>;
 export type DecisionContext={now:Date;revoked:boolean;decisions_used:number;outbound_used:number;last_contact_at:Date|null;
- evidence_refs:string[];verified_goal_met:boolean;customer_requested_stop:boolean;uncertain_dispatch:boolean;call_enabled:boolean};
+ evidence_refs:string[];current_outcome_refs?:string[];verified_goal_met:boolean;customer_requested_stop:boolean;uncertain_dispatch:boolean;call_enabled:boolean};
 
 // The model chooses the next tool. This guard enforces the standing authorization.
 export function checkCaseDecision(authority:CaseAuthority,decision:CaseDecision,context:DecisionContext):string|null{
@@ -37,6 +37,11 @@ export function checkCaseDecision(authority:CaseAuthority,decision:CaseDecision,
  if(decision.evidence_refs.some(ref=>!context.evidence_refs.includes(ref)))return "UNKNOWN_EVIDENCE";
  if(decision.tool==="request_human_help")return null;
  if(decision.tool==="stop_case"){
+  if(decision.outcome==="synthetic_demo_completed"){
+   if(authority.synthetic!==true)return "SYNTHETIC_AUTHORITY_REQUIRED";
+   if(context.uncertain_dispatch)return "DISPATCH_NEEDS_RECONCILIATION";
+   if(!decision.evidence_refs.some(ref=>context.current_outcome_refs?.includes(ref)))return "CURRENT_OUTCOME_REQUIRED";
+  }
   if(decision.outcome==="goal_met"&&!context.verified_goal_met)return "OUTCOME_NOT_VERIFIED";
   if(decision.outcome==="customer_requested_stop"&&!context.customer_requested_stop)return "STOP_REQUEST_NOT_VERIFIED";
   return null;

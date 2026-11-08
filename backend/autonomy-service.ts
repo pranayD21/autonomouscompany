@@ -1,3 +1,4 @@
+import {readCaseOutcomes} from "./case-outcome";
 import {caseSources,caseAgentFacts,caseAgentSessions} from "./schema";
 import {publicCitation} from "./source-service";
 import {callEvidence} from "./schema";
@@ -37,8 +38,10 @@ export async function caseDecisionInput(db:NodePgDatabase,caseId:string,policy:C
  const calls=await db.select().from(callEvidence).where(eq(callEvidence.case_id,caseId)).orderBy(desc(callEvidence.received_at)).limit(20);
  const sources=await db.select().from(caseSources).where(eq(caseSources.case_id,caseId));
  const facts=await db.select().from(caseAgentFacts).where(eq(caseAgentFacts.case_id,caseId));
- const evidence_refs=[...sources.map(s=>`source:${s.id}:${s.sha256}`),...calls.map(c=>`call:${c.id}:${c.sha256}`),`case:${item.revision}`,...actions.map(a=>`action:${a.id}`),...replies.map(r=>`reply:${r.id}:${r.sha256}`)];
- return {case:item,authority:policy,sources:sources.map(publicCitation),recorded_statements:facts,call_evidence:calls.map(c=>({...c,trust:"untrusted_reported_speech"})),review:review?.snapshot?.output_valid?{revision:review.case_revision,result:review.snapshot.result}:null,
+ const outcomes=await readCaseOutcomes(db,caseId);
+ const current_outcome_refs=outcomes.filter(o=>o.evidence_current).map(o=>`outcome:${o.id}`);
+ const evidence_refs=[...current_outcome_refs,...sources.map(s=>`source:${s.id}:${s.sha256}`),...calls.map(c=>`call:${c.id}:${c.sha256}`),`case:${item.revision}`,...actions.map(a=>`action:${a.id}`),...replies.map(r=>`reply:${r.id}:${r.sha256}`)];
+ return {case:item,authority:policy,outcomes,current_outcome_refs,sources:sources.map(publicCitation),recorded_statements:facts,call_evidence:calls.map(c=>({...c,trust:"untrusted_reported_speech"})),review:review?.snapshot?.output_valid?{revision:review.case_revision,result:review.snapshot.result}:null,
   actions:actions.map(a=>({id:a.id,kind:a.kind,destination:a.destination,subject:a.subject,body:a.body,state:a.state,provider_status:a.provider_status,created_at:a.created_at})),
   replies:replies.map(r=>({id:r.id,sha256:r.sha256,sender:r.sender,body:r.body,received_at:r.received_at})),evidence_refs};
 }

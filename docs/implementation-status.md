@@ -94,3 +94,10 @@ The outcome API is owner-protected and deployed. The new outcome panel is implem
 
 
 The outcome and session-status frontend is now published at assurance.claims. Hosted checks passed; the temporary Vercel token was revoked. The separate Naïve activation task reports cross-session tool-result isolation failure, so shared MCP activation remains gated pending its investigation.
+
+## Managed Agents setup unblocked and isolation verified
+
+The side-chat setup task used Playwriter in Dia to sign into the correct existing Managed Agents company and provision temporary admin access. The prior incompatible-dashboard-key blocker is resolved. A shared-URL synthetic test exposed cross-session case contamination, so its credentials were revoked and sessions cancelled. Distinct case-specific MCP URLs with explicitly pinned versions passed live verification: correct own-case reads, cross-case denial, and one persisted fact per case. Three configuration tests and build passed. Temporary keys/vaults/credentials/fixtures were cleaned up; the default coordinator was restored to general-review version 21 without a case connector. Full per-user lifecycle activation and automatic provisioning remain unfinished. Naïve read_people approvals were needed during the test; existing runtime credentials, grants, and budgets remain unchanged. See agent-tools.md.
+
+
+Synthetic scenario completion now has its own evidence-backed stop option, with a mandatory no-real-payout label. It passed live MCP verification without contacting anyone. This is demo completion, not the still-unimplemented verified real-outcome path. Payment remains hypothetical per the latest user instruction.

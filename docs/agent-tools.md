@@ -58,3 +58,20 @@ Verification: nine protocol/configuration tests, five native-action database tes
 
 
 `record_outcome` saves agent-reported amounts and decisions with exact evidence quotes. `case_get` includes those reports and current evidence status. This does not establish verified completion or authorize charges. See [outcomes](outcomes.md).
+
+## Managed Agents credential and connector verification — November 7, 2026
+
+Playwriter in Dia found the app signed into the Berkeley Google account’s onboarding company. Signing out of the app and choosing the existing Gmail Google identity reached the correct Managed Agents organization, whose ID matched the existing runtime key. A temporary admin-scoped key successfully read the existing coordinator and provisioned case identities/vaults. The incompatible legacy dashboard is not required. The runtime key and approved budgets were preserved.
+
+The first shared `/mcp` live test failed isolation: one synthetic session requested its own case but received the other test case’s result. Both session credentials were revoked at the database and deleted from their vaults, and the sessions were cancelled. No real case data or external action was involved. The exact provider-internal cause is unconfirmed. Treat this as a failed connector-isolation test, not evidence that a shared endpoint is safe.
+
+The mitigation uses a distinct `/mcp/<case UUID>` URL in both each vault credential and its explicitly pinned agent version. The existing MCP endpoint already checks the URL against the authenticated case. `caseAgentTools(url,caseId)` constructs this binding. The global blueprint now adds case tools only when both `NAIVE_CASE_TOOLS_URL` and explicit `NAIVE_CASE_TOOL_CASE_ID` are set. General review agents should leave the latter unset.
+
+`scripts/case-agent-smoke.ts setup` now stores a separate agent version for each fixture in ignored `test-results/case-agent-smoke-isolated-url.json`. Its `poll` mode reads existing sessions only. The previous failed state is retained privately as `case-agent-smoke-shared-url-failure.json`; do not resume those cancelled sessions. Both fresh isolated-URL sessions completed with end_turn, each returned only its own case ID, rejected the cross-case probe with CASE_MISMATCH, and wrote exactly one expected fact to its own Neon row. Naïve’s `read_people` approval gates required explicit approval for synthetic probes/writes despite configured tool permissions. External status requests returned HTTP 429 service capacity and timed out. The signed-in Dia session’s same-origin API completed the known synthetic approvals and verification; no replacement model runs were created.
+
+After verification, all four temporary case credentials were revoked/removed, their vaults deleted, identities detached, and temporary database fixtures deleted. Both temporary admin keys were revoked and the local key file removed. The existing runtime key and standing authorities were unchanged. The general coordinator was restored to version 21 with no case connector; test sessions used pinned versions 19 and 20. Future real activations must provision and pin their own case URL/version; this test does not activate a user case or make the UI provisioning automatic. General reviews remain available.
+
+Three configuration tests and the build passed after the changes. Live verification needed operator approvals for Naïve’s read_people gate; do not describe this integration test as fully unattended operation. Session-reported coordinator costs for the successful isolated pair were 15,167 and 9,939 micro-USD before the final first-session fact-write continuation; no spending caps were increased.
+
+
+Integration review tightened caseAgentTools further: a bare shared /mcp URL is rejected unless a valid explicit case ID is supplied; an already case-specific URL must match that ID. This prevents a future caller from accidentally restoring the connector configuration that failed live isolation. The raw shared server endpoint remains available for direct protocol tests, but is not a valid Managed Agents connector configuration. Three configuration tests and build passed after this tightening.

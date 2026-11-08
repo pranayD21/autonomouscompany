@@ -1,3 +1,4 @@
+import {readCaseOutcomes} from "./case-outcome";
 import {and,desc,eq,inArray,sql} from "drizzle-orm";
 import type {NodePgDatabase} from "drizzle-orm/node-postgres";
 import {caseAuthorities,caseDecisions,cases,outreachActions,caseAgentSessions} from "./schema";
@@ -47,7 +48,8 @@ export async function applyDecision(db:NodePgDatabase,authority:Authority,round:
   }
   const [uncertain]=await tx.select({id:outreachActions.id}).from(outreachActions).where(and(eq(outreachActions.case_id,item.id),inArray(outreachActions.state,["unknown","dispatching"])));
   const input=round.input as {evidence_refs?:string[];customer_requested_stop?:boolean};
-  const denied=checkCaseDecision(current.policy,decision,{now:new Date(),revoked:!["active","waiting"].includes(current.state),decisions_used:current.decisions_used,outbound_used:current.outbound_used,last_contact_at:current.last_contact_at,evidence_refs:input.evidence_refs??[],verified_goal_met:false,customer_requested_stop:input.customer_requested_stop===true,uncertain_dispatch:!!uncertain,call_enabled:outreachEnabled("call")});
+  const currentOutcomeRefs=(await readCaseOutcomes(tx,item.id)).filter(o=>o.evidence_current).map(o=>`outcome:${o.id}`);
+  const denied=checkCaseDecision(current.policy,decision,{now:new Date(),revoked:!["active","waiting"].includes(current.state),decisions_used:current.decisions_used,outbound_used:current.outbound_used,last_contact_at:current.last_contact_at,evidence_refs:input.evidence_refs??[],current_outcome_refs:currentOutcomeRefs,verified_goal_met:false,customer_requested_stop:input.customer_requested_stop===true,uncertain_dispatch:!!uncertain,call_enabled:outreachEnabled("call")});
   if(denied==="CONTACT_TOO_SOON"){
    const wake=new Date(Math.min(new Date(current.policy.expires_at).getTime(),current.last_contact_at!.getTime()+current.policy.min_contact_interval_minutes*60000));
    await tx.update(caseDecisions).set({decision,state:"finished",finished_at:new Date(),result:{reason:denied,state:"waiting"}}).where(eq(caseDecisions.id,round.id));
@@ -67,7 +69,7 @@ export async function applyDecision(db:NodePgDatabase,authority:Authority,round:
    const [updated]=await tx.update(caseDecisions).set({decision,state:"executing",action_id:action.id}).where(eq(caseDecisions.id,round.id)).returning();return updated;
   }
   const state=decision.tool==="wait_for_reply"?"waiting":decision.tool==="request_human_help"?"human_required":"stopped";
-  const reason=decision.tool==="request_human_help"?decision.question:decision.tool==="stop_case"?decision.summary:decision.reason;
+  const reason=decision.tool==="request_human_help"?decision.question:decision.tool==="stop_case"?(decision.outcome==="synthetic_demo_completed"?`Synthetic scenario completed; no real payout verified. ${decision.summary}`:decision.summary):decision.reason;
   const nextWake=decision.tool==="wait_for_reply"?new Date(Date.now()+decision.minutes*60000):null;
   await tx.update(caseDecisions).set({decision,state:"finished",finished_at:new Date(),result:{state,reason}}).where(eq(caseDecisions.id,round.id));
   await tx.update(caseAuthorities).set({state,reason,next_wake_at:nextWake,observed_revision:item.revision}).where(live(current.id));return null;

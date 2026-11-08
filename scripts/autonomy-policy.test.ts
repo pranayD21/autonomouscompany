@@ -30,3 +30,13 @@ test("authority rejects ambiguous contacts and malformed addresses",()=>{
  assert.equal(caseAuthority.safeParse({...authority,contacts:[...authority.contacts,...authority.contacts]}).success,false);
  assert.equal(caseAuthority.safeParse({...authority,contacts:[{...authority.contacts[0],destination:"not an address"}]}).success,false);
 });
+
+test("synthetic completion requires current recorded outcome evidence and never verifies real success",()=>{
+ const stop:CaseDecision={tool:"stop_case",outcome:"synthetic_demo_completed",summary:"Fictional scenario complete",reason:"Recorded synthetic result",evidence_refs:["outcome:demo"]};
+ const ctx={...context,evidence_refs:["outcome:demo"],current_outcome_refs:["outcome:demo"]};
+ assert.equal(checkCaseDecision(authority,stop,ctx),null);
+ assert.equal(checkCaseDecision(authority,stop,{...ctx,current_outcome_refs:[]}),"CURRENT_OUTCOME_REQUIRED");
+ assert.equal(checkCaseDecision(authority,{...stop,evidence_refs:[]},ctx),"CURRENT_OUTCOME_REQUIRED");
+ assert.equal(checkCaseDecision(authority,stop,{...ctx,uncertain_dispatch:true}),"DISPATCH_NEEDS_RECONCILIATION");
+ assert.equal(checkCaseDecision(authority,{...stop,outcome:"goal_met"},ctx),"OUTCOME_NOT_VERIFIED");
+});

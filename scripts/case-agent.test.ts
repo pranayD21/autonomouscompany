@@ -8,5 +8,15 @@ test("case session pins its acting identity and version without credentials in m
 });
 test("case tools reject secret-bearing URLs and expose only explicit tools",()=>{
  for(const url of ["http://example.com/mcp","https://user:pass@example.com/mcp","https://example.com/mcp?token=secret","https://example.com/mcp#secret","https://example.com/other"])assert.throws(()=>caseAgentTools(url));
- const config=caseAgentTools("https://example.com/mcp");assert.equal(config.tools.default_config.permission,"deny");assert.equal(config.tools.configs["assurance.case_get"].permission,"allow");assert.equal("headers" in config.mcp_servers[0],false);
+ const config=caseAgentTools("https://example.com/mcp","11111111-1111-4111-8111-111111111111");assert.equal(config.tools.default_config.permission,"deny");assert.equal(config.tools.configs["assurance.case_get"].permission,"allow");assert.equal("headers" in config.mcp_servers[0],false);
+});
+
+test("case-specific connector URL separates provider sessions and rejects malformed case IDs",()=>{
+ const a="11111111-1111-4111-8111-111111111111",b="22222222-2222-4222-8222-222222222222";
+ assert.equal(caseAgentTools("https://example.com/mcp",a).mcp_servers[0].url,`https://example.com/mcp/${a}`);
+ assert.notEqual(caseAgentTools("https://example.com/mcp",a).mcp_servers[0].url,caseAgentTools("https://example.com/mcp",b).mcp_servers[0].url);
+ assert.throws(()=>caseAgentTools("https://example.com/mcp","../other"));
+ assert.throws(()=>caseAgentTools("https://example.com/mcp"));
+ assert.throws(()=>caseAgentTools(`https://example.com/mcp/${b}`,a));
+ assert.throws(()=>caseAgentTools("https://example.com/other",a));
 });
