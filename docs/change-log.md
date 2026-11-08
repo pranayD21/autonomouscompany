@@ -1,5 +1,13 @@
 # Change log
 
+## Save agent reviews without an open browser
+
+Extracted completion validation and first-valid-result persistence into `backend/crew-completion.ts`. Both manual status reads and the new scheduler validate against immutable run inputs, including earlier case revisions. Added `backend/crew-monitor.ts`, `backend/crew-worker.ts`, and migration 0010 for durable check times, leases, coarse status, and invocation IDs. The worker reads at most five existing sessions per delivery; it never starts inference or sends correspondence. Corrections re-enable checking, and concurrent correction requests retain their schedule. Failed/cancelled sessions, rejected completed output, and pending approvals need human attention.
+
+Six database tests passed on disposable branch `crew-monitor-check`, including concurrent delivery, input revisions, first-result retention, invalid evidence, approvals, provider failures, delegation, lease recovery, correction races, and batch limits. Fourteen validation regressions and `npm run build` passed. A real 01:16 UTC scheduler delivery on that branch read one previously completed synthetic Naïve session and saved one valid result, with zero failures. The row's invocation ID matched the Function log. No new model run was started. Anonymous and forged scheduler requests returned 401.
+
+Applied migration 0010 to production and deployed `crewpoll`, the shared case API change, and the five-minute `crew-monitor` trigger. The existing reply trigger remains enabled. Production rejects forged scheduler requests, hosted E2E passed after deployment, and the actual operator session still reports crew access enabled. Gateway inference remains blocked by credits. Deleted the temporary test branch and closed the verification browser tab without signing the operator out. Added crew-monitoring.md and updated the docs index, architecture, Neon operations, and implementation status. Production had no unfinished sessions at deployment; the live read-and-save check used the isolated copy.
+
 ## Voice agents aligned with the workplace demo
 
 Updated `backend/providers/voice-config.ts` so the default hosted demo follows the fictional pharmaceutical-office chemical burn. Unknown employer, location, policy, claim, treatment, and money details remain unknown. The agents ask one question at a time, separate workers' compensation from personal health coverage, and do not claim a submission or outcome. The old bill/EOB example is optional and separate. Updated the case-call prompt to use the same insurer-facing boundaries.

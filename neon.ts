@@ -11,6 +11,11 @@ export default defineConfig({
   auth: true,
   aiGateway: true,
   functions: {
+    crewpoll: {
+      name: "Assurance review monitor",
+      source: "./backend/crew-worker.ts",
+      env: { NAIVE_API_KEY: { value: process.env.NAIVE_API_KEY, required: true } },
+    },
     replypoll: {
       name: "Assurance reply monitor",
       source: "./backend/reply-worker.ts",
@@ -43,6 +48,7 @@ export default defineConfig({
     },
   },
   triggers: {
+    "crew-monitor": { type: "schedule", function: "crewpoll", functionPath: "/poll", cron: "*/5 * * * *" },
     "reply-monitor": { type: "schedule", function: "replypoll", functionPath: "/poll", cron: "*/5 * * * *" },
   },
   // Branch policy: per-branch tuning

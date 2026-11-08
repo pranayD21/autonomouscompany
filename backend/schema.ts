@@ -30,6 +30,12 @@ export const crewRuns = pgTable("advocacy_crew_runs", {
   completed_at: timestamp("completed_at", { withTimezone: true }),
   repair_requested_at: timestamp("repair_requested_at", { withTimezone: true }),
   repair_sent_at: timestamp("repair_sent_at", { withTimezone: true }),
+  poll_after: timestamp("poll_after", { withTimezone: true }).defaultNow(),
+  poll_lease_id: uuid("poll_lease_id"),
+  poll_lease_until: timestamp("poll_lease_until", { withTimezone: true }),
+  poll_checked_at: timestamp("poll_checked_at", { withTimezone: true }),
+  poll_status: text("poll_status"),
+  poll_invocation_id: text("poll_invocation_id"),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, t => [uniqueIndex("advocacy_crew_case_revision_idx").on(t.case_id,t.case_revision)]);
 

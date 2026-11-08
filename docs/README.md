@@ -23,4 +23,6 @@ Every repository change must update the relevant documentation in the same chang
 
 - [Scheduled reply monitoring](reply-monitoring.md): owner controls, Neon trigger, retries, leases, and verification.
 
+- [Scheduled review saving](crew-monitoring.md): Naïve session checks, immutable validation, leases, and recovery.
+
 - [Hosted frontend](hosting.md): Vercel build, public configuration, exact origins, and verification.

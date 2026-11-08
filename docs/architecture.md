@@ -2,6 +2,8 @@
 
 ## Intended agent architecture
 
+Completed Naïve reviews now have a background persistence path. `backend/crew-completion.ts` shares immutable-input validation between the case API and `backend/crew-monitor.ts`; `backend/crew-worker.ts` exposes the authenticated Neon schedule endpoint. This worker only reads existing sessions. See [scheduled review saving](crew-monitoring.md) for leases, retries, and the remaining manual steps.
+
 A Naïve coordinator owns a case and delegates to four proposed specialists:
 
 - Intake: extracts fields, identifies missing information, and attaches evidence references.

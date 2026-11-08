@@ -5,7 +5,7 @@ Updated November 7, 2026. See [stack operations](stack.md) for account configura
 ## Verified
 
 - Neon CLI authentication and the requested production project setup completed. Postgres, Auth, Functions, Realtime, and AI Gateway credentials are provisioned.
-- All ten Drizzle migrations applied. The case Function is deployed with server-only Naïve configuration.
+- All eleven Drizzle migrations applied. The case Function is deployed with server-only Naïve configuration.
 - `npm run build` passes, including TypeScript checks for backend, frontend, scripts, and provider configuration. Latest build: 265 modules, 546.51 kB JavaScript. The chunk-size warning remains.
 - `npm start` serves the preview; use http://localhost:4173.
 - `npm run test:e2e` passes signup/session validation, authenticated Function access, database create/persistence/delete, Realtime delivery, reload, and sign-out. It also verifies 401 for missing/invalid tokens, 400 for negative amounts, and 403 for unlisted users trying to spend crew credits.
@@ -62,3 +62,7 @@ Owner controls, a separate scheduler Function, retry delays, and durable process
 ## Hosted app
 
 https://assurance-claims.vercel.app is deployed on the existing Vercel Hobby account. Hosted signup, password sign-in, session reload, persistence, live updates, cross-user isolation, and sign-out passed. New users can create synthetic cases but cannot spend agent credits until explicitly configured. Only public service URLs are on Vercel; backend credentials remain on Neon. See [hosting](hosting.md).
+
+## Scheduled review saving
+
+The deployed `crewpoll` Function checks existing Naïve sessions every five minutes and saves valid completed reviews independently of browser refresh. A real scheduler delivery on an isolated branch retrieved an existing completed synthetic session and saved its validated result. Six isolated concurrency/recovery tests, fourteen validation regressions, the build, and hosted E2E passed. Production's trigger is enabled, forged scheduler requests return 401, and the operator still has crew access. The test branch was deleted. No additional inference, call, or email was initiated. The UI still requires refresh or reload to show a newly saved review. See [review monitoring](crew-monitoring.md).

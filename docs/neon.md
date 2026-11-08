@@ -53,6 +53,8 @@ AI Gateway reported that no models were available until the organization adds a 
 
 The hosted origin https://assurance-claims.vercel.app is configured in Function CORS, Realtime allowed origins, and Auth trusted domains. For future frontend domains, merge the exact origin into all three. Preserve existing entries. The local preview command uses `127.0.0.1`, while the allowlists contain `localhost`; test with `http://localhost:4173` or deliberately reconcile the origin mismatch.
 
+`crewpoll` and the `crew-monitor` five-minute trigger save completed Naïve reviews independently of the browser. Its only custom credential is `NAIVE_API_KEY`; database credentials are injected by Neon. Migration 0010 adds durable check/lease fields. The existing `replypoll` Function and its schedule remain separate and receive only the AgentMail credentials. See [review monitoring](crew-monitoring.md) and [reply monitoring](reply-monitoring.md).
+
 Official references: https://neon.com/docs/llms.txt and the installed Neon service-specific skills. Preserve existing provider choices, project linkage, env files, and service settings when continuing setup.
 
 Deployment verification: the CLI can report a completed deployment before requests reach the new Function version. Verify an affected authenticated route after deployment, including permission changes. During the crew review test, the old response persisted briefly; waiting and rechecking the same case avoided duplicate work. Migration 0002 was tested on a temporary branch before production; that temporary branch was then deleted.

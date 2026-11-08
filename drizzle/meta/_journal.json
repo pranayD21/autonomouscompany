@@ -71,6 +71,13 @@
       "when": 1794097567328,
       "tag": "0009_dusty_mindworm",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794100437293,
+      "tag": "0010_next_nehzno",
+      "breakpoints": true
     }
   ]
 }

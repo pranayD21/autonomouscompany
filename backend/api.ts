@@ -15,6 +15,7 @@ import {setReplyMonitoring} from "./reply-monitor";
 
 import { crewConfiguration, naiveClient, startCrew, repairCrew } from "./providers/naive";
 import { completedCrewSnapshot } from "./providers/crew-result";
+import {saveCrewCompletion} from "./crew-completion";
 import { actionInput, destinationAllowed, outreachEnabled, readOutreach } from "./providers/outreach";
 import {syncReplies} from "./reply-service";
 import { dispatchOnce } from "./outreach-service";
@@ -149,7 +150,7 @@ app.post("/cases/:id/crew/repair",async c=>{
   await db.update(crewRuns).set({repair_requested_at:new Date()}).where(and(eq(crewRuns.id,run.id),sql`${crewRuns.repair_requested_at} IS NULL`));
   try{
     await repairCrew(run.id,run.session_id,(input.research?.sources??[]).map((s:{id:string;text:string})=>({source_id:s.id,quotes:citationCandidates(s.text)})),potentialDifference(item.bill_cents,item.eob_cents));
-    await db.update(crewRuns).set({repair_sent_at:new Date()}).where(and(eq(crewRuns.id,run.id),sql`${crewRuns.repair_sent_at} IS NULL`));
+    await db.update(crewRuns).set({repair_sent_at:new Date(),poll_after:new Date(),poll_status:"pending"}).where(and(eq(crewRuns.id,run.id),sql`${crewRuns.repair_sent_at} IS NULL`));
     return c.json({status:"repair_sent"},202);
   }catch{return c.json({error:"The correction request is pending. Retry uses the same request and session."},502);}
 });
@@ -162,17 +163,7 @@ app.get("/cases/:id/crew", async (c) => {
   if (run.completed_at && run.snapshot) return c.json({ ...run.snapshot, saved_at: run.completed_at });
   try {
     const session = await naiveClient().sessions.get(run.session_id);
-    const captured=JSON.parse(run.message);
-    const sources = (captured.documents ?? []).filter((d:{confirmed_at:unknown;result:unknown})=>d.confirmed_at&&d.result);
-    const snapshot = completedCrewSnapshot(session,potentialDifference(item.bill_cents,item.eob_cents),sources,captured.research,captured.correspondence?.replies);
-    if (snapshot.output_valid) {
-      // First valid completion wins even if simultaneous refreshes finish out of order.
-      await db.update(crewRuns).set({ snapshot, completed_at: new Date() })
-        .where(and(eq(crewRuns.id, run.id), sql`${crewRuns.completed_at} IS NULL`));
-      const [saved] = await db.select().from(crewRuns).where(eq(crewRuns.id, run.id));
-      return c.json({ ...saved.snapshot!, saved_at: saved.completed_at });
-    }
-    return c.json({ ...snapshot, saved_at: null,repair_requested_at:run.repair_requested_at,repair_sent_at:run.repair_sent_at });
+    return c.json(await saveCrewCompletion(db,run,session));
   } catch {
     return c.json({ error: "The team status is temporarily unavailable. Your case and run ID are preserved; refresh to check the same run." }, 502);
   }
