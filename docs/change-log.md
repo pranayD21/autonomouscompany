@@ -1338,3 +1338,11 @@ Removed the generated `hello` Function, and renamed the npm package to `assuranc
 Deploying removes `hello` from production only if the Neon deploy prunes undeclared Functions; this was not checked.
 
 Verification: `npm run build` and `npm test` on a throwaway Postgres.
+
+## 2026-11-08 — Product showcase and accomplishments
+
+Added [product-showcase.md](product-showcase.md) as a reader-facing pitch for Assurance, linked from the root README and documentation index. It explains the knowledge and savings gaps, the barrier between everyday speech and insurance terminology, phone intake, the installable mobile web app, the company roles, and the technical work behind persistent case handling.
+
+The owner clarified the November 8 discovery report as 300 high-signal prospect posts across GoFundMe, X, and Reddit, found in under two hours from the preceding three days. The showcase, product direction, and verification record now retain that count as posts expressing need, separately from unique people or conversions. The owner also clarified the product's all-language orientation through multilingual models; the copy distinguishes this foundation from tested performance in every language. Code and topic documentation support the mobile, role, evidence, and workflow descriptions. The production and test accomplishments retain their original scope and attribution, including the earlier direct-model email delivery, the restricted real-user case, fictional insurer exchanges, and test-only finance.
+
+Verification: the preceding repository assessment independently passed `npm run build` and all 65 root test files against fresh local Postgres, with zero failures or skips. This change edits Markdown only. Local link validation, `git diff --check`, writing checks, and the editorial source-preservation check passed. Separate copy-editing/read-aloud and fresh-reader passes reviewed the showcase. No application tests were rerun for these Markdown edits, and no deployment, outreach, or company agent execution occurred.

@@ -21,6 +21,10 @@ Call transcripts and case contents stay out of this repository to protect the us
 
 The GTM agent works: a Naïve GTM agent found Assurance's first user on Reddit. Its messages are not stored in this repository. [Permanent company agents](firm-blueprint.md) describes the go-to-market workflow.
 
+## GTM discovery
+
+On November 8, 2026, the owner reported that the GTM scrapers found **300 high-signal prospect posts across GoFundMe, X, and Reddit in under two hours**, looking at complaints from the preceding three days. This is a team-reported count of posts expressing need. It does not establish a deduplicated count of people, contacted leads, conversions, or revenue. The [product showcase](product-showcase.md) uses the figure with that attribution and scope.
+
 ## Other production evidence
 
 - A test case with no outreach went through budget allocation, advocate hiring, session start, first saved goal, and finished onboarding.

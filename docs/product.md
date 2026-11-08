@@ -35,6 +35,12 @@ Track case outcomes, autonomous actions, human interventions, model/call/email c
 
 A Naïve GTM agent found Assurance's first user on Reddit. See [verification](verification.md). The Growth role runs this workflow on a schedule; see [permanent company agents](firm-blueprint.md).
 
+The owner reports that GTM scrapers found 300 high-signal prospect posts across GoFundMe, X, and Reddit in under two hours, examining the preceding three days of public complaints. This discovery result measures posts expressing need, separately from unique prospects, contact, and conversion. See the [product showcase](product-showcase.md) for the pitch and [verification](verification.md) for attribution.
+
+## Language access
+
+Assurance is oriented toward serving people in any language, using multilingual models as its foundation. The product aims to let people describe their situation and understand claim guidance in the language they are comfortable using. It also addresses unfamiliar insurance terminology through conversational explanations. This orientation is distinct from a claim of validated performance in every language across voice, documents, and case handling.
+
 ## Service providers
 
 Naïve runs company agents and isolated case advocates. Neon provides backend services and persistence. AgentPhone handles requested voice calls, AgentMail handles email, and Vercel hosts the frontend. Twilio Verify supplies phone sign-in codes. Stripe is restricted to test-mode finance tools. Provider configuration and verified availability are documented in [implementation status](implementation-status.md) and the individual integration documents.

@@ -4,6 +4,8 @@
 
 Assurance is an agent-run insurance claims advocacy service. It helps injured people and policyholders organize evidence, manage workplace-injury claims and health-insurance disputes, communicate with insurers and claims administrators, and follow up on documented decisions. Each case has an isolated advocate, owner-controlled authorization, and durable records of actions and evidence.
 
+Read the [product showcase](docs/product-showcase.md) for the pitch, mobile experience, company agents, and accomplishments behind Assurance.
+
 ## How it works
 
 1. A customer enters a phone number and asks Assurance to verify it and call them.

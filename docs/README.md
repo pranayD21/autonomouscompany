@@ -7,6 +7,7 @@ Read [../agents.md](../agents.md) first. These Markdown files are the durable pr
 | Document | Read when |
 | --- | --- |
 | [product.md](product.md) | Understanding customers, scope, and business model |
+| [product-showcase.md](product-showcase.md) | Reading the product pitch, accomplishments, mobile experience, and evidence behind the claims |
 | [architecture.md](architecture.md) | Locating code or designing agent and service boundaries |
 | [frontend.md](frontend.md) | Changing the workspace UI, mobile layouts, next-step logic, routes, or copy rules |
 | [neon.md](neon.md) | Configuring backend services, credentials, deployment, and tooling |
