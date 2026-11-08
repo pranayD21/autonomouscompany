@@ -11,7 +11,7 @@ import {queueFirmEvent,reserveFirmHire,type FirmRole} from './firm-events';
 import {naiveClient} from './providers/naive';
 import {naiveFetch} from './providers/naive-capacity';
 import {openCaseToolInstructions} from './providers/case-agent';
-import {ensureCaseInbox,sendLeadInvitation} from './agentmail-webhook';
+import {sendLeadInvitation} from './agentmail-webhook';
 import {readCaseConversation} from './case-messages';
 import {firmTools,firmHarness} from './firm-blueprint';
 
@@ -115,7 +115,7 @@ export async function executeFirmTool(db:NodePgDatabase,role:FirmRole,name:strin
    if(!claimed){
     const [provisioning]=await db.select().from(firmRecords).where(eq(firmRecords.key,`advocate-provision:${staff.authority_id}`));
     if(provisioning)return {case_id:item.id,agent_id:staff.agent_id,state:'provisioning_queued'};
-    // Finding the agent and creating the mailbox are both repeatable, so an interrupted hire resumes once its agent is saved or its attempt has gone stale.
+    // Finding the agent is repeatable, so an interrupted hire resumes once its agent is saved or its attempt has gone stale.
     const stale=Date.now()-new Date(staff.updated_at).getTime()>300000;
     if(staff.state!=='hiring'||(!staff.agent_id&&!stale))throw Error('HIRING_RESERVED_RECONCILE_EXISTING_RESOURCES');
    }
@@ -125,14 +125,11 @@ export async function executeFirmTool(db:NodePgDatabase,role:FirmRole,name:strin
    if(!agent)agent=await client.agents.create({name:agentName,harness:firmHarness(),model:process.env.ASSURANCE_FIRM_MODEL??'openai/gpt-5.4-mini',system:`You are the exclusive Assurance advocate for case ${item.id}. ${openCaseToolInstructions}`,budget:{period:'month',cap_micro_usd:staff.budget_micro_usd,max_task_micro_usd:staff.budget_micro_usd},tools:{default_config:{permission:'deny'},configs:{}},mcp_servers:[],handoffs:false,metadata:{assurance_case:item.id,assurance_authority:staff.authority_id}});
    if(agent.metadata.assurance_case!==item.id||agent.metadata.assurance_authority!==staff.authority_id)throw Error('ADVOCATE_BINDING_MISMATCH');
    await db.update(firmStaffing).set({agent_id:agent.id,state:'hiring',updated_at:new Date()}).where(eq(firmStaffing.case_id,item.id));
-   const verified=item.owner_id.startsWith('phone:')?null:(await db.execute(sql`SELECT u.email FROM neon_auth."user" u WHERE u.id=${item.owner_id} AND (u."emailVerified"=true OR EXISTS(SELECT 1 FROM advocacy_firm_records r WHERE r.key='verified-email:'||u.id AND r.kind='email_verification' AND r.payload->>'email'=lower(u.email)))`)).rows[0]?.email;
-   const ownerEmail=typeof verified==='string'&&z.email().safeParse(verified).success?verified.toLowerCase():undefined;
-   const mailbox=await ensureCaseInbox(db,{caseId:item.id,clientEmail:ownerEmail??(item.intake.contact_email||undefined),clientEmailVerified:!!ownerEmail});
    await db.transaction(async tx=>{
     await tx.insert(firmRecords).values({key:`advocate-provision:${staff.authority_id}`,kind:'advocate_provisioning',actor:role,case_id:item.id,payload:{authority_id:staff.authority_id,agent_id:agent.id,general_version:agent.current_version,operation_id:operationId,state:'queued'}}).onConflictDoNothing();
     await tx.update(caseAgentSetups).set({state:'queued',reason:'Front Desk hired the advocate; isolated provisioning is queued.',next_check_at:new Date(),lease_id:null,lease_until:null}).where(eq(caseAgentSetups.authority_id,staff.authority_id));
    });
-   return {case_id:item.id,agent_id:agent.id,inbox:mailbox.email,state:'provisioning_queued'};
+   return {case_id:item.id,agent_id:agent.id,state:'provisioning_queued'};
   }
   if(name==='update_board_card'){
    const board=z.string().min(1).parse(process.env.ASSURANCE_FIRM_BOARD_ID);const status=z.enum(['todo','doing','blocked','done']).parse(raw.status),title=z.string().min(1).max(200).parse(raw.title),body=z.string().max(20000).parse(raw.body??'');

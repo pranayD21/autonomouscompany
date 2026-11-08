@@ -1,5 +1,5 @@
 import {createHash,createHmac,timingSafeEqual} from 'node:crypto';
-import {and,desc,eq,sql} from 'drizzle-orm';
+import {and,desc,eq,sql,or} from 'drizzle-orm';
 import type {NodePgDatabase} from 'drizzle-orm/node-postgres';
 import {Hono} from 'hono';
 import {z} from 'zod';
@@ -51,19 +51,22 @@ export async function ingestAgentMailEvent(db:NodePgDatabase,input:unknown,reque
   const [mapping]=await tx.select().from(caseMailboxes).where(eq(caseMailboxes.inbox_id,m.inbox_id));
   const publicInbox=process.env.AGENTMAIL_PUBLIC_INBOX_ID??process.env.AGENTMAIL_INBOX_ID;
   if(!mapping&&m.inbox_id!==publicInbox)return {ignored:true};
+  // In the shared inbox, a thread this firm started belongs to its case. Anything else is a new lead.
+  const threadMatch=mapping?null:(await tx.select({case_id:outreachActions.case_id}).from(outreachActions).where(and(eq(outreachActions.kind,'email'),eq(outreachActions.provider_inbox_id,m.inbox_id),m.thread_id?or(eq(outreachActions.provider_thread_id,m.thread_id),eq(outreachActions.provider_id,m.message_id)):eq(outreachActions.provider_id,m.message_id))).limit(1))[0];
+  const route=mapping??(threadMatch?{case_id:threadMatch.case_id,inbox_id:m.inbox_id,email:process.env.AGENTMAIL_PUBLIC_EMAIL??m.inbox_id,client_email:null,client_email_verified_at:null}:null);
   const body=(m.extracted_text?.trim()?m.extracted_text:m.text??'').trim();
   let leadId:string|undefined,state='recorded';
-  if(!mapping&&event.event_type.startsWith('message.received')){
+  if(!route&&event.event_type.startsWith('message.received')){
    const sender=mailbox(m.from??'');if(!sender)throw Error('INVALID_SENDER');
    const [lead]=await tx.insert(emailLeads).values({inbox_id:m.inbox_id,message_id:m.message_id,sender,subject:m.subject??'',body,attachments:m.attachments??[],state:event.event_type==='message.received'&&authenticated(m)?'new':'held'}).onConflictDoNothing().returning();
    leadId=lead?.id??(await tx.select().from(emailLeads).where(and(eq(emailLeads.inbox_id,m.inbox_id),eq(emailLeads.message_id,m.message_id))))[0]?.id;state='lead';
    if(lead)await queueFirmEvent(tx,{role:'frontdesk',event_key:`email-lead:${lead.id}`,kind:'new_email_lead',payload:{lead_id:lead.id,held:lead.state==='held'}});
   }
-  if(mapping){
-   if(m.attachments?.length)await queueEmailAttachments(tx,{caseId:mapping.case_id,inboxId:m.inbox_id,messageId:m.message_id,attachments:m.attachments,held:event.event_type!=='message.received'||!authenticated(m)});
-   const [item]=await tx.select().from(cases).where(eq(cases.id,mapping.case_id));
+  if(route){
+   if(m.attachments?.length)await queueEmailAttachments(tx,{caseId:route.case_id,inboxId:m.inbox_id,messageId:m.message_id,attachments:m.attachments,held:event.event_type!=='message.received'||!authenticated(m)});
+   const [item]=await tx.select().from(cases).where(eq(cases.id,route.case_id));
    if(!item)throw Error('CASE_NOT_FOUND');
-   if(event.event_type==='message.received'&&mapping.client_email_verified_at&&mailbox(m.from??'')===mailbox(mapping.client_email??'')&&authenticated(m)&&m.to?.some(to=>mailbox(to)===mailbox(mapping.email))&&(body||m.attachments?.length)){
+   if(event.event_type==='message.received'&&route.client_email_verified_at&&mailbox(m.from??'')===mailbox(route.client_email??'')&&authenticated(m)&&m.to?.some(to=>mailbox(to)===mailbox(route.email))&&(body||m.attachments?.length)){
     if(body)await sendVerifiedEmailCaseMessage(tx,item.id,item.owner_id,{id:messageUuid(m.message_id),text:body});
     else{
      await queueCaseAgentEvent(tx,item.id,`owner-email-attachments:${m.message_id}`,'claimant_updated_case',{message_id:m.message_id,attachment_count:m.attachments?.length,source:'verified_owner_email'});
@@ -75,13 +78,13 @@ export async function ingestAgentMailEvent(db:NodePgDatabase,input:unknown,reque
     const action=actions.find(a=>a.kind==='email'&&((m.thread_id&&a.provider_thread_id===m.thread_id)||a.provider_id===m.message_id));
     if(action&&['message.bounced','message.rejected'].includes(event.event_type))await tx.update(outreachActions).set({provider_status:event.event_type,checked_at:new Date()}).where(eq(outreachActions.id,action.id));
     if(action&&event.event_type.startsWith('message.received')&&m.thread_id&&m.timestamp&&m.from){
-     const reply=normalizeReply({...m,thread_id:m.thread_id,timestamp:m.timestamp,from:m.from,to:m.to??[],labels:[...(m.labels??[]),'received',...(event.event_type==='message.received'?[]:[event.event_type.split('.').at(-1)!])]} as Parameters<typeof normalizeReply>[0],action,m.inbox_id,mapping.email);
+     const reply=normalizeReply({...m,thread_id:m.thread_id,timestamp:m.timestamp,from:m.from,to:m.to??[],labels:[...(m.labels??[]),'received',...(event.event_type==='message.received'?[]:[event.event_type.split('.').at(-1)!])]} as Parameters<typeof normalizeReply>[0],action,m.inbox_id,route.email);
      if(reply)await syncReplies(tx,action,item.owner_id,async()=>({replies:[reply],partial:false}));
     }
     await queueCaseAgentEvent(tx,item.id,`agentmail:${event.event_id}`,event.event_type,{message_id:m.message_id,thread_id:m.thread_id,source:'agentmail',trusted_owner:false});state='case_evidence';
    }
   }
-  await tx.insert(agentmailEvents).values({event_id:event.event_id,payload_hash:hash,event_type:event.event_type,inbox_id:m.inbox_id,message_id:m.message_id,payload:event,state,case_id:mapping?.case_id,lead_id:leadId,processed_at:new Date()});
+  await tx.insert(agentmailEvents).values({event_id:event.event_id,payload_hash:hash,event_type:event.event_type,inbox_id:m.inbox_id,message_id:m.message_id,payload:event,state,case_id:route?.case_id,lead_id:leadId,processed_at:new Date()});
   return {state,lead_id:leadId};
  });
 }
