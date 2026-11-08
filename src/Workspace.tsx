@@ -3,7 +3,7 @@ import {OnboardingCallNotice} from './phone-onboarding';
 import {GmailConnection} from './GmailConnection';
 import {EmailLeads} from "./EmailLeads";
 import {useCallback, useEffect, useRef, useState, type ReactNode} from "react";
-import {AnimatePresence, motion} from "motion/react";
+import {AnimatePresence, animate, motion, useMotionValue, useTransform} from "motion/react";
 import {useLiveQuery} from "@neon/realtime-react";
 import type {SealedLiveQuery} from "@neon/realtime/client";
 import type {BillCase} from "../backend/schema";
@@ -16,6 +16,7 @@ import {Autonomy} from "./Autonomy";
 import {Outcomes} from "./Outcomes";
 import {ArrowLeft, Close, Home, Info, LogOut, Plus, User} from "./Icons";
 import {isPersonName} from "./format";
+import {goToHash} from "./mobile-nav";
 import {Sidebar, SidebarLink, SidebarSection, SidebarText} from "./ui/Sidebar";
 import {Overview} from "./Overview";
 import {ClaimProgress} from "./ui/ClaimProgress";
@@ -42,7 +43,7 @@ function useRoute() {
     window.addEventListener("hashchange", sync);
     return () => window.removeEventListener("hashchange", sync);
   }, []);
-  const go = (hash: string) => { if (window.location.hash !== hash) window.location.hash = hash; window.scrollTo({top: 0}); };
+  const go = (hash: string) => { goToHash(hash); window.scrollTo({top: 0}); };
   return [route, go] as const;
 }
 
@@ -162,6 +163,66 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
   const progress = useProgressMap([item], userId, crewEnabled).get(item.id);
   // On phones the Case info sheet is a full-screen bottom sheet that slides up from the screen edge.
   const phoneSheet = typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches;
+  // Phones: swipe the sheet down to close it, like a native bottom sheet. The sheet follows the finger from the
+  // handle or header, and from the body too when the body is scrolled to the top and the swipe starts downward.
+  // Touch events (not pointer events) so the body can claim the gesture before iOS starts scrolling it.
+  const sheetRef = useRef<HTMLDivElement>(null), sheetBodyRef = useRef<HTMLDivElement>(null);
+  const sheetY = useMotionValue(0);
+  const backdropOpacity = useTransform(sheetY, y => phoneSheet ? Math.max(0, 1 - y / (sheetRef.current?.offsetHeight || 600)) : 1);
+  useEffect(() => {
+    const sheet = sheetRef.current, body = sheetBodyRef.current;
+    if (!infoOpen || !phoneSheet || !sheet || !body) return;
+    type Gesture = {id: number; x0: number; y0: number; fromBody: boolean; mode: "pending" | "drag" | "off"; samples: [number, number][]};
+    let g: Gesture | null = null;
+    const find = (list: TouchList, id: number) => Array.from(list).find(t => t.identifier === id);
+    // True when the touch is inside something already scrolled down, so the swipe should scroll it back up instead.
+    const scrolled = (el: EventTarget | null) => { for (let n = el as Element | null; n && n !== sheet; n = n.parentElement) if (n.scrollTop > 0) return true; return false; };
+    const onStart = (e: TouchEvent) => {
+      if (g?.mode === "drag") return;
+      const target = e.target as Element;
+      if (e.touches.length !== 1 || target.closest("input, textarea, select, [contenteditable]")) { g = null; return; }
+      const t = e.touches[0], fromBody = body.contains(target);
+      g = {id: t.identifier, x0: t.clientX, y0: t.clientY, fromBody, mode: fromBody && scrolled(target) ? "off" : "pending", samples: []};
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!g || g.mode === "off") return;
+      const t = find(e.touches, g.id);
+      if (!t) return;
+      const dx = t.clientX - g.x0, dy = t.clientY - g.y0;
+      if (g.mode === "pending") {
+        if (g.fromBody) {
+          // Decide on the first move: iOS ignores preventDefault once it has started scrolling.
+          if (dy <= 0 || Math.abs(dx) > Math.abs(dy) || scrolled(e.target)) { g.mode = "off"; return; }
+        } else if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return; // tap slop keeps header buttons tappable
+        g.mode = "drag";
+        sheetY.stop();
+      }
+      if (e.cancelable) e.preventDefault();
+      const y = Math.max(0, dy);
+      sheetY.set(y);
+      g.samples.push([e.timeStamp, y]);
+      while (g.samples.length > 2 && e.timeStamp - g.samples[0][0] > 100) g.samples.shift();
+    };
+    const onEnd = (e: TouchEvent) => {
+      if (!g || find(e.touches, g.id)) return;
+      const done = g; g = null;
+      if (done.mode !== "drag") return;
+      const [t0, y0] = done.samples[0] ?? [0, 0], [t1, y1] = done.samples[done.samples.length - 1] ?? [0, 0];
+      const velocity = t1 > t0 ? (y1 - y0) / (t1 - t0) * 1000 : 0;
+      if (e.type === "touchend" && (sheetY.get() > 90 || (velocity > 450 && sheetY.get() > 12))) setInfoOpen(false);
+      else animate(sheetY, 0, {type: "spring", bounce: 0, duration: 0.3});
+    };
+    sheet.addEventListener("touchstart", onStart, {passive: true});
+    sheet.addEventListener("touchmove", onMove, {passive: false});
+    sheet.addEventListener("touchend", onEnd);
+    sheet.addEventListener("touchcancel", onEnd);
+    return () => {
+      sheet.removeEventListener("touchstart", onStart);
+      sheet.removeEventListener("touchmove", onMove);
+      sheet.removeEventListener("touchend", onEnd);
+      sheet.removeEventListener("touchcancel", onEnd);
+    };
+  }, [infoOpen, phoneSheet, sheetY]);
   useEffect(() => {
     if (!infoOpen) return;
     closeRef.current?.focus();
@@ -169,7 +230,6 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
     window.addEventListener("keydown", onKey);
     return () => { window.removeEventListener("keydown", onKey); openRef.current?.focus({preventScroll: true}); };
   }, [infoOpen]);
-
   return <CaseDocumentsProvider key={`${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision}><article className="case claim-workspace claim-chat-page" data-case-id={item.id}>
     <Autonomy key={item.id} caseId={item.id} userId={userId} enabled={crewEnabled} compact render={({status, activity, canStart, started, start, busy: starting, error}) => <section id="section-conversation" className="chat-card-wrap" aria-label="Conversation">
       <CaseChat key={`chat-${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision} title={item.title} pausedNote={!canStart} fallbackStatus={progress?.loaded ? {label: progress.title, owner: progress.owner} : undefined}
@@ -183,15 +243,15 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
           {error && <p role="alert">{error}</p>}
         </div>}</>}>
         <AnimatePresence>{infoOpen && <motion.div key="info" className="chat-sheet-layer" initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} transition={{duration: 0.2}}>
-          <div className="chat-sheet-backdrop" onClick={() => setInfoOpen(false)} aria-hidden="true"/>
-          <motion.div className="chat-sheet" role="dialog" aria-modal="true" aria-labelledby="chat-sheet-title"
-            initial={phoneSheet ? {y: "100%"} : {y: 24, opacity: 0}} animate={{y: 0, opacity: 1}} exit={phoneSheet ? {y: "100%"} : {y: 24, opacity: 0}} transition={{type: "spring", bounce: phoneSheet ? 0 : 0.15, duration: phoneSheet ? 0.38 : 0.45}}>
+          <motion.div className="chat-sheet-backdrop" style={{opacity: backdropOpacity}} onClick={() => setInfoOpen(false)} aria-hidden="true"/>
+          <motion.div ref={sheetRef} className="chat-sheet" role="dialog" aria-modal="true" aria-labelledby="chat-sheet-title" style={{y: sheetY}}
+            initial={phoneSheet ? {y: window.innerHeight} : {y: 24, opacity: 0}} animate={{y: 0, opacity: 1}} exit={phoneSheet ? {y: window.innerHeight} : {y: 24, opacity: 0}} transition={{type: "spring", bounce: phoneSheet ? 0 : 0.15, duration: phoneSheet ? 0.38 : 0.45}}>
             <span className="chat-sheet-grab" aria-hidden="true"/>
             <header className="chat-sheet-head">
               <div><h2 id="chat-sheet-title">Case info</h2><p>{caseKind(item)}</p></div>
               <button ref={closeRef} type="button" className="chat-round" onClick={() => setInfoOpen(false)} aria-label="Close case info"><Close size={16}/></button>
             </header>
-            <div className="chat-sheet-body">
+            <div ref={sheetBodyRef} className="chat-sheet-body">
               <section className="sheet-block" aria-label="Where things stand"><h3>Where things stand</h3><ClaimProgress progress={progress}/></section>
               {progress?.outcome && <section className="sheet-block"><h3>Result</h3><Outcomes caseId={item.id} userId={userId} revision={item.revision}/></section>}
               <section className="sheet-block"><h3>Your documents</h3><Documents bare/></section>

@@ -26,7 +26,7 @@ try{
  });
  await page.goto(url);await expect(page.getByRole('log')).toContainText('What date did the incident happen?');
  await page.getByRole('textbox',{name:'Message Assurance',exact:true}).fill('November 1.');await page.getByRole('button',{name:'Send message',exact:true}).click();
- await expect(page.getByRole('log')).toContainText('November 1.');await expect(page.getByRole('textbox',{name:'Message Assurance',exact:true})).toHaveValue('');expect(posts).toHaveLength(1);
+ await expect(page.getByRole('log')).toContainText('November 1.');await expect(page.getByRole('textbox',{name:'Message Assurance',exact:true})).toHaveValue('');expect(posts).toHaveLength(1);await expect(page.getByText('Message saved',{exact:false})).toHaveCount(0);
  await page.reload();await expect(page.getByRole('log')).toContainText('November 1.');
  failNext=true;await page.getByRole('textbox',{name:'Message Assurance',exact:true}).fill('The location was the lab.');await page.getByRole('button',{name:'Send message',exact:true}).click();
  await expect(page.getByRole('alert')).toContainText('Temporary save failure');await expect(page.getByRole('log')).not.toContainText('The location was the lab.');
@@ -36,5 +36,5 @@ try{
  await page.getByRole('textbox',{name:'Message Assurance',exact:true}).fill('Keep this note for later.');await page.getByRole('button',{name:'Send message',exact:true}).click();await expect(page.getByRole('log')).toContainText('Keep this note for later.');
  await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
  await page.screenshot({path:'test-results/case-chat-mobile.png',fullPage:true});
- console.log('PASS website chat: saved messages survive reload; failed send is absent and retries same ID; one in-composer uploader; stopped-work notice; mobile width. No external communications.');
+ console.log('PASS website chat: sent messages clear the draft with no saved banner and survive reload; failed send is absent and retries same ID; one in-composer uploader; stopped-work notice; mobile width. No external communications.');
 }finally{await browser.close();server.kill();unlinkSync(path);}

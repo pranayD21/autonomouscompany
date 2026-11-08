@@ -54,12 +54,53 @@ export function Sidebar({children, footer}: {children: ReactNode; footer?: React
     };
   }, [sheet, mobile]);
 
+  useEffect(() => {
+    if (!mobile) return;
+    let start: {x: number; y: number; identifier: number; opening: boolean} | null = null;
+    const selectedText = () => !!window.getSelection()?.toString();
+    const onStart = (event: TouchEvent) => {
+      start = null;
+      const touch = event.touches[0];
+      const target = event.target instanceof Element ? event.target : null;
+      if (event.defaultPrevented || event.touches.length !== 1 || !touch || !target || selectedText() || document.querySelector(".chat-sheet")) return;
+      if (target.closest('input, textarea, select, button, a, [contenteditable]:not([contenteditable="false"]), [role="slider"], .ov-filters')) return;
+      for (let element: Element | null = target; element && element !== document.body; element = element.parentElement) {
+        if (element.scrollWidth > element.clientWidth + 1 && /auto|scroll/.test(getComputedStyle(element).overflowX)) return;
+      }
+      const inSheet = !!sheetRef.current?.contains(target);
+      if (sheet ? inSheet : touch.clientX >= 0 && touch.clientX <= 28) start = {x: touch.clientX, y: touch.clientY, identifier: touch.identifier, opening: !sheet};
+    };
+    const onMove = (event: TouchEvent) => {
+      if (!start) return;
+      const touch = event.touches[0];
+      if (event.defaultPrevented || event.touches.length !== 1 || !touch || touch.identifier !== start.identifier || selectedText()) { start = null; return; }
+      const deltaX = touch.clientX - start.x, deltaY = touch.clientY - start.y;
+      const distance = start.opening ? deltaX : -deltaX;
+      if ((Math.abs(deltaY) > 10 && Math.abs(deltaY) >= Math.abs(deltaX)) || distance < -10) { start = null; return; }
+      if (distance > 10 && distance > Math.abs(deltaY) * 1.5) {
+        if (event.cancelable) event.preventDefault();
+        if (distance > 56) { const opening = start.opening; start = null; setSheet(opening); }
+      }
+    };
+    const onEnd = () => { start = null; };
+    window.addEventListener("touchstart", onStart, {passive: true});
+    window.addEventListener("touchmove", onMove, {passive: false});
+    window.addEventListener("touchend", onEnd);
+    window.addEventListener("touchcancel", onEnd);
+    return () => {
+      window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+      window.removeEventListener("touchcancel", onEnd);
+    };
+  }, [mobile, sheet]);
+
   const brand = <a href="#home" className="sidebar-brand" aria-label="Assurance home"><span className="sidebar-brand-mark"><Logo size={24} aria-hidden="true"/></span><SidebarText className="sidebar-brand-word">assurance<span className="brand-period">.</span></SidebarText></a>;
 
   if (mobile) return <SidebarContext.Provider value={{open: true, mobile: true, close: () => setSheet(false)}}>
     <div className="mobile-bar">{brand}<button className="icon-button" aria-label="Open navigation" aria-expanded={sheet} aria-controls={sheet ? sheetId : undefined} onClick={() => setSheet(true)}><Menu/></button></div>
     <AnimatePresence>{sheet && <>
-      <motion.div className="sheet-scrim" initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} onClick={() => setSheet(false)}/>
+      <motion.div className="sheet-scrim" initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} transition={reduce ? {duration: 0} : undefined} onClick={() => setSheet(false)}/>
       <motion.nav ref={sheetRef} id={sheetId} className="sheet" role="dialog" aria-modal="true" aria-label="Workspace navigation" initial={{x: "-100%"}} animate={{x: 0}} exit={{x: "-100%"}} transition={reduce ? {duration: 0} : {duration: 0.3, ease: "easeInOut"}}>
         <div className="sheet-top">{brand}<button className="icon-button" aria-label="Close navigation" onClick={() => setSheet(false)}><Close/></button></div>
         <div className="sidebar-scroll">{children}</div>

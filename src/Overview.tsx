@@ -1,20 +1,20 @@
-// Signed-in overview (#workspace). Layout ideas from 21st.dev: "Stats Bento"
-// (ui layout, MIT) for the mixed-size stat cards with a dark hatched lead card,
-// "Stats cards with links" (Ephraim Duncan) for the linked attention card, and
-// "KPI Tile" (OSAGI) for the compact metric. Restyled in the landing page's
-// paper/ink/blue palette; the case list reuses the landing "How it works" rows.
+// Signed-in overview (#workspace). One plain summary card (Needs you / In progress /
+// Reported savings) styled like the case list, in the landing page's paper/ink/blue
+// palette; the case list reuses the landing "How it works" rows.
 import {useState, type ReactNode} from "react";
 import {AnimatePresence, motion} from "motion/react";
 import type {BillCase} from "../backend/schema";
 import {PhoneIntakes} from "./PhoneIntakes";
-import {ArrowUpRight, Plus} from "./Icons";
+import {ArrowUpRight, Check, Clock, Plus} from "./Icons";
 import {OWNER_LABEL, useProgressMap, type Owner, type Progress} from "./progress";
 import {NumberTicker} from "./ui/motion";
 import {isPersonName} from "./format";
 import "./overview.css";
 
 const ease = [0.16, 1, 0.3, 1] as const;
-const money = (cents: number) => new Intl.NumberFormat("en-US", {style: "currency", currency: "USD"}).format(cents / 100);
+// Whole dollars when the amount has no cents or is $1,000 or more ("$400", "$12,900"); otherwise "$412.37".
+const wholeDollars = (cents: number) => cents % 100 === 0 || cents >= 100000;
+const money = (cents: number, whole = wholeDollars(cents)) => new Intl.NumberFormat("en-US", {style: "currency", currency: "USD", ...(whole ? {maximumFractionDigits: 0, minimumFractionDigits: 0} : {})}).format(cents / 100);
 const caseKind = (item: BillCase) => item.case_type === "workplace_injury" ? "Workplace injury" : "Health insurance";
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const ORDER: Record<Owner, number> = {you: 0, waiting: 1, done: 2};
@@ -22,18 +22,18 @@ const ORDER: Record<Owner, number> = {you: 0, waiting: 1, done: 2};
 type Filter = "all" | Owner;
 const FILTERS: {id: Filter; label: string}[] = [{id: "all", label: "All"}, {id: "you", label: "Needs you"}, {id: "waiting", label: "Waiting"}, {id: "done", label: "Resolved"}];
 
+const EMPTY: Record<Filter, [string, string]> = {
+  all: ["No cases yet.", "Open a case and Assurance takes it from there."],
+  you: ["Nothing needs you right now.", "We’ll flag anything that does."],
+  waiting: ["Nothing in progress.", "Cases Assurance is working on show up here."],
+  done: ["No resolved cases yet.", "Finished cases show up here."],
+};
+
 function greeting(name: string) {
   const hour = new Date().getHours();
   const salutation = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   // Phone-only and email-only accounts have no real name; greet them without echoing the number or address.
   return isPersonName(name) ? `${salutation}, ${name.trim().split(/\s+/)[0]}` : salutation;
-}
-
-function summary(total: number, you: number, done: number, loaded: boolean) {
-  if (!loaded) return "Checking on your cases…";
-  const handling = total - you - done;
-  if (you === 0) return handling > 0 ? `Nothing needs you right now. Assurance is handling ${handling === 1 ? "your open case" : `all ${handling} open cases`}.` : "Nothing needs you right now.";
-  return `${plural(you, "case")} ${you === 1 ? "needs" : "need"} you.${handling > 0 ? ` Assurance is handling the other ${handling === 1 ? "one" : handling}.` : ""}`;
 }
 
 export function Overview({cases, userId, userName, crewEnabled, live}: {cases: readonly BillCase[]; userId: string; userName: string; crewEnabled: boolean; live: ReactNode}) {
@@ -56,7 +56,6 @@ export function Overview({cases, userId, userName, crewEnabled, live}: {cases: r
       <div>
         <p className="eyebrow">{greeting(userName)}</p>
         <h1 className="ov-title">Your cases<span className="ov-dot">.</span></h1>
-        <p className="ov-summary" aria-live="polite">{summary(rows.length, counts.you, counts.done, loaded)}</p>
       </div>
       <div className="ov-head-side">
         {live}
@@ -66,39 +65,29 @@ export function Overview({cases, userId, userName, crewEnabled, live}: {cases: r
 
     <PhoneIntakes userId={userId}/>
 
-    <section className="ov-bento" aria-label="Case summary">
-      <motion.article className="ov-card ov-savings" initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, ease}}>
-        <span className="ov-hatch" aria-hidden="true"/>
-        <span className="ov-chip">Reported savings</span>
-        <strong className="ov-savings-value"><NumberTicker value={saved} format={n => money(Math.round(n))}/></strong>
-        <p>{saved ? `Across ${plural(savedCases, "case")}, from recorded insurer decisions.` : "Shows up once an insurer decision is recorded."}</p>
-      </motion.article>
-
-      <motion.div className="ov-card-slot" initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, delay: 0.06, ease}}>
-        {firstNeedingYou ? <a className="ov-card ov-attention" data-alert="true" href={`#case/${firstNeedingYou.item.id}`}>
-          <span className="ov-card-label">Needs you</span>
-          <strong className="ov-big">{counts.you}</strong>
-          <span className="ov-attention-case">{firstNeedingYou.p!.title}<small>{firstNeedingYou.item.title}</small></span>
-          <span className="ov-card-foot">Open {counts.you > 1 ? "the first one" : "it"}<ArrowUpRight size={14} aria-hidden="true"/></span>
-        </a> : <div className="ov-card ov-attention">
-          <span className="ov-card-label">Needs you</span>
-          <strong className="ov-big">{loaded ? 0 : "–"}</strong>
-          <span className="ov-attention-case">{loaded ? "You’re all caught up." : "Checking…"}<small>We’ll flag anything that needs you here.</small></span>
-        </div>}
-      </motion.div>
-
-      <motion.article className="ov-card ov-mix" initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, delay: 0.12, ease}}>
-        <span className="ov-card-label">All cases</span>
-        <strong className="ov-big">{rows.length}</strong>
-        <span className="ov-meter" role="img" aria-label={`${counts.you} need you, ${counts.waiting} waiting, ${counts.done} resolved`}>
-          {(["you", "waiting", "done"] as const).map(owner => counts[owner] > 0 && <motion.span key={owner} data-owner={owner}
-            initial={{flexGrow: 0}} animate={{flexGrow: counts[owner]}} transition={{duration: 0.8, delay: 0.25, ease}}/>)}
-        </span>
-        <span className="ov-legend">
-          {(["you", "waiting", "done"] as const).map(owner => <span key={owner} data-owner={owner}><i/>{counts[owner]} {OWNER_LABEL[owner].toLowerCase()}</span>)}
-        </span>
-      </motion.article>
-    </section>
+    <motion.section className="ov-stats" aria-label="Case summary" initial={{opacity: 0, y: 8}} animate={{opacity: 1, y: 0}} transition={{duration: 0.4, ease}}>
+      {firstNeedingYou
+        ? <a className="ov-stat" data-alert="true" href={`#case/${firstNeedingYou.item.id}`} aria-label={`${counts.you} ${counts.you === 1 ? "case needs" : "cases need"} you. Open ${firstNeedingYou.item.title}`}>
+            <span className="ov-stat-label">Needs you</span>
+            <strong className="ov-stat-value">{counts.you}</strong>
+            <span className="ov-stat-foot">Open<ArrowUpRight size={13} aria-hidden="true"/></span>
+          </a>
+        : <div className="ov-stat">
+            <span className="ov-stat-label">Needs you</span>
+            <strong className="ov-stat-value">{loaded ? 0 : "–"}</strong>
+            <span className="ov-stat-foot">{loaded ? "All caught up" : "Checking…"}</span>
+          </div>}
+      <div className="ov-stat">
+        <span className="ov-stat-label">In progress</span>
+        <strong className="ov-stat-value">{loaded ? counts.waiting : "–"}</strong>
+        <span className="ov-stat-foot">{counts.done ? `${counts.done} resolved` : "Assurance is on it"}</span>
+      </div>
+      <div className="ov-stat ov-stat--savings">
+        <span className="ov-stat-label">Reported savings</span>
+        <strong className="ov-stat-value"><NumberTicker value={saved} format={n => money(Math.round(n), wholeDollars(saved))}/></strong>
+        <span className="ov-stat-foot">{saved ? `From ${plural(savedCases, "insurer decision")}` : "None recorded yet"}</span>
+      </div>
+    </motion.section>
 
     <section className="ov-list" aria-labelledby="ov-list-heading">
       <div className="ov-list-head">
@@ -117,7 +106,11 @@ export function Overview({cases, userId, userName, crewEnabled, live}: {cases: r
             <CaseRow item={item} p={p} index={i} hovered={hovered === item.id} onHover={() => setHovered(item.id)}/>
           </motion.li>)}
         </AnimatePresence>
-        {visible.length === 0 && <li className="ov-empty">No cases here right now.</li>}
+        {visible.length === 0 && <li className="ov-empty">
+          <span className="ov-empty-icon" aria-hidden="true">{filter === "you" || filter === "all" ? <Check size={16}/> : <Clock size={16}/>}</span>
+          <strong>{EMPTY[filter][0]}</strong>
+          <span>{EMPTY[filter][1]}</span>
+        </li>}
       </ol>
       <a className="ov-new" href="#new"><span className="ov-new-plus" aria-hidden="true"><Plus size={16}/></span>Open another case</a>
     </section>

@@ -133,7 +133,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 /* ---------- Misc content ---------- */
 .surface ul, .surface ol { padding-left: 20px; }
 .surface li { padding: 5px 0; color: var(--quiet); font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
-.surface a:not(.brand):not(.skip-link):not(.sidebar-link):not([class^="ov-"]):not(.pill-link):not(.back-link):not(.text-link) { color: var(--blue); text-underline-offset: 4px; }
+.surface a:not(.brand):not(.skip-link):not(.sidebar-link):not([class^="ov-"]):not(.pill-link):not(.back-link):not(.text-link):not(.primary-link) { color: var(--blue); text-underline-offset: 4px; }
 .surface dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 20px; font-size: 12px; line-height: 1.7; }
 .surface dl > div { min-width: 0; }
 .surface dt { color: var(--quiet); }
@@ -229,7 +229,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .phone-entry form > button { min-height: 48px; }
 .phone-entry > .text-button { margin-top: 18px; text-align: left; }
 .phone-entry .demo-note { font-size: .8rem; }
-.onboarding-call-notice { padding: 16px 20px; margin-bottom: 24px; border: 1px solid var(--border, #dadbd5); border-radius: 14px; background: var(--surface, #f6f7f2); }
+.onboarding-call-notice { padding: 16px 20px; margin-bottom: 20px; border: 1px solid var(--border, #dadbd5); border-radius: 14px; background: var(--surface, #f6f7f2); }
 .onboarding-call-notice p { margin: 0 0 5px; }
 .onboarding-call-notice small { color: var(--muted, #6a6d63); }
 .surface .case-key-numbers { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 22px; margin: 0 0 10px; font-size: 13px; }
@@ -402,17 +402,33 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 /* Phone accounts open a new case by calling. */
 .new-case-call h2 { margin: 0 0 10px; font-size: 1.4rem; }
 .new-case-call p { max-width: 520px; line-height: 1.5; }
-.new-case-call .primary-link { display: inline-block; margin: 8px 0 4px; padding: 12px 20px; border-radius: 10px; color: #fff; background: var(--blue); font-weight: 600; text-decoration: none; }
-.onboarding-call-notice { position: relative; }
-.onboarding-dismiss { position: absolute; top: 8px; right: 10px; border: 0; background: transparent; font-size: 18px; line-height: 1; padding: 4px 8px; color: var(--muted, #6a6d63); cursor: pointer; }
-/* One flat card: the status line is plain text (not a second blue box), the case link is the primary
-   action and stopping is a quieter text button. Both actions keep 44px touch targets. */
-.surface .onboarding-call-notice { border-color: var(--rule); background: #fff; }
-.surface .onboarding-call-notice p[role="status"] { padding: 0; padding-right: 36px; border-radius: 0; background: transparent; color: var(--ink); font-size: 14px; font-weight: 550; line-height: 1.5; }
-.surface .onboarding-call-notice .onboarding-dismiss { display: grid; place-items: center; top: 4px; right: 4px; width: 44px; height: 44px; padding: 0; border-radius: 50%; background: transparent; color: var(--quiet); font-size: 20px; }
-.surface .onboarding-call-notice .onboarding-dismiss:hover:not(:disabled) { background: var(--tint); color: var(--ink); }
-.onboarding-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin-top: 12px; }
-.surface .onboarding-call-notice a.onboarding-open { display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 100px; background: var(--blue); color: #fff; font-size: 13px; font-weight: 600; text-decoration: none; transition: background .18s; }
-.surface .onboarding-call-notice a.onboarding-open:hover { background: var(--ink); }
-.surface .onboarding-call-notice .onboarding-stop { min-height: 44px; padding: 0; color: var(--quiet); font-size: 12px; text-decoration: underline; text-decoration-color: var(--rule); }
+.surface .new-case-call .primary-link { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; max-width: 100%; margin: 8px 0 4px; padding: 0 22px; border-radius: 100px; color: #fff; background: var(--blue); font-size: 15px; font-weight: 600; text-decoration: none; font-variant-numeric: tabular-nums; }
+@media (hover: hover) { .surface .new-case-call .primary-link:hover { background: var(--ink); } }
+
+/* Onboarding notice: a one-line bar (dot, status, expand chevron) that opens to the call-back
+   button, the stop control and the transcript. Amber when the call needs something from the owner. */
+.surface .onboarding-call-notice { position: relative; padding: 0; border: 1px solid var(--rule); border-radius: 16px; background: #fff; overflow: hidden; }
+.surface .onboarding-call-notice[data-urgent="true"] { border-color: #f0d8bd; background: #fffaf3; }
+.onboarding-bar { display: flex; align-items: center; gap: 6px; min-height: 52px; padding: 4px 4px 4px 12px; }
+.onboarding-bar-dot { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }
+.onboarding-call-notice[data-urgent="true"] .onboarding-bar-dot { background: var(--warn); }
+.surface .onboarding-call-notice .onboarding-bar p { flex: 1; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--ink) !important; font-size: 14px !important; font-weight: 550; line-height: 1.4; }
+.onboarding-call-notice[data-expanded="false"] .onboarding-bar p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.surface .onboarding-call-notice .onboarding-toggle, .surface .onboarding-call-notice .onboarding-dismiss { position: static; display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; min-height: 44px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--quiet); font-size: 20px; line-height: 1; }
+.surface .onboarding-call-notice .onboarding-toggle svg { transition: transform .2s; }
+.onboarding-call-notice[data-expanded="true"] .onboarding-toggle svg { transform: rotate(180deg); }
+.surface .onboarding-call-notice .onboarding-toggle:hover:not(:disabled), .surface .onboarding-call-notice .onboarding-dismiss:hover:not(:disabled), .surface .onboarding-call-notice .onboarding-stop:hover:not(:disabled) { background: transparent; }
+@media (hover: hover) { .surface .onboarding-call-notice .onboarding-toggle:hover:not(:disabled), .surface .onboarding-call-notice .onboarding-dismiss:hover:not(:disabled) { background: var(--tint); color: var(--ink); } }
+.onboarding-details { padding: 0 16px 14px; overflow-wrap: anywhere; }
+.surface .onboarding-details p { margin: 0 0 4px; color: var(--quiet); font-size: 14px; line-height: 1.5; }
+.onboarding-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-top: 8px; }
+.surface .onboarding-call-notice a.onboarding-open { display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 100px; background: var(--blue); color: #fff; font-size: 14px; font-weight: 600; text-decoration: none; font-variant-numeric: tabular-nums; transition: background .18s; }
+@media (hover: hover) { .surface .onboarding-call-notice a.onboarding-open:hover { background: var(--ink); } }
+.surface .onboarding-call-notice .onboarding-stop { min-height: 44px; max-width: 100%; padding: 8px 0; color: var(--quiet); font-size: 13px; text-align: left; white-space: normal; text-decoration: underline; text-decoration-color: var(--rule); }
 .surface .onboarding-call-notice .onboarding-stop:hover:not(:disabled) { color: var(--warn); }
+.surface .onboarding-details details { margin-top: 8px; }
+.surface .onboarding-details summary { min-height: 44px; display: flex; align-items: center; font-size: 13px; color: var(--quiet); cursor: pointer; }
+.surface .onboarding-details summary::before { content: '+'; margin-right: 8px; font-size: 18px; }
+.surface .onboarding-details details[open] summary::before { content: '−'; }
+.surface .onboarding-call-notice :is(button, a, summary):focus-visible, .surface .new-case-call .primary-link:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+@media (prefers-reduced-motion: reduce) { .surface .onboarding-call-notice .onboarding-toggle svg { transition: none; } }

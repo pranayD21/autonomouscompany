@@ -1,5 +1,20 @@
 # Change log
 
+## November 8, 2026 — iPhone fixes from the owner's own phone
+
+The user tested on their iPhone and reported: the overview summary sentence was unnecessary; the orange **Needs you** card and dark **Reported savings** card looked inconsistent with the rest of the UI; a selected case filter was black text on a black pill; the empty filter state looked bare; the onboarding notice took too much space; the **Call us to open it** button was a blank blue rectangle; swiping down didn't close Case info; the chat showed a "Message saved." banner; and swiping from the left edge to open the menu jumped back to the overview.
+
+Fixes (details in [frontend.md](frontend.md)):
+
+- The summary sentence was removed. The bento cards became one plain stats card (Needs you, In progress, Reported savings), with whole-dollar amounts. Filter hover is limited to devices that really hover, so the selected label stays light. Empty filters get an icon, a title and a help line.
+- The onboarding notice is collapsible and defaults to a one-line bar, and the internal reason text was dropped. The generic link colour no longer overrides `.primary-link`, so the call button shows its number.
+- The Case info sheet closes with a finger-tracking swipe down from the handle, the header, or the body when it is at the top. The "Message saved." banner was removed.
+- The left-edge swipe was Safari's Back gesture walking the app's hash history. On phones, in-app navigation now replaces history (`src/mobile-nav.ts`), and the drawer opens with an edge swipe and closes with a swipe left.
+
+Two Opus and two GPT-6.1 Sol agents verified and polished these in parallel, each owning separate files.
+
+Verification: `npm run build` (with mock public URLs) passed, and the 19 focused tests passed. `scripts/mobile-nav-ui-check.ts` passed all five WebKit groups: phone history replace, edge open and left close, gesture exclusions, link semantics, and desktop Back. `scripts/case-chat-ui-fixture.ts` passed, and it now also asserts that no saved banner appears. Agent WebKit runs at 320px and 393px checked the stats card, filter colours, empty states, the notice collapsed and expanded, and sheet swipes (close, spring back, body-at-top, scrolled body ignored). Synthetic touch events cannot prove Safari's native edge-Back arbitration, so that still needs a physical iPhone.
+
 ## November 8, 2026 — Home-screen app on iPhone
 
 The user wanted to use Assurance as an app on an iPhone, as simply as possible. Added `public/manifest.webmanifest` (standalone display, Assurance name, existing 180px icon) and the `apple-mobile-web-app-capable` / status-bar meta tags in `index.html`, so Safari's Add to Home Screen opens it full-screen. No App Store build, native wrapper or service worker. Not built locally (the local build needs the Vercel-only `VITE_*` service URLs and fails on main without them) and not yet checked on a physical iPhone.

@@ -94,4 +94,4 @@ Provider contracts checked against current official documentation: [outbound cal
 
 The deployment configuration explicitly passes `PHONE_ONBOARDING_ENABLED` to cases and phone, and the Naïve activation/firm and AgentPhone selector flags to phone. No provider secret is exposed to the browser. Advocate prompts use website questions for phone owners and do not require email.
 
-UI placement (2026-11-08): the onboarding notice and its **Stop onboarding and case work** control render on the overview and other workspace views, but not on individual case pages (`src/Workspace.tsx`).
+UI placement (2026-11-08): the onboarding notice and its **Stop onboarding and case work** control render on the overview and other workspace views, but not on individual case pages (`src/Workspace.tsx`). The notice is collapsed to a one-line bar by default; the stop control, call-back button and transcript are one tap away in the expanded view (see [frontend.md](frontend.md)).
