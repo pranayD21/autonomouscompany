@@ -3,7 +3,7 @@ import {Pool} from "pg";
 
 export class NaiveDeferred extends Error {
  readonly code="NAIVE_DEFERRED";
- constructor(readonly retryAfterMs:number){super("Naïve work is queued while provider capacity recovers.");}
+ constructor(readonly retryAfterMs:number){super("Naïve work is waiting for the shared request queue or a provider cooldown.");}
 }
 export interface CapacityStore {
  acquire(token:string):Promise<{acquired:boolean;waitMs:number}>;
@@ -16,7 +16,7 @@ export function postgresCapacity(pool:Pool):CapacityStore {
    const result=await pool.query(`UPDATE advocacy_naive_capacity SET lease_id=$1,lease_until=now()+interval '35 seconds'
     WHERE id='naive' AND next_allowed_at<=now() AND (lease_until IS NULL OR lease_until<=now()) RETURNING id`,[token]);
    if(result.rowCount)return {acquired:true,waitMs:0};
-   const state=await pool.query(`SELECT greatest(0,extract(epoch FROM (greatest(next_allowed_at,coalesce(lease_until,now()))-now()))*1000) AS wait_ms FROM advocacy_naive_capacity WHERE id='naive'`);
+   const state=await pool.query(`SELECT CASE WHEN next_allowed_at>now() THEN extract(epoch FROM (next_allowed_at-now()))*1000 ELSE 1000 END AS wait_ms FROM advocacy_naive_capacity WHERE id='naive'`);
    return {acquired:false,waitMs:Math.max(1000,Number(state.rows[0]?.wait_ms??1000))};
   },
   async release(token,status,retryMs,requestId){

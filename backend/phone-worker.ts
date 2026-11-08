@@ -1,3 +1,4 @@
+import {onboardingEnabled,pollPhoneOnboarding} from './phone-onboarding';
 import {macMessagesRoutes,macBridgeReady} from "./mac-messages-bridge";
 import {parseTriggerDelivery} from "@neon/functions/triggers";
 import {Hono} from 'hono';import {cors} from 'hono/cors';import {bodyLimit} from 'hono/body-limit';
@@ -8,7 +9,7 @@ const app=new Hono();app.use('*',bodyLimit({maxSize:65536}));app.route('/mac-bri
 app.use('/auth/*',cors({origin:o=>['https://assurance.claims','https://assurance-claims.vercel.app','http://localhost:5173','http://localhost:4173'].includes(o)?o:undefined,allowHeaders:['Content-Type','Authorization'],allowMethods:['GET','POST','OPTIONS'],credentials:true}));
 app.use('/status',cors({origin:o=>['https://assurance.claims','https://assurance-claims.vercel.app','http://localhost:5173','http://localhost:4173'].includes(o)?o:undefined}));
 let auth:ReturnType<typeof createPhoneAuth>|undefined;
-app.get('/status',async c=>{c.header('Cache-Control','no-store');return c.json({notificationProvider:process.env.PHONE_NOTIFICATION_PROVIDER??'agentphone',notificationReady:process.env.PHONE_FLOW_ENABLED==='true'&&(process.env.PHONE_NOTIFICATION_PROVIDER==='mac_messages'?await macBridgeReady(pool):false),enabled:phoneLoginEnabled(),smsReady:await signInSmsReady().catch(()=>false),testNumbers:phoneLoginEnabled()?phoneTestNumbers():[],testCode:phoneLoginEnabled()?phoneTestCode():null});});
+app.get('/status',async c=>{c.header('Cache-Control','no-store');return c.json({onboardingEnabled:onboardingEnabled(),notificationProvider:process.env.PHONE_NOTIFICATION_PROVIDER??'agentphone',notificationReady:process.env.PHONE_FLOW_ENABLED==='true'&&(process.env.PHONE_NOTIFICATION_PROVIDER==='mac_messages'?await macBridgeReady(pool):false),enabled:phoneLoginEnabled(),smsReady:await signInSmsReady().catch(()=>false),testNumbers:phoneLoginEnabled()?phoneTestNumbers():[],testCode:phoneLoginEnabled()?phoneTestCode():null});});
 app.all('/auth/*',async c=>{
  if(!phoneLoginEnabled()||!process.env.PHONE_AUTH_SECRET||!process.env.PHONE_AUTH_BASE_URL)return c.json({error:'Phone sign-in is not active yet.'},503);
  const route=c.req.path.slice('/auth'.length);const allowed:Record<string,string>={'/phone-number/send-otp':'POST','/phone-number/verify':'POST','/get-session':'GET','/token':'GET','/jwks':'GET','/sign-out':'POST'};
@@ -26,7 +27,8 @@ app.post('/agentphone/webhook',async c=>{
 app.post('/poll',async c=>{
  const parsed=await parseTriggerDelivery(c.req.raw);
  if(!parsed.ok||parsed.invocation.type!=='schedule'||parsed.invocation.trigger.name!=='phone-notifications')return c.json({error:'Verified phone notification schedule required.'},401);
- if(process.env.PHONE_FLOW_ENABLED!=='true')return c.json({enabled:false});
+ const onboardings=await pollPhoneOnboarding(pool);
+ if(process.env.PHONE_FLOW_ENABLED!=='true')return c.json({enabled:false,onboardings});
  await deliverPhoneNotifications(pool);return c.json({checked:true});
 });
 app.onError(()=>Response.json({error:'Phone service temporarily unavailable.'},{status:503}));

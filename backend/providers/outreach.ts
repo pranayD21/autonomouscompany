@@ -16,7 +16,7 @@ export function voiceProvider() {
 }
 export function outreachEnabled(kind: "call"|"email") {
   return kind==="call" ? (voiceProvider()==="agentphone" && !!(process.env.AGENTPHONE_API_KEY && process.env.AGENTPHONE_AGENT_ID && process.env.AGENTPHONE_NUMBER_ID))
-    : !!(process.env.AGENTMAIL_API_KEY && process.env.AGENTMAIL_INBOX_ID);
+    : !!(process.env.AGENTMAIL_API_KEY);
 }
 export function destinationAllowed(kind: "call"|"email", destination: string) {
   const list=process.env[kind==="call"?"OUTREACH_ALLOWED_PHONES":"OUTREACH_ALLOWED_EMAILS"]??"";
@@ -27,7 +27,8 @@ export class DispatchFailure extends Error {
 }
 export type DispatchResult={provider_id:string;provider_thread_id?:string;provider_status:string};
 export type StatusResult={provider_status:string;duration_seconds?:number};
-function mailUrl() {return `https://api.agentmail.to/v0/inboxes/${encodeURIComponent(process.env.AGENTMAIL_INBOX_ID!)}/messages`;}
+export function actionInbox(action: OutreachAction) { return action.provider_inbox_id || process.env.AGENTMAIL_INBOX_ID; }
+function mailUrl(action: OutreachAction) {const inbox=actionInbox(action);if(!inbox)throw new DispatchFailure("EMAIL_INBOX_NOT_CONFIGURED",true);return `https://api.agentmail.to/v0/inboxes/${encodeURIComponent(inbox)}/messages`;}
 async function responseJson(response: Response) {
   if(!response.ok) throw new DispatchFailure(`HTTP_${response.status}`,[400,401,402,403,404,422,429].includes(response.status));
   return response.json();
@@ -52,7 +53,7 @@ export async function sendOutreach(action: OutreachAction, request: typeof fetch
   }
   if(!!action.reply_to_message_id!==!!action.reply_thread_id)throw new DispatchFailure("INVALID_REPLY_CONTEXT",true);
   const path=action.reply_to_message_id?`${encodeURIComponent(action.reply_to_message_id)}/reply`:"send";
-  const data=await responseJson(await request(`${mailUrl()}/${path}`,{
+  const data=await responseJson(await request(`${mailUrl(action)}/${path}`,{
     method:"POST",headers:{Authorization:`Bearer ${process.env.AGENTMAIL_API_KEY}`,"Content-Type":"application/json","Idempotency-Key":action.id},signal:AbortSignal.timeout(25000),
     body:JSON.stringify({to:[action.destination],...(action.reply_to_message_id?{reply_all:false,cc:[],bcc:[]}:{subject:action.subject}),text:action.body,track_opens:false}),
   }));
@@ -75,7 +76,7 @@ export async function readOutreach(action: OutreachAction, request: typeof fetch
   }
   // Receipt identity, not the current selection, determines the status provider.
   const call=action.kind==="call";
-  const url=call?`https://api.agentphone.ai/v1/calls/${encodeURIComponent(action.provider_id)}`:`${mailUrl()}/${encodeURIComponent(action.provider_id)}`;
+  const url=call?`https://api.agentphone.ai/v1/calls/${encodeURIComponent(action.provider_id)}`:`${mailUrl(action)}/${encodeURIComponent(action.provider_id)}`;
   const data=await responseJson(await request(url,{headers:{Authorization:`Bearer ${process.env[call?"AGENTPHONE_API_KEY":"AGENTMAIL_API_KEY"]}`},signal:AbortSignal.timeout(15000)}));
   if(call) {
     const parsed=z.object({id:z.string(),status:z.string(),durationSeconds:z.number().int().nonnegative().nullable().optional()}).parse(data);

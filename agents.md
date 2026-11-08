@@ -15,7 +15,7 @@ Whenever you change anything in this repository, update or add the corresponding
 
 ## Current autonomy instruction
 
-The latest user instruction supersedes earlier synthetic-only, bounded-review, per-contact approval, recipient allowlist, decision/message-count, contact-spacing, case-expiry, and fixed repository-budget requirements. Implement one persistent agent run per case. The current hosted proof of concept uses direct OpenAI inference after Naïve capacity failures; keep legacy Naïve sessions separate. The owner submits a case under the displayed standard handling scope; no separate permission essay or checkbox is required. Earlier grants keep their original scope. The agent writes a stable goal/finish condition and chooses sources, contacts, message content, timing, questions, and completion. Preserve identity boundaries, source integrity, revocation, truthful evidence, and duplicate-send protections. Request-level Naïve capacity controls remain in force and are not case-work caps. Authentication abuse controls and provider protocol constraints are separate. See [persistent workflow migration](docs/persistent-workflow-migration.md). Earlier demo limits below are historical and must not be reintroduced into the new path.
+The latest user instruction supersedes earlier synthetic-only, bounded-review, per-contact approval, recipient allowlist, decision/message-count, contact-spacing, case-expiry, and fixed repository-budget requirements. Implement one persistent agent run per case. The latest target runs every company agent, including each case advocate, on Naïve. Direct OpenAI was a temporary fallback; preserve old runs without allowing two engines to act on one authority. The firm includes permanent management roles and one isolated advocate per client. Verify current Naïve APIs against its live OpenAPI specification. The owner submits a case under the displayed standard handling scope; no separate permission essay or checkbox is required. Earlier grants keep their original scope. The agent writes a stable goal/finish condition and chooses sources, contacts, message content, timing, questions, and completion. Preserve identity boundaries, source integrity, revocation, truthful evidence, and duplicate-send protections. Request-level Naïve capacity controls remain in force and are not case-work caps. Authentication abuse controls and provider protocol constraints are separate. See [persistent workflow migration](docs/persistent-workflow-migration.md). Earlier demo limits below are historical and must not be reintroduced into the new path.
 
 ## Product direction
 
@@ -29,9 +29,11 @@ The user explicitly named two use cases: workplace injury claims involving an em
 
 The user says the team has a working product. The local scaffold described in these docs is only the implementation visible in this workspace; do not assume it includes the team's entire working system.
 
-## Phone-first entry direction
+## Current phone onboarding MVP
 
-The user wants callers to begin by calling Assurance, with accounts tied to verified phone numbers. Document requests and detected problems should text a sign-in-required portal/dashboard link. Existing accounts may link a phone only after proving both identities; caller ID alone never unlocks a case. Phone login is deployed through Twilio Verify, including one successful consented real SMS sign-in and fictional shared demo accounts. Inbound intake and AgentPhone notification texts remain disabled through PHONE_FLOW_ENABLED=false. Keep registration contact details in ignored private files. The user approved the $25 individual SMS registration; AgentPhone accepted it and reports pending review. No additional real test calls/texts or inbound routing activation are authorized by that registration payment. See [phone-first accounts](docs/phone-first.md).
+The latest user override starts with a phone number and an explicit “Verify and call me” request. Twilio Verify sends the sign-in code. After verification, AgentPhone places one durably reserved onboarding call; reloads never redial. The call collects the account and standard handling scope, then sufficient owner-bound transcript intake automatically creates the case and queues its isolated Naïve advocate. Customers use website chat and uploads without an email requirement. Preserve older email accounts and cases. AgentMail remains the third-party email provider.
+
+Keep `PHONE_FLOW_ENABLED=false`; the separate `PHONE_ONBOARDING_ENABLED` gate enables only the requested outbound path. Do not enable inbound routing, case SMS, Mac Messages, or resubmit registration. Finish the connected hosted journey before native Naïve browser verification. Use built-in browser tools and a fictional portal, with case isolation and submission receipts; do not build another browser framework. See [phone onboarding](docs/phone-onboarding.md).
 
 ## Hackathon context
 
@@ -43,7 +45,7 @@ The event requires the Naïve SDK. Judges emphasize what the company actually ac
 
 - Naïve owns coordination, specialist delegation, budgets, and tool permissions. Public docs call the relevant primitive a coordinator/team; verify current SDK APIs before implementation.
 - Voice provider preference: **AgentPhone only** for new calls, explicitly selected by the user. Do not pursue Twilio number purchase, ElevenLabs voice integration, or SIP setup. `OUTREACH_VOICE_PROVIDER=agentphone` is selected in the private environment and is the source/deployment default; other selectors disable new calls. Direct hosted-agent/active-number readback passed, and the AgentPhone-only code is deployed. Preserve historical receipts and never retry an uncertain call through another provider. A new case-linked call still requires recipient authorization and live verification. See docs/voice-agentphone.md.
-- AgentMail is the proposed written follow-up channel. Neon was explicitly selected and provisioned for backend services.
+- AgentMail is the written communication provider; do not create Naïve mailboxes. Neon was explicitly selected and provisioned for backend services.
 - Separate potential discrepancies, verified reductions in patient responsibility, and refunds actually received. Never present estimates or simulations as money saved.
 - Obtain appropriate authorization before external case actions. Do not impersonate the patient or commit them to settlements or payments without authorization.
 - Use synthetic records for the public prototype unless a participant explicitly consents and the data handling is appropriate. Vendor selection alone does not establish healthcare privacy compliance.
@@ -51,7 +53,7 @@ The event requires the Naïve SDK. Judges emphasize what the company actually ac
 
 ## Current handoff status
 
-The hosted direct-agent proof of concept and phone login are deployed at https://assurance.claims. Real scheduler activation, document extraction/confirmation, owner resume, isolation, stop persistence, one delivered fictional email, and one Twilio Verify SMS sign-in passed. The full fictional insurer exchange passed with scripted model responses and fake communications; no real insurer outcome is claimed. Legacy Naïve remains separate and gateway inference remains unavailable. See [implementation status](docs/implementation-status.md) for current evidence and boundaries; older milestone entries are historical.
+The earlier direct-agent proof of concept and phone login were verified live. The current Naïve company expansion has deployed backend support, six permanent roles, and an AgentMail webhook, but live staffing/continuation and the new frontend release are still being verified. Autonomous portal submission is required and being implemented; email/Gmail tools do not cover it. See [implementation status](docs/implementation-status.md) for current evidence and boundaries. Historical tests do not prove the new company workflow.
 
 ## Documentation map
 
@@ -75,4 +77,4 @@ The user supplied docs/autonomy-plan.md and explicitly assigned all files to thi
 
 ## Payment scope update
 
-The user now wants payment to remain hypothetical. A claimable Stripe sandbox/test key was created and read-only verified; it expires November 15, 2026 unless claimed. Credentials are private and undeployed. Do not build or activate real fee collection or present hypothetical payments as completed. This supersedes the immediate working-Checkout requirement in the earlier autonomy plan. See docs/payments.md.
+The latest firm plan permits Stripe test-mode finance tools only; real collection remains prohibited. Earlier instructions kept payments entirely hypothetical. A claimable Stripe sandbox/test key was created and read-only verified; it expires November 15, 2026 unless claimed. Credentials are private and undeployed. Do not activate real fee collection or present test PaymentIntents as paid fees or revenue. This supersedes the immediate working-Checkout requirement in the earlier autonomy plan. See docs/payments.md.

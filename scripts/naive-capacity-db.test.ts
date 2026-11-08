@@ -13,6 +13,7 @@ test("independent workers share one lease, Retry-After cooldown, and stale-owner
  const workers=Array.from({length:6},()=>postgresCapacity(pool));const tokens=workers.map(()=>randomUUID());
  const results=await Promise.all(workers.map((w,i)=>w.acquire(tokens[i])));assert.equal(results.filter(x=>x.acquired).length,1);
  const winner=results.findIndex(x=>x.acquired);
+ assert.ok(results.filter(x=>!x.acquired).every(x=>x.waitMs===1000),"In-flight lease contention should recheck briefly, not assume its entire crash timeout");
  await workers[winner].release(tokens[winner],429,120000,"fixture-capacity");
  const blocked=await workers[0].acquire(randomUUID());assert.equal(blocked.acquired,false);assert.ok(blocked.waitMs>110000);
  await workers[0].release(randomUUID(),200,null,null);

@@ -676,3 +676,235 @@ Added migration 0025, authenticated phone-Function bridge routes, fresh-heartbea
 Nine local tests and nine disposable-database bridge tests passed; TypeScript passed. Read-only checks found one SMS and one iMessage service, with automation and selected SMS account ready. Database access is denied, so the bridge remains disabled. No real send, Apple-account change, privacy-setting change, or inbound-routing activation occurred. All 17 existing phone regression tests also passed, as did the final build and diff checks. Production migration journal hashes were verified, then migration 0025 brought the count to 26. All seven Functions deployed with the authenticated Mac bridge configured and PHONE_FLOW_ENABLED still false. Live endpoint propagation/readback is checked separately.
 
 Hosted bridge readback passed after deployment propagation: public status reports mac_messages with notificationReady=false while Twilio login remains enabled/ready. The configured local runner completed a no-send heartbeat cycle; anonymous claim returned401, and authenticated claim returned no job with the flow disabled. All35 focused tests (9local,9bridge DB,17phone regression) passed. No real SMS/iMessage, reply delivery, or inbound call was tested. The user reported enabling Full Disk Access, but the existing T3/Codex helper still cannot open Messages; resolve responsible-app access/restart before enabling delivery.
+
+
+### Naïve open-permission provisioning compatibility
+
+Updated `backend/provision-case-session.ts` and `backend/providers/case-binding.ts` to provision v2 owner-authorized cases without old operator, synthetic, or expiry restrictions. Kept direct-engine exclusion and legacy validation, corrected null sealed-credential expiry comparison, and introduced explicit provider-required open-session budget validation while preserving the restored general coordinator configuration. Three binding tests passed; the new provisioning database test awaits the coordinated serial suite. No live provider mutation or deployment was performed by this change.
+
+- Restored version-2 compatibility in Naïve setup/session lifecycle checks: owner-bound non-expiring credentials, same-session events, human-help parking, and revocation remain enforced without legacy operator/expiry restrictions. Legacy grants keep their prior behavior. Added three focused database regressions; `npx tsc --noEmit` passed. Database suite execution and deployment are pending integration verification.
+
+## Naïve stable goal tools — November 8, 2026 UTC
+
+Added a case-bound `set_goal` MCP tool for version-2 Naïve sessions, backed by a unique already-delivered event in the existing session event table. Identical retries preserve the goal; changed goals, revoked credentials, wrong owners/cases, stopped permission, and conflicting direct runs reject. Case reads expose the saved goal, and Naïve v2 action/document-request services require it before proceeding. The direct adapter excludes the remote tool because its runner already owns `set_goal`. No migration or external contact was performed by this change. TypeScript and four direct-engine unit tests passed; focused database validation is coordinated separately.
+
+## Mac permissions and single transport test
+
+User-approved Full Disk Access for Terminal and T3 Code resolved Messages database access. One authorized local SMS attempt used the bridge's persisted send-once handler; AppleScript accepted it, but the recipient reported no delivery and Messages recorded sent=0, delivered=0, error=4. No resend, hosted queue enablement, or inbound-routing change occurred. Private test records remain ignored. The test establishes local API acceptance only, not delivered SMS or hosted reply ingestion.
+- Added `scripts/naive-activation.test.ts` for the restored engine-selection and intake/resume contract. Seven integration tests are prepared, with TypeScript passing; execution is deferred to the serial database verification run to avoid concurrent migration conflicts.
+
+## Naïve restoration implementation
+
+Added an explicit new-case engine selector and v2 Naïve setup/session support, immutable MCP goal storage, case-owner answer/resume support, and the Naïve status UI. Existing direct cases remain direct; legacy grants keep their limits. Provider-required budget is configured separately from repository work caps. Added serial database and hosted zero-contact verification scripts. A live tool-free Naïve inference turn returned idle/end_turn without pending actions or 429. Deployment and complete test results pending below.
+
+## Website conversation interface
+
+Added `src/CaseChat.tsx` to the case workspace, above the existing overview and documents. The conversation renders persisted owner and Assurance messages, refreshes after case changes and every five seconds, and sends owner messages with stable retry IDs. A failed send is not displayed as saved. The document shortcut reuses the existing upload area. Stopped cases can retain notes without implying agent work restarted. Frontend configuration continues to use the authenticated cases API; no SMS provider or additional credentials are required. Verification is recorded in [website chat UI](web-chat-ui.md).
+
+## Website conversation backend
+
+Added a durable owner/agent message table and case-scoped read/write API. Messages work before engine setup and after stop; only eligible owner-paused runs resume, and uncertain dispatch retains the answer without continuing. Existing owner-update requests share the message store. Agent website updates and deduplicated document requests create no SMS rows. Conversation reads combine persisted messages with actual decision questions and summaries. Added migration0026 and focused disposable-database tests; verification results follow after execution.
+
+Website conversation verification: five focused chat database tests passed after correcting a fixture's required decision-input field. The two existing intake-service tests and seven Naïve activation tests also passed with the durable message store. TypeScript and diff whitespace checks passed. Tests used the disposable database, sent no external messages, and did not deploy production.
+
+## Website conversation rollout checks
+
+Migration0026 was applied after matching every existing production migration hash/timestamp; production now has27 migrations. The deployed chat API passed saved-message persistence, identical-retry deduplication, and second-owner read/write rejection. The frontend mocked chat fixture passed reload, failed-write recovery, document attachment navigation and mobile layout; the activation fixture passed its new conversation-link behavior. Five chat database tests, two intake regressions and seven Naïve activation regressions passed, plus the binding/goal setup regressions. No SMS notification flag was enabled.
+
+Naïve's hosted scheduler provisioned the dedicated coordinator identity, read the case and saved its goal. Its first `request_human` call encountered a provider approval pause; this is being resolved with audited, case-bound v2 approval handling. It is not yet recorded as a completed chat loop.
+- Added automatic provider approval for supported same-case Assurance MCP tools under version-2 permission; legacy approvals remain explicit. Confirmation reservations are now durable before dispatch, with unknown outcomes held for reconciliation and explicit admission rejections retryable. All 12 focused approval database tests passed serially on the disposable branch, including legacy approval behavior, v2 same-case approval, unsupported tool rejection, unknown-outcome non-replay, and capacity retry. TypeScript passed.
+
+## Email-first customer entry
+
+Replaced the phone-primary sign-in screen with email sign-in/account creation and removed phone intake/linking controls from the main workspace. Added a configured public firm email link to landing/sign-in and updated copy to describe email and website handling. Existing phone sessions and stored cases remain intact. Successful email sign-in explicitly selects the email session; failures do not discard the existing selection. Added a mocked email-entry browser fixture; results recorded after execution.
+
+Email entry verification: `npx tsx scripts/email-entry-ui-fixture.ts`, `npx tsc --noEmit`, and `git diff --check` passed. The fixture verified email-first fields, the configured contact link, invalid-credential handling, sign-up, and legacy phone-selection removal after successful email login. No live account, email, or SMS was created; deployment is handled by the parent workflow.
+- Added six permanent Assurance company-role declarations and an idempotent explicit-apply setup script, preserving the five legacy agent declarations. The CEO has a company board; CEO, Knowledge and Growth have loose-window schedules. Role tokens stay in private environment/vaults; no Naïve mailboxes or real fee collection are created. Live OpenAPI read, installed blueprint schema inspection, TypeScript, local declaration evaluation and plan-only setup passed. No remote firm writes were performed in this implementation step.
+
+### Email case entry and durable sender mailbox
+
+- Added authenticated email lead listing and claim routes, checked against server-side verified managed email identity. Added the workspace lead chooser and verification action; workplace and health-insurance paths stay separate. The public firm address endpoint returns configured AgentMail email only.
+- Email dispatch records the sender inbox before network dispatch. New firm cases require their dedicated mailbox; threaded follow-ups retain the original action's inbox. Receipt and reply reads use that stored inbox after configuration changes. Historical actions without the field keep the legacy inbox fallback. Uncertain dispatches remain reserved and are not automatically retried.
+- Verified: TypeScript, three fake-provider/identity tests (`scripts/email-routing.test.ts`), and mocked email-entry browser flow including lead claim and verified-email gating. No external email was sent by these checks. Verification email also uses AgentMail with a durable hashed challenge and same-owner confirmation. The managed password sign-in remains unchanged and does not send verification email through Neon.
+
+### 2026-11-08 — AgentMail webhook intake and case mailboxes
+
+Added signed AgentMail ingress, durable event deduplication, private email leads, verified-email claiming, case mailbox creation, and reserved invitation sends. Flagged messages remain evidence and cannot impersonate the owner. Canonical provider lookup handles omitted inline bodies without following arbitrary body URLs. Owner emails preserve long text as a single durable conversation message. Migration 0027 adds ingress storage. The provisioning command defaults to a read-only plan and keeps the signing secret private. Three signature tests and seven disposable-database integration tests passed, including canonical body retrieval and full long-email preservation. TypeScript compilation passed. No real email or webhook configuration was performed by these tests. See [AgentMail intake and replies](agentmail-ingress.md).
+- Additional database verification: 12/12 serial verification/outreach checks passed, then 2/2 verification/lead-claim checks passed after adding full email claim coverage. These prove the challenge is single-use and bound to the current account email, the original email narrative survives intact, and retrying a claim reuses its case. All provider sends were mocked; provider acceptance is not a delivery claim.
+- The email browser fixture also passed under React StrictMode with a delayed verification response: exactly one confirmation request, token removed from browser history, and no stale unverified state. TypeScript and whitespace checks passed after integration.
+
+### 2026-11-08 — Email attachments enter case document intake
+
+Inbound attachments now queue durable jobs after a lead is claimed or on receipt in a case inbox. The worker retrieves validated AgentMail attachments, stores their file hashes and original provenance, invokes existing extraction, and wakes the advocate; failures are visible holds. Four disposable-database tests passed with fake storage and providers. Current Naïve API/catalog inspection confirmed Gmail managed OAuth capability, but no account connection was created or advertised. See [AgentMail intake and replies](agentmail-ingress.md).
+
+### Goal refinements and authored document requests
+
+- Naïve goals now retain an immutable original objective and append reasoned refinements, with revision conflict detection and full history returned in case context. The tool instructions distinguish documented resolution from missing information and waiting. Semantic scope is an agent instruction backed by an audit trail, not a claim of automated semantic verification.
+- Document requests preserve agent-authored types and messages. Reusing an operation ID with different message text now fails instead of silently returning the earlier request; new operations requesting an already requested document type remain deduplicated.
+- Verified: all 10 goal/message database tests passed with fake communications, including the new refinement and authored-document cases. TypeScript and whitespace checks passed. Provider instructions also retain the original objective and prohibit redefining it to turn unfinished work into completion.
+
+### 2026-11-08 — Optional case-bound Gmail discovery
+
+Added owner-authenticated Gmail connect/status/disconnect routes and a Documents-panel control. Managed OAuth is restricted to the read-only Gmail scope and explicit read tools, bound to the existing case advocate identity. Uncertain connection creation requires reconciliation. A private configuration command prepares the auth configuration without connecting a customer. Case tools now show mailbox details, attachment job status, and reusable playbook projections. TypeScript and three disposable-database Gmail tests passed (read-only restrictions, owner isolation/connection wake, stopped-case and uncertain-creation behavior). The configuration command completed a read-only provider plan. Provider consent and live Gmail retrieval have not been exercised. See [AgentMail intake and replies](agentmail-ingress.md).
+
+## Company runtime integration — work in progress
+
+Added role-scoped firm operations, CEO case budgets, isolated advocate hiring, durable company events, case-to-company requests, closure handoffs and playbook revision history. Dedicated AgentMail inboxes use webhook delivery rather than legacy reply polling. Updated the main agent instructions to email/web intake and Naïve company execution. Initial firm service assertions passed, but the first suite's fixture cleanup failed on a foreign key and was corrected; a clean rerun remains required. No company deployment or live company outcome is claimed at this checkpoint.
+- Added the hosted firm MCP/worker and durable event runner. Role-bound bearer tokens expose only each role's tools. Event creation freezes request bytes and reuses a stable provider key; company/scheduled-session approvals are scoped and durably reserved before dispatch. The first DB test run caught timestamp precision in the lease fence, which was corrected before rerunning. Three firm MCP unit tests and all five firm-runner database tests passed after the fix; TypeScript and diff checks passed. Live deployment remains a separate step.
+
+### Stripe test-only finance adapter
+
+- Added `backend/firm-finance.ts` to calculate a proposed fee from the latest evidence-supported outcome and reserve one test intent per case/outcome. Pending decisions, inconsistent arithmetic, stale evidence, live keys, live receipts, and mismatched amounts are rejected.
+- The adapter creates only an unconfirmed test PaymentIntent, retains no client secret, reports no paid revenue, and does not replay uncertain creation. Zero fees require no provider request. Existing own-recipient email grants do not authorize any payment collection.
+- Verified three mocked provider/calculation tests and TypeScript. No real Stripe request or money movement occurred in these checks.
+- Finance database integration passed: latest current evidence is required before reservation; repeated outcome operations reuse the saved intent; changed fee input conflicts; source confirmation removal blocks creation; uncertain creation remains unknown and cannot replay through a new operation. All Stripe responses were mocked.
+
+- Company runner review fixed queue starvation and explicit budget-pause handling. The new full-poll regression also caught raw SQL lease timestamps arriving as strings; these are normalized before fencing updates. All seven firm-runner database tests passed on the disposable database after the correction. Provider responses remained mocked.
+
+### 2026-11-08 — Gmail OAuth refresh and native read permissions
+
+Fixed Gmail owner operations to use the server key that can initiate connections, refresh authorization through the single-connection endpoint, and retain the provider's create-only authorization link privately until expiry. New case-agent configurations explicitly allow the six pinned native Gmail read operations. The current API exposes no standalone connected-tool execution endpoint. Seven regression tests passed; no customer OAuth or Gmail read was performed. Existing pinned sessions retain their original tool configuration.
+
+## Hosted company preparation
+
+Production migration journal was checked against local hashes, then migrations 0027–0029 were applied; the journal now has 30 entries through 0029. The company service suite passed 5/5 after fixing cleanup. The broader Naïve activation/session, ingress and email-routing regression passed 61/61. Firm runner tests passed 7/7, including scheduling fairness, budget-pause handling and timestamp fencing. Build and TypeScript passed.
+
+AgentMail credential verification caught an incorrect webhook Delete permission in the first newly created key. The user authorized revocation; the key was deleted and its absence verified. A replacement's saved permission list was verified as Inbox Read/Create, Message Read/Send/Reply, Label Spam/Unauthenticated Read, and Webhook Read/Create/Update. Credentials remain private. Company execution and recurring role schedules remain disabled during deployment preparation.
+
+### Explicit direct-to-Naïve handoff
+
+Added an atomic owner-bound migration helper preserving the original authority, transcript and stable goal. Busy or uncertain work blocks migration; the old credential is revoked and only an audited migrated record permits Naïve provisioning. Direct polling excludes archived runs. All four disposable database tests passed on the final run, including conversation continuity, unfinished-decision refusal, Naïve resume, owner session projection and revocation retaining the archive marker. TypeScript passed. No production case was migrated by these changes.
+
+### Hosted firm webhook boundaries verified
+
+- Added `scripts/hosted-firm-webhook-check.ts`. The hosted run passed on November 8, 2026 at 08:20:47 UTC: configured public address, authentication/origin/schedule boundaries, invalid signature rejection, and signed unmapped event ignoring on two submissions.
+- Production readback found zero matching event/lead rows and zero outreach delta. Actual AgentMail registration was enabled with the expected deployment URL and five subscriptions. No email, customer fixture, mailbox, or case was created.
+- Actual provider-generated callback delivery remains unproven. Official AgentMail references expose no test-delivery/replay endpoint; the locally signed probe does not establish that additional claim.
+
+### Verified email binds owned case mailboxes
+
+- Added a focused verification test for existing mailbox linkage: the matching owned mailbox becomes verified, while a matching address on another owner's case and a different address on the same owner's case remain unverified. The fixture includes case-insensitive email matching and uses mocked AgentMail delivery.
+- Both email verification/claim database tests passed with these linkage assertions. No real email was sent; TypeScript and whitespace checks passed.
+
+### Rotation cleanup state reconciled
+
+Inspected the existing ignored second rotation runner and state without creating a new fixture or executing case tools. The state was already marked cleaned, consistent with the earlier successful cleanup entry. Production readback confirmed zero remaining case, authority, tool credential, session, and outreach rows for that fixture. No cleanup mutations were repeated. A fresh remote read-only audit was deferred by the shared Naïve governor while company verification was active; this turn does not claim an additional remote deletion/readback proof. Updated stale session documentation that still called the cleanup pending.
+
+## Current-status reconciliation and portal requirement — November 8, 2026
+
+Updated `agents.md` and `implementation-status.md` to distinguish the earlier direct-model release from the deployed but unfinished Naïve company integration. Recorded the explicit autonomous portal-submission requirement as a missing capability, separate from email and Gmail access. The current TypeScript check passed. Portal implementation and live company staffing/continuation proof remain in progress; no real insurer submission is claimed.
+
+Updated the new-submission scope in `backend/intake-policy.ts` and `src/CaseForm.tsx` to explicitly include authorized portal forms and evidence. Existing authority records remain unchanged. Portal implementation verification remains pending.
+
+## Phone sign-in session recovery — November 8, 2026
+
+Fixed repeated JWT requests and deletion of valid phone sessions after transient errors. The reported account was already verified with an active session, while a hosted check reproduced `/auth/token` rate limiting. Concurrent session reads now share a one-minute cache; failures preserve the login credential. Two focused tests and TypeScript passed. No new SMS was sent; live frontend recovery verification remains pending. See `docs/auth-session-recovery.md`.
+
+Company workflow corrections: resolve board role aliases to registered agents, retain safe provider error codes, deny native board writes in favor of the durable tool, and clarify Front Desk budget-request ordering. The runner suite passed 8/8; staffing/service tests passed 6/6 after directly queuing CEO allocation alongside intake. Three existing requested cases received the deduplicated allocation event.
+
+## Standalone AgentPhone capability correction
+
+The user's separately authorized direct voice test completed for 120 seconds. It used the hosted demo persona without a case or Naïve session binding, so its statement that it could not perform external actions reflected the missing tool connection. Updated the standalone voice prompt to explain Assurance advocate capabilities accurately, avoid presenting the voice demo's limits as company-wide limits, and avoid defaulting administrative tasks back to the caller. Patched only the hosted persona system prompt and verified exact provider readback. No additional call was placed. Case-bound voice handoff remains unfinished and was reported to the main implementation agent. This readback verifies prompt configuration, not a corrected live conversation or autonomous employer outreach.
+
+### Reconciled the stalled company board operation
+
+- A live HTTP 400 identified the board contract: `assignee` must be an agent name, not its ID. Added role/ID-to-current-name resolution before board writes; the focused unit test and TypeScript passed.
+- Read the existing board by its original operation key, corrected the definitively rejected request, received a provider card receipt, and reconciled the original operation and staffing references. Resumed the existing front-desk session with its existing continuation idempotency key. No new customer fixture, email, call, or duplicate board operation was created.
+- Removed temporary raw provider validation details from runtime errors; only safe status/code remain. A separate blocked front-desk read showed pending `firm.list_cases`, a valid scoped tool; the existing recovery script queued it for normal runner handling.
+
+Adjusted Naïve admission waiting to distinguish an in-flight request lease from a real provider cooldown. Single-request isolation and Retry-After remain enforced; all six capacity unit/database tests passed, including concurrent admission, provider cooldown, stale-owner protection, process-crash recovery, and no POST replay.
+
+Hosted Naïve continuation readback now confirms the supplied fictional incident date was recorded with a source reference by the existing run, with zero outreach. This establishes continuation/persistence; final stop and company staffing proof remain separate checks.
+
+The scheduler now advances up to three due company events sequentially per invocation; nine runner tests passed. Provider rejections are shown as bounded status/error codes in the durable event reason, while raw responses remain private. The broader session/activation regression passed 51/51.
+
+Hosted zero-contact fixture stop proof passed: revoked authority and credential, stopped local run, and the same Naïve remote session reported `cancelled`. The supplied fact remains persisted and outreach count remains zero. Private proof is retained in ignored test results; no case identifiers or credentials are committed.
+
+### Firm credential diagnostics — November 8, 2026
+
+Added secret-free MCP rejection diagnostics while investigating a continued Front Desk session's HTTP 401. Direct authenticated initialization succeeds for all six deployed role endpoints; vault metadata matches the Front Desk agent, identity, and endpoint. This does not yet prove resumed provider credential injection or successful hiring.
+
+### Business completion is separate from model completion — November 8, 2026
+
+The firm runner now checks persisted CEO allocation and advocate onboarding results before finishing those events. Missing results are recorded as intervention work against the existing event/session; first-turn work stays pending. Added an ended-without-hiring regression. Hosted normal-path proof remains outstanding.
+
+Validation: all 10 firm-runner database tests passed serially on the disposable database, including the ended-without-hiring regression. The three MCP boundary tests also passed. These results do not substitute for hosted normal-path hiring proof.
+
+Hosted diagnosis: the continued Front Desk case-summary request reached the firm Function without a bearer header (09:12:39 UTC). No credential was rotated and authentication remains enforced. A read-only current-version connection diagnostic is separate from business completion proof.
+
+Added a separate hosted firm-onboarding smoke fixture whose permission explicitly includes management staffing, unlike the older no-delegation recovery fixture. It permits no external communications. A current-version Front Desk diagnostic successfully called `firm.list_cases`; same-session continuation remains under investigation.
+
+The extended firm-runner suite passed 11/11 after adding first-goal, credential-binding, and CEO-rationale assertions. Deployed scheduler readback correctly moved the ended, unstaffed event to `human_required`. Current-version continuation paused for approval despite configured `allow`; its approved read is being checked. An isolated `vetta` harness diagnostic is testing a supported alternative to the existing `pi` runtime without changing company bindings.
+
+The isolated `vetta` diagnostic passed initial and resumed authenticated MCP reads after the existing scoped approval protocol. Added explicit `ASSURANCE_FIRM_HARNESS`, defaulting new company roles/advocates to this verified runtime; the setup reconciler includes the field in provider configuration. Existing case permissions and credentials are unchanged. Normal-path firm verification continues.
+
+The first runtime reconciliation attempt stopped at shared request admission. Setup now waits through definite admission rejections only, with a bounded request slice; uncertain network/provider writes still stop for reconciliation. TypeScript validation covers the updated reconciler.
+
+Reduced provider contention in firm status: non-CEO roles read local staffing/events and board references without extra provider credit/board calls. CEO balance remains live and allocations recheck credit. This addresses the observed status-tool failure while company roles were competing with scheduler requests.
+
+Onboarding completion also distinguishes pending CEO/hiring dependencies from failed hiring. Existing queued/running dependency events keep intake pending without spawning another session; missing results after dependent work ends still require intervention.
+
+Hosted inspection found a CEO budget request reusing its completed board operation ID. The duplicate guard correctly prevented dispatch. Clarified conflict responses and role instructions so the agent can select a fresh ID for genuinely different work without bypassing uncertain-operation reconciliation.
+
+Verified the zero-contact fixture's old CEO session cancellation before queuing one linked event on the corrected runtime. The old event is superseded rather than marked successful. No case advocate existed, no budget had been recorded, and no outreach occurred at handover. Existing case authority and receipts were retained.
+
+Hosted Front Desk `firm_status` passed with durable staffing/events and no provider credit lookup. The existing role-service regressions passed 7/7, MCP boundary tests passed 3/3, and the business-completion tests passed after pending-dependency and ended-without-goal handling were added. No normal-path hiring completion is claimed yet.
+
+Added sequential handling of the already-pending approval batch within one scheduler request slice. Each call retains its own binding recheck and confirmation ledger. This reduces onboarding delays without expanding role permissions or replaying uncertain confirmations.
+
+All 12 firm-runner tests passed serially, including the already-pending approval batch, ended-without-hiring, first-goal, dependency-waiting, identity, and uncertain-confirmation regressions. TypeScript passed before deploying the batch change.
+
+Completion checks now account for the expected first-turn owner question: a bound advocate with a persisted goal may finish onboarding while its authority is parked `human_required`. This is not case resolution or renewed action permission. Added that authority-state assertion to the regression.
+
+Adjusted running-event polling to avoid missing the next minute cron tick after processing latency. This shortens observed onboarding approval delays while retaining the claim fence and shared request governor.
+
+Found a provisioning integration defect while the first firm advocate was being bound: its general version already carried case-authority ownership metadata, which could be mistaken for a published connector version and trigger a missing restore-version error. Provisioning now distinguishes ownership metadata from an actual connector. Added a case-owned general-agent regression before reconciling the existing hire.
+
+The new provisioning regression also exposed a binding-check defect: the supplied CEO allocation was typed but ignored in favor of the global fallback. Binding checks now validate the supplied positive allocation, retaining the fallback only for older open runs without a firm allocation. The first regression run failed on this real defect; it was not reported as passing.
+
+Moved multi-request firm advocate provisioning into the existing leased setup worker. Front Desk returns a truthful queued receipt after recording the selected agent/version; worker retries preserve those bindings and the CEO allocation. This removes long provisioning from an MCP call without treating a queued hire as completed work. The metadata and case-budget binding fixes passed all 9 provisioning/binding tests after correcting a local edit error; no failed test run was deployed.
+
+Validation: provisioning/binding tests passed 9/9, including the case-owned general-version regression and explicit CEO allocation. Setup-worker tests passed 10/10, including concurrent polling and retrying the same hired agent/version/budget. These results precede live reconciliation of the interrupted hire.
+
+Completion checks recognize the new durable provisioning job as pending work, while continuing to require the actual bound advocate and first goal for completion. The regression distinguishes a queued provisioning job from an ended hiring session with no work queued.
+
+Hosted reconciliation confirmed the original case-owned agent and mailbox existed while the failed provisioning transaction left zero registered case runs and active credentials. The original uncertain hire was recorded as reconciled-to-queued and linked to one durable provisioning job. The owner authority, agent, and CEO allocation were preserved; no second agent, claim contact, or payout was created. The backend deployment completed; first-turn proof remains pending.
+
+### Native portal service in progress
+
+Added a case-isolated Naïve browser service, owner-only credential/live-view connection, durable action reservations and read-only uncertain-submission reconciliation. The implementation uses the live OpenAPI browser contracts and preserves old permission scopes. Three schema/destination/fictional-form unit tests and TypeScript passed. The disposable database integration test passed for case/identity binding, scoped context grant, secret non-persistence, uncertain dispatch blocking, scope rejection and revocation. All provider responses were mocked; hosted native-browser execution remains unverified. Added a controlled fictional portal fixture; document upload is still unverified because the native browser action API has no upload operation.
+
+
+## 2026-11-08 — Phone-first MVP frontend
+
+- Restored phone entry on the landing page and signed-out workspace with explicit **Verify and call me** copy and visible standard handling scope. Older email accounts remain accessible; email is not required for phone owners.
+- Added the authenticated onboarding-call client and dashboard status/transcript polling. Verification requests a call once; reloads and polling do not dispatch calls. Existing phone session cache and transient-error recovery are preserved.
+- Kept case conversation/uploads and stop controls, hid email-only setup from phone owners, made pre-call manual intake optional, and added compact amounts with unknown and estimated values explicitly distinguished. Overview totals no longer turn all unknown amounts into zero.
+- Verification: `npm run build`, the 12 session-cache/progress/activation unit tests, `npx tsx scripts/phone-ui-check.ts`, and the chat/email fallback browser fixtures passed. The production bundle retains the existing size/static-import warnings. The phone browser fixture mocked every external request and covered invalid OTP, rapid clicks, retained sessions, provider failure, disabled readiness, and email fallback. No real verification texts or calls were sent. Provider readiness and real end-to-end calling are separate checks.
+
+- Portal integration direction clarified: use the built-in Naïve browser, not the unexposed action proxy. Kept reusable owner credential/context and reservation code. Native tool configuration and approval argument contracts are not described in the fetched agent schema; no broad built-in approval bypass was added.
+
+## Requested phone onboarding backend — November 8, 2026
+
+Implemented the phone-first MVP handoff in `backend/phone-onboarding.ts`, mounted from the existing authenticated phone routes. A verified owner explicitly requests one AgentPhone onboarding call under the displayed standard handling scope. A committed owner-unique ledger prevents redials after duplicate clicks, timeouts, invalid receipts, crashes, and cancellation. Receipt reconciliation binds the original owner, phone, routing IDs, and outbound direction, retains a hashed transcript, and automatically creates a case plus isolated Naïve setup when caller-reported intake is sufficient. There is no email or manual claim step in that successful path. The voice disclosure distinguishes intake from the separate advocate's later work.
+
+Added owner cancellation with transaction locking, late-receipt retention, and existing-authority revocation. Pending onboarding prevents account relinking. The phone worker reconciles existing call receipts before the independent inbound/SMS gate; `PHONE_FLOW_ENABLED` remains false. Migration `0030_phone_onboarding.sql` adds only the onboarding ledger. See [phone onboarding](phone-onboarding.md) for APIs, configuration, and incomplete-intake limits.
+
+Verification: all 10 new tests passed serially against the disposable `autonomy-check` database, including mocked Twilio Verify → verified EdDSA JWT → one outbound call reservation → transcript → Naïve setup; cancellation races, binding rejection, delayed transcripts, activation retries, and no revival of revoked authority. The existing phone-account linking regression also passed. The first database attempt used a stale deleted test-branch connection and failed before migration. Authentication-fixture SID and inherited signing-key issues were corrected; the final suite isolates its signing-key store. `npm run build`, TypeScript, and scoped whitespace checks passed. No real SMS, outbound call, production migration, deployment, inbound routing change, or paid registration occurred. Live provider-to-Naïve continuation remains unverified; deployment still requires the documented onboarding configuration.
+
+
+## 2026-11-08 — Onboarding stop control
+
+- Added **Stop onboarding and case work** to the phone onboarding notice using authenticated `POST /phone/onboarding/stop`. Pending clicks are disabled; confirmed cancellation explains that an already requested call may still connect. Failures preserve the previous status and allow retry. In-flight status reads cannot overwrite a stop result.
+- Verification: `npx tsx scripts/phone-onboarding-ui-fixture.ts` and `npx tsc --noEmit` passed. The fixture covers authenticated requests, pending state, cancellation, reload, an existing case, and failed-stop recovery. All external requests were mocked; no SMS, calls, or real case work occurred.
+
+## Phone MVP integration configuration
+
+Wired the requested outbound onboarding gate into cases and phone deployment configuration, with Naïve activation and firm flags on the phone worker. Updated advocate instructions to use website questions for phone accounts without requiring email. Updated the root instructions and resume sequence to the latest user override. Backend and hosted verification are still in progress; local phone test results are recorded separately.
+
+
+## 2026-11-08 — Separate phone login and call readiness
+
+- `PhoneStatus` now reads `onboardingEnabled` strictly: only true enables **Verify and call me**. Missing or false readiness preserves OTP login, displays call unavailability, and never submits a call request. Call and handling-scope copy appears only when that action is available. Existing-account linking and fictional test sign-ins never call; typed fictional numbers are also excluded.
+- General landing and empty-workspace copy no longer promises a call when the readiness gate is unavailable. Email remains an optional legacy-account fallback.
+- Verification: the extended `npx tsx scripts/phone-ui-check.ts` and `npx tsc --noEmit` passed. The mocked flow covers enabled calls, absent/false call readiness with successful phone login, and both quick-button and typed fictional-account paths with zero call requests. No real SMS or calls were sent.

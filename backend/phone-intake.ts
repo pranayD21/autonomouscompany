@@ -76,6 +76,7 @@ export async function linkVerifiedPhone(pool:Pool,owner:string,phoneUserId:strin
   if(!u||u.linked_owner_id&&u.linked_owner_id!==owner)throw Error('PHONE_ALREADY_LINKED');
   const used=await client.query('SELECT id FROM advocacy_phone_users WHERE linked_owner_id=$1 AND id<>$2',[owner,u.id]);if(used.rowCount)throw Error('ACCOUNT_ALREADY_LINKED');
   const records=await client.query('SELECT id FROM advocacy_cases WHERE owner_id=$1 LIMIT 1',[`phone:${u.id}`]);if(records.rowCount)throw Error('PHONE_ACCOUNT_HAS_CASES');
+  const onboarding=await client.query('SELECT id FROM advocacy_phone_onboarding WHERE owner_id=$1 LIMIT 1',[`phone:${u.id}`]);if(onboarding.rowCount)throw Error('PHONE_ACCOUNT_HAS_ONBOARDING');
   await client.query('UPDATE advocacy_phone_users SET linked_owner_id=$2 WHERE id=$1',[u.id,owner]);
   await client.query('INSERT INTO advocacy_phone_preferences(owner_id,phone,sms_consent) VALUES($1,$2,false) ON CONFLICT(owner_id) DO NOTHING',[owner,u.phone_number]);
   await client.query('COMMIT');return {linked:true};

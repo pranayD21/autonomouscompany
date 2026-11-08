@@ -4,7 +4,7 @@ import {randomUUID} from "node:crypto";
 import {Pool} from "pg";
 import {drizzle} from "drizzle-orm/node-postgres";
 import {eq} from "drizzle-orm";
-import {cases,outreachActions} from "../backend/schema";
+import {cases,outreachActions,caseMailboxes} from "../backend/schema";
 import {dispatchOnce} from "../backend/outreach-service";
 import {actionInput,destinationAllowed,DispatchFailure,sendOutreach,readOutreach} from "../backend/providers/outreach";
 if(!process.env.OUTREACH_TEST_DATABASE_URL)throw new Error("Use an isolated Neon test branch via OUTREACH_TEST_DATABASE_URL");
@@ -61,6 +61,17 @@ test("destination and synthetic validation fail closed",()=>{
  assert.equal(actionInput.safeParse({...base,destination:"a@example.com,b@example.com"}).success,false);
  assert.equal(actionInput.safeParse({...base,subject:"Hi\r\nBcc: other@example.com"}).success,false);
  assert.equal(destinationAllowed("email","not-configured@example.com"),false);
+});
+
+test("dispatch persists case inbox before send and followup retains original inbox",async()=>{
+ await db.insert(caseMailboxes).values({case_id:item.id,inbox_id:'case-original',email:'case-original@example.com'});
+ const a=await draft('email');let sends=0;
+ const first=await dispatchOnce(db,a,owner,async current=>{sends++;assert.equal(current.provider_inbox_id,'case-original');const [saved]=await db.select().from(outreachActions).where(eq(outreachActions.id,current.id));assert.equal(saved.provider_inbox_id,'case-original');assert.equal(saved.state,'dispatching');return {provider_id:'mail-original',provider_thread_id:'thread-original',provider_status:'accepted'};});
+ await db.update(caseMailboxes).set({inbox_id:'case-replacement',email:'replacement@example.com'}).where(eq(caseMailboxes.case_id,item.id));
+ const followup=await draft('email');await db.update(outreachActions).set({reply_to_message_id:first.provider_id,reply_thread_id:first.provider_thread_id}).where(eq(outreachActions.id,followup.id));
+ const [updated]=await db.select().from(outreachActions).where(eq(outreachActions.id,followup.id));
+ const pending=await dispatchOnce(db,updated,owner,async current=>{sends++;assert.equal(current.provider_inbox_id,'case-original');throw Error('uncertain send');});assert.equal(pending.state,'unknown');
+ await dispatchOnce(db,pending,owner,async()=>{throw Error('must not send');});assert.equal(sends,2);
 });
 
 test("a draft cannot dispatch after its case revision changes",async()=>{

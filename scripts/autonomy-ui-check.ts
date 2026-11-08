@@ -34,12 +34,12 @@ export async function checkAutonomyPermissions(page:Page,apiBase:string,caseId:s
   await reload();await expect(panel.getByRole("heading",{name:"Working",exact:true})).toBeVisible();await panel.getByText("Agent details",{exact:true}).click();await expect(panel.getByText("Engine: Direct model",{exact:true})).toBeVisible();await expect(panel.getByText("Find supported claim avenues",{exact:true})).toBeVisible();
   sessions[0]={...sessions[0],state:"human_required",waiting_on:"Please provide the fictional claim reference."};await reload();
   await expect(panel.getByRole("heading",{name:"Needs your attention",exact:true})).toBeVisible();await expect(panel.getByRole("button",{name:"Review pending actions",exact:true})).toHaveCount(0);
-  await panel.getByLabel("Your response",{exact:true}).fill("The incident happened on November 3.");await panel.getByRole("button",{name:"Send response",exact:true}).click();await expect.poll(()=>updates.length).toBe(1);expect(updates[0].text).toBe("The incident happened on November 3.");expect(updates[0].id).toMatch(/^[0-9a-f-]{36}$/);await expect(panel.getByText("Update saved.",{exact:true})).toBeVisible();
-  sessions[0]={...sessions[0],state:"human_required"};await reload();
-  await panel.getByRole("button",{name:"Continue with updated information",exact:true}).click();await expect.poll(()=>resumed.length).toBe(1);expect(resumed[0]).toEqual({confirm:true});await expect(panel.getByRole("heading",{name:"Working",exact:true})).toBeVisible();
+  await expect(panel.getByRole("link",{name:"Reply in the conversation",exact:true})).toHaveAttribute("href","#section-conversation");
+  await expect(panel.getByLabel("Your response",{exact:true})).toHaveCount(0);
   await panel.getByRole("button",{name:"Stop agent work",exact:true}).click();await expect.poll(()=>revoked.length).toBe(1);await expect(panel.getByRole("heading",{name:"Stopped",exact:true})).toBeVisible();
   available=false;await reload();await expect(panel.getByRole("form",{name:"Start case agent"})).toHaveCount(0);await expect(panel.getByText("Agent work is temporarily unavailable. Your case is saved.",{exact:true})).toBeVisible();
   const hash="a".repeat(64),approvalPath=`${apiBase}/cases/${caseId}/sessions/${runId}/approvals`,decisions:any[]=[];
+  authorities=authorities.map(a=>({...a,policy:{version:1}}));
   sessions=[{id:runId,authority_id:authorityId,state:"human_required",engine:"naive",reason:"Synthetic provider approval",next_check_at:null}];
   await page.route(approvalPath,route=>{
    if(route.request().method()==="POST"){decisions.push(route.request().postDataJSON());return route.fulfill({json:{state:"confirmed"}});}
@@ -47,7 +47,7 @@ export async function checkAutonomyPermissions(page:Page,apiBase:string,caseId:s
   });
   await reload();await panel.getByRole("button",{name:"Review pending actions",exact:true}).click();await expect(panel.getByRole("heading",{name:"assurance.case_get",exact:true})).toBeVisible();await panel.getByRole("button",{name:"Approve this action",exact:true}).click();
   await expect.poll(()=>decisions.length).toBe(1);expect(decisions[0]).toEqual({confirm:true,hash,decision:"allow"});await page.unroute(approvalPath);
-  console.log("PASS mocked activation UI: no review prerequisite, single-click v2 scope with no permission form, queued/running/waiting/stopped statuses, direct engine attribution, owner resume without changing permission, and Naïve-only provider approval. No live grant or outreach created.");
+  console.log("PASS mocked activation UI: no review prerequisite, single-click v2 scope with no permission form, queued/running/waiting/stopped statuses, direct engine attribution, website conversation link for owner replies, and legacy-only Naïve provider approval. No live grant or outreach created.");
  }catch(error){console.error("Activation UI failure state:",(await card.innerText()).slice(0,2500));throw error;}
  finally{await page.unroute(stackPath);await page.unroute(crewPath);await page.unroute(path);await page.unroute(revokePath);await page.unroute(resumePath);await page.unroute(updatesPath);}
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "advocacy_outreach_actions" ADD COLUMN "provider_inbox_id" text;

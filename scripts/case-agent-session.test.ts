@@ -1,12 +1,12 @@
 import {NaiveDeferred} from "../backend/providers/naive-capacity";
-import {confirmCaseApproval,readCaseApprovals,pendingHash,type ApprovalProvider,type Pending} from "../backend/case-agent-approval";
+import {automaticallyConfirmCaseTool,confirmCaseApproval,readCaseApprovals,pendingHash,type ApprovalProvider,type Pending} from "../backend/case-agent-approval";
 import {test,before,after} from "node:test";
 import assert from "node:assert/strict";
 import {randomUUID} from "node:crypto";
 import {Pool} from "pg";
 import {drizzle} from "drizzle-orm/node-postgres";
 import {migrate} from "drizzle-orm/node-postgres/migrator";
-import {eq,inArray} from "drizzle-orm";
+import {eq,inArray,sql} from "drizzle-orm";
 import {cases,caseAuthorities,caseToolCredentials,caseAgentSessions,caseAgentEvents} from "../backend/schema";
 import {issueCaseToolCredential} from "../backend/case-tool-auth";
 import {registerCaseAgentSession,pollCaseAgentSessions,advanceCaseAgentSession,type CaseSessionDependencies} from "../backend/case-agent-session";
@@ -261,4 +261,76 @@ test("capacity rejection preserves the session and event until the shared cooldo
  await pollCaseAgentSessions(db,{...deps,send:async(id,_message,key)=>{assert.equal(id,sessionId);keys.push(key);return {accepted_seq:42};}});
  assert.deepEqual(keys,[`case-event:${event.id}`,`case-event:${event.id}`]);
  assert.equal((await db.select().from(caseAgentEvents).where(eq(caseAgentEvents.id,event.id)))[0].accepted_seq,42);
+});
+
+async function openFixture(){
+ if(ids.length)await db.update(caseAgentSessions).set({state:"stopped"}).where(inArray(caseAgentSessions.case_id,ids));
+ const [item]=await db.insert(cases).values({owner_id:owner,title:"Open Naïve case fixture"}).returning();ids.push(item.id);
+ const result=await db.execute(sql`INSERT INTO advocacy_case_authorities(case_id,approved_by,policy) VALUES(${item.id},${owner},${JSON.stringify({version:2,consent:"Handle this fictional case. No external contact in this test."})}::jsonb) RETURNING id`);
+ const authorityId=result.rows[0].id as string;
+ const credential=await issueCaseToolCredential(db,item.id,owner,authorityId);
+ const input={case_id:item.id,authority_id:authorityId,credential_id:credential.id,identity_id:`idn_${randomUUID()}`,agent_id:"agt_test",agent_version:18};
+ const run=await registerCaseAgentSession(db,input,owner);return {item,authorityId,credential,input,run};
+}
+test("v2 starts without legacy operator/expiry limits and preserves its session through evidence and human help",async()=>{
+ const previous=process.env.NAIVE_OPEN_SESSION_BUDGET_MICRO_USD;
+ process.env.NAIVE_OPEN_SESSION_BUDGET_MICRO_USD="1000000";process.env.CREW_ALLOWED_USER_IDS="";
+ try{
+  const f=await openFixture();assert.equal(f.credential.expires_at,null);
+  let starts=0,sends=0,cancels=0;
+  const provider:CaseSessionDependencies={...deps,verifyBinding:async b=>{assert.equal(b.open_permission,true);return true;},start:async(input)=>{starts++;assert.equal(input.budget_micro_usd,1000000);return {id:"ses_open_fixture"};},send:async()=>{sends++;return {accepted_seq:sends};},cancel:async()=>{cancels++;}};
+  await advanceCaseAgentSession(db,f.run.id,provider);
+  await queueCaseAgentEvent(db,f.item.id,"open:reply","reply_received",{});
+  await advanceCaseAgentSession(db,f.run.id,provider);assert.equal(sends,1);
+  await db.update(caseAuthorities).set({state:"human_required",reason:"Owner decision needed"}).where(eq(caseAuthorities.id,f.authorityId));
+  await pollCaseAgentSessions(db,provider);assert.equal((await get(f.run.id)).state,"human_required");assert.equal(cancels,0);
+  await queueCaseAgentEvent(db,f.item.id,"open:untrusted","reply_received",{});
+  await advanceCaseAgentSession(db,f.run.id,provider);assert.equal(sends,1);assert.equal(cancels,0);
+  await db.update(caseAuthorities).set({state:"revoked"}).where(eq(caseAuthorities.id,f.authorityId));
+  await pollCaseAgentSessions(db,provider);assert.equal((await get(f.run.id)).state,"stopped");assert.equal(cancels,1);assert.equal(starts,1);
+ }finally{process.env.CREW_ALLOWED_USER_IDS=owner;if(previous===undefined)delete process.env.NAIVE_OPEN_SESSION_BUDGET_MICRO_USD;else process.env.NAIVE_OPEN_SESSION_BUDGET_MICRO_USD=previous;}
+});
+test("v2 pause during binding verification parks without starting or cancelling a session",async()=>{
+ const f=await openFixture();let starts=0;
+ await advanceCaseAgentSession(db,f.run.id,{...deps,verifyBinding:async()=>{await db.update(caseAuthorities).set({state:"human_required"}).where(eq(caseAuthorities.id,f.authorityId));return true;},start:async()=>{starts++;return {id:"ses_forbidden"};}});
+ assert.equal(starts,0);assert.equal((await get(f.run.id)).state,"human_required");
+});
+
+async function openApprovalFixture(name="assurance.request_human"){
+ const f=await openFixture();
+ await db.update(caseAgentSessions).set({session_id:`ses_${randomUUID()}`,state:"running"}).where(eq(caseAgentSessions.id,f.run.id));
+ const action:Pending={kind:"tool",name,tool_call_id:"call_open",parked_seq:5,args:{case_id:f.item.id,authority_id:f.authorityId,question:"Which insurer?"}};
+ let calls=0;
+ const provider:ApprovalProvider={read:async()=>({status:"idle",stop_reason:"awaiting_approval",pending_actions:[action]}),confirm:async()=>{calls++;return {status:"running",stop_reason:null,pending_actions:[]};}};
+ return {...f,action,provider,calls:()=>calls};
+}
+test("v2 auto approval runs supported same-case tool under standing permission without operator membership",async()=>{
+ const f=await openApprovalFixture();process.env.CREW_ALLOWED_USER_IDS="";
+ try{
+  await advanceCaseAgentSession(db,f.run.id,{...deps,read:f.provider.read,autoApprove:(db,caseId,runId,owner)=>automaticallyConfirmCaseTool(db,caseId,runId,owner,f.provider)});
+  assert.equal(f.calls(),1);assert.equal((await get(f.run.id)).state,"running");
+  assert.equal((await readCaseApprovals(db,f.item.id,f.run.id,owner,f.provider)).history[0].state,"confirmed");
+ }finally{process.env.CREW_ALLOWED_USER_IDS=owner;}
+});
+test("v2 auto approval rejects arbitrary builtins, cross-case tools, and missing action authority",async()=>{
+ const f=await openApprovalFixture();
+ for(const mutation of [()=>{f.action.name="web_fetch";},()=>{f.action.name="assurance.case_get";f.action.args={case_id:randomUUID()};},()=>{f.action.name="assurance.send_email";f.action.args={case_id:f.item.id};}]){
+  mutation();assert.equal((await automaticallyConfirmCaseTool(db,f.item.id,f.run.id,owner,f.provider)).state,"unsupported");
+ }
+ assert.equal(f.calls(),0);
+});
+test("v2 auto approval preserves durable uncertainty and never replays confirmation",async()=>{
+ const f=await openApprovalFixture();let calls=0;
+ const provider={...f.provider,confirm:async()=>{calls++;throw Error("Timeout after acceptance");}};
+ assert.equal((await automaticallyConfirmCaseTool(db,f.item.id,f.run.id,owner,provider)).state,"uncertain");
+ assert.equal((await automaticallyConfirmCaseTool(db,f.item.id,f.run.id,owner,provider)).state,"uncertain");
+ assert.equal(calls,1);assert.equal((await get(f.run.id)).state,"human_required");
+ const history=(await readCaseApprovals(db,f.item.id,f.run.id,owner,provider)).history;assert.equal(history.length,1);assert.equal(history[0].state,"uncertain");
+});
+test("v2 auto approval admission rejection preserves safe same-action retry",async()=>{
+ const f=await openApprovalFixture();let calls=0;
+ const rejected={...f.provider,confirm:async()=>{calls++;throw Object.assign(Error("rate limit"),{status:429});}};
+ await assert.rejects(()=>automaticallyConfirmCaseTool(db,f.item.id,f.run.id,owner,rejected));
+ assert.equal((await readCaseApprovals(db,f.item.id,f.run.id,owner,f.provider)).history.length,0);
+ assert.equal((await automaticallyConfirmCaseTool(db,f.item.id,f.run.id,owner,f.provider)).state,"confirmed");assert.equal(calls,1);assert.equal(f.calls(),1);
 });

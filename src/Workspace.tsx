@@ -1,4 +1,7 @@
-import {PhoneIntakes} from "./PhoneIntakes";
+import {phoneSelected} from './phone-session';
+import {OnboardingCallNotice} from './phone-onboarding';
+import {GmailConnection} from './GmailConnection';
+import {EmailLeads} from "./EmailLeads";
 import {useCallback, useEffect, useRef, useState, type ReactNode} from "react";
 import {AnimatePresence, motion} from "motion/react";
 import {useLiveQuery} from "@neon/realtime-react";
@@ -8,6 +11,7 @@ import type {CaseInput} from "../backend/claim-input";
 import {api, sealCases} from "./services";
 import {CaseForm} from "./CaseForm";
 import {Documents} from "./Documents";
+import {CaseChat} from "./CaseChat";
 import {CrewReview} from "./CrewReview";
 import {ArrowLeft, ArrowUpRight, Home, LogOut, Plus, Sparkle} from "./Icons";
 import {Sidebar, SidebarLink, SidebarSection, SidebarText} from "./ui/Sidebar";
@@ -107,7 +111,8 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
         label={item.title} meta={item.status.replaceAll("_", " ")}/>)}
     </Sidebar>
     <main id="workspace-content" className="surface">
-      <PhoneIntakes userId={userId}/>
+      {phoneSelected()&&<OnboardingCallNotice userId={userId}/>}
+      {!phoneSelected()&&route.view!=="case"&&<EmailLeads userId={userId} onOpen={id=>go(`#case/${id}`)}/>}
       {error && <p role="alert" className="error">Live updates stopped: {error.message}. Reload to reconnect.</p>}
       <AnimatePresence>{notice && <motion.p role="alert" className="error" initial={{opacity: 0, y: -6}} animate={{opacity: 1, y: 0}} exit={{opacity: 0}}>{notice}</motion.p>}</AnimatePresence>
       <AnimatePresence mode="wait">
@@ -125,7 +130,8 @@ function Greeting({name}: {name: string}) {
 
 function Overview({cases, userName, live}: {cases: readonly BillCase[]; userName: string; live: ReactNode}) {
   const [hovered, setHovered] = useState<number | null>(null);
-  const total = cases.reduce((sum, c) => sum + (gap(c) ?? 0), 0);
+  const knownAmounts = cases.filter(c => gap(c) !== null);
+  const total = knownAmounts.reduce((sum, c) => sum + gap(c)!, 0);
   const reviewed = cases.filter(c => c.status === "reviewed").length;
   const focus = cases.find(c => c.status !== "reviewed") ?? cases[0];
   const step = focus && nextStep(focus);
@@ -142,7 +148,7 @@ function Overview({cases, userName, live}: {cases: readonly BillCase[]; userName
     </div>}
 
     <div className="summary-strip">
-      <div className="summary-money"><strong><NumberTicker value={total} format={n => money(Math.round(n))}/></strong><small>{MONEY_CAVEAT}</small></div>
+      <div className="summary-money"><strong>{knownAmounts.length ? <NumberTicker value={total} format={n => money(Math.round(n))}/> : "Not yet known"}</strong><small>{knownAmounts.length ? `${MONEY_CAVEAT}${knownAmounts.length < cases.length ? " Some case amounts are missing." : ""}` : "Add documents to establish amounts."}</small></div>
       <div className="summary-meta">
         <span><b>{cases.length}</b> open</span>
         <span><b>{reviewed}</b> of {cases.length} reviewed</span>
@@ -174,14 +180,15 @@ function Overview({cases, userName, live}: {cases: readonly BillCase[]; userName
 function Intake({hasCases, disabled, onCancel, onSave, live}: {hasCases: boolean; disabled: boolean; onCancel: () => void; onSave: (d: CaseInput,files?:File[]) => Promise<void>; live: ReactNode}) {
   return <>
     <div className="page-head">
-      <div>{hasCases && <button className="back-link" onClick={onCancel}><ArrowLeft size={16} aria-hidden="true"/>All cases</button>}<h1>{hasCases ? "Open a new case." : "Open your first case."}</h1><p className="lede">Tell us what happened or upload your documents. Assurance takes it from there.</p></div>
+      <div>{hasCases && <button className="back-link" onClick={onCancel}><ArrowLeft size={16} aria-hidden="true"/>All cases</button>}<h1>{hasCases ? "Open a new case." : phoneSelected() ? "Your cases" : "Open your first case."}</h1><p className="lede">{phoneSelected()&&!hasCases ? "Your cases will appear here. You can add details and documents below." : "Tell us what happened or upload your documents. Assurance takes it from there."}</p></div>
       {live}
     </div>
-    <div className="intake-card"><CaseForm disabled={disabled} onSave={onSave}/></div>
+    {phoneSelected()&&!hasCases ? <details className="intake-card"><summary>Add case details yourself (optional)</summary><CaseForm disabled={disabled} onSave={onSave}/></details> : <div className="intake-card"><CaseForm disabled={disabled} onSave={onSave}/></div>}
   </>;
 }
 
 const SECTIONS = [
+  {id: "section-conversation", label: "Conversation"},
   {id: "section-overview", label: "Overview"},
   {id: "section-documents", label: "Documents"},
   {id: "section-authorization", label: "Agent work"},
@@ -221,7 +228,7 @@ function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}: {item:
         <div><h2>{step.title}</h2></div>
         <a className="pill-link" href={step.href} onClick={e => { e.preventDefault(); if (step.href === "#section-overview") openEditor(); else document.getElementById(step.href.slice(1))?.scrollIntoView({behavior: "smooth"}); }}>{step.cta}<ArrowUpRight size={15} aria-hidden="true"/></a>
       </div>
-      {bothKnown
+      {phoneSelected() ? <dl className="case-key-numbers" aria-label="Key amounts"><div><dt>Bill amount</dt><dd>{item.bill_cents === null ? "Not yet known" : money(item.bill_cents)}</dd></div><div><dt>EOB responsibility</dt><dd>{item.eob_cents === null ? "Not yet known" : money(item.eob_cents)}</dd></div><div><dt>Estimated discrepancy</dt><dd>{diff === null ? "Not yet known" : money(diff)}</dd><small>To investigate · not verified savings</small></div></dl> : bothKnown
         ? <div className="money-card">
             <p className="discrepancy">Potential discrepancy <b>{money(diff)}</b></p>
             <div className="money-row"><span>Bill</span><span>{money(item.bill_cents)}</span></div>
@@ -238,6 +245,10 @@ function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}: {item:
 
     <SectionNav sections={SECTIONS}/>
 
+    <CaseSection id="section-conversation" title="Conversation">
+      <CaseChat key={`chat-${item.id}-${userId}`} caseId={item.id} userId={userId} revision={item.revision}/>
+    </CaseSection>
+
     <CaseSection id="section-overview" title="Overview" status={sectionStatus("details")} aside={<button className="text-button" onClick={() => setEditing(e => !e)} aria-expanded={editing}>{editing ? "Cancel editing" : "Update case details"}</button>}>
       <AnimatePresence initial={false}>
         {editing && <motion.div className="edit-panel" initial={{height: 0, opacity: 0}} animate={{height: "auto", opacity: 1}} exit={{height: 0, opacity: 0}} transition={{duration: 0.3, ease: [0.16, 1, 0.3, 1]}}>
@@ -251,6 +262,7 @@ function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}: {item:
     </CaseSection>
 
     <CaseSection id="section-documents" title="Documents" status={sectionStatus("documents")}>
+      {!phoneSelected()&&<GmailConnection key={`gmail-${item.id}`} caseId={item.id} userId={userId}/>}
       <Documents key={`documents-${item.id}`} caseId={item.id} userId={userId} revision={item.revision}/>
     </CaseSection>
 

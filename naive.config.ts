@@ -1,3 +1,4 @@
+import {firmRoles,firmAgentName,firmAgentDeclarations,firmEndpoint,prepareFirmTokenEnvironment} from "./backend/firm-blueprint";
 import { defineProject } from "@usenaive-sdk/blueprints";
 import {caseAgentTools,caseToolInstructions} from "./backend/providers/case-agent";
 
@@ -11,9 +12,15 @@ const specialists = [
   ["verifier", "Check the proposed findings against evidence. Distinguish claim status, insurer decisions, provider payments, benefits paid to the claimant, liability reductions, and refunds received."],
 ] as const;
 const names = specialists.map(([name]) => `bill-advocate-${name}`);
+prepareFirmTokenEnvironment();
+const firmAgents=firmAgentDeclarations();
 export default defineProject({
   name: "bill-advocate",
+  identities: firmRoles.map(role=>({name:firmAgentName(role),description:`Assurance permanent ${role} persona`})),
+  skills: [{slug:"assurance-firm-operations",file:"docs/firm-operations-skill.md"}],
+  vaults: firmRoles.map(role=>({name:firmAgentName(role),identity:firmAgentName(role),credentials:[{kind:"static_bearer" as const,key:`firm-${role}`,mcp_server_url:firmEndpoint(role),value:{from_env:`ASSURANCE_FIRM_TOKEN_${role.toUpperCase()}`}}]})),
   agents: [
+    ...firmAgents,
     ...specialists.map(([name, role]) => ({ name: `bill-advocate-${name}`, model: "qwen/qwen3.7-flash", budget, system: `${common}\n${role}`, handoffs: false as const, tools: { default_config: { permission: "deny" as const }, configs: name === "intake" ? { view_image: { enabled:true,permission:"allow" as const } } : {} as Record<string,{enabled:boolean;permission:"allow"|"deny"|"ask"}> } })),
     { name: "bill-advocate-coordinator", model: "openai/gpt-5.4-mini", budget,
       system: `${common}\n${caseToolInstructions}\nCoordinate intake, investigation, an advocacy draft, and independent verification. Keep each delegation compact (under 6000 characters) so tool arguments are not truncated. Send the relevant official source text and IDs to the investigator and verifier; do not copy all source boilerplate to every specialist. Give intake and advocacy the case facts and explicit research gaps. All specialists must stay in synthetic/demo mode and must not ask for real personal records. Choose which specialists, if any, are useful for the current decision. Do not run a fixed four-specialist pipeline for routine follow-ups or known facts. Delegate only a specific unresolved question using send_to_agent with wait:true. If specialists are outstanding, call wait_for_agents and incorporate their results before submitting. You may decide directly when the supplied evidence is sufficient. Use independent verification for consequential coverage or outcome claims when it would resolve uncertainty; delegation itself never verifies a claim. For review tasks, end with a concise case plan and the exact human intervention required. For authorized_case_decision tasks, reconcile the specialist advice into exactly one permitted next action, including waiting or stopping when appropriate. When an output schema is supplied, you MUST call submit_output with all required fields before ending. A prose answer or JSON in a chat message is not a submitted result.`,

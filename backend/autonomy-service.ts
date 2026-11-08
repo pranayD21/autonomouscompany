@@ -1,3 +1,6 @@
+import {directBlocksNaive} from './migrate-direct-case';
+import {firmEnabled,requestFirmStaffing} from "./firm-events";
+import {readNaiveCaseGoals} from "./naive-case-goal";
 import {openCasePermission,isOpenCasePermission} from "./open-case-policy";
 import {issueCaseToolCredential} from "./case-tool-auth";
 import {registerDirectCaseRun} from "./direct-case-runner";
@@ -31,7 +34,8 @@ export async function authorizeCase(db:NodePgDatabase,caseId:string,userId:strin
  });
 }
 
-export const directActivationAvailable=()=>process.env.ASSURANCE_DIRECT_ACTIVATION_ENABLED==="true";
+export const selectedCaseEngine=()=>process.env.ASSURANCE_CASE_ENGINE==="naive"?"naive":"direct_openai";
+export const directActivationAvailable=()=>selectedCaseEngine()==="naive"?process.env.NAIVE_CASE_PROVISIONING_ENABLED==="true":process.env.ASSURANCE_DIRECT_ACTIVATION_ENABLED==="true";
 async function authorizeDirectCase(db:NodePgDatabase,caseId:string,userId:string,raw:unknown,persistent:boolean){
  const policy=openCasePermission.parse(raw);
  if(!persistent||!directActivationAvailable())throw Error("DIRECT_ACTIVATION_UNAVAILABLE");
@@ -42,8 +46,9 @@ async function authorizeDirectCase(db:NodePgDatabase,caseId:string,userId:string
   if(existing)throw Error("AUTHORITY_ALREADY_EXISTS");
   const inserted=await tx.execute(sql`INSERT INTO advocacy_case_authorities(case_id,policy,approved_by) VALUES(${caseId},${JSON.stringify(policy)}::jsonb,${userId}) RETURNING id`);
   const id=inserted.rows[0].id as string;
-  const credential=await issueCaseToolCredential(tx,caseId,userId,id);
-  await registerDirectCaseRun(tx,{case_id:caseId,authority_id:id,credential_id:credential.id,owner_id:userId});
+  if(selectedCaseEngine()==="naive"){await tx.insert(caseAgentSetups).values({case_id:caseId,authority_id:id,requested_by:userId});if(firmEnabled())await requestFirmStaffing(tx,caseId,id);}
+  else {const credential=await issueCaseToolCredential(tx,caseId,userId,id);
+   await registerDirectCaseRun(tx,{case_id:caseId,authority_id:id,credential_id:credential.id,owner_id:userId});}
   const [created]=await tx.select().from(caseAuthorities).where(eq(caseAuthorities.id,id));return created;
  });
 }
@@ -56,7 +61,7 @@ export async function revokeCaseAuthority(db:NodePgDatabase,caseId:string,id:str
    .where(and(eq(caseAuthorities.id,id),eq(caseAuthorities.case_id,caseId),eq(caseAuthorities.approved_by,userId))).returning();
   if(!revoked)throw Error("NOT_FOUND");
   await tx.update(caseToolCredentials).set({revoked_at:new Date()}).where(eq(caseToolCredentials.authority_id,id));
-  await tx.update(directCaseRuns).set({state:"stopped",next_check_at:null,lease_id:null,lease_until:null,reason:"Stopped by the case owner. An in-flight communication may still complete.",updated_at:new Date()}).where(eq(directCaseRuns.authority_id,id));
+  await tx.update(directCaseRuns).set({state:"stopped",next_check_at:null,lease_id:null,lease_until:null,reason:"Stopped by the case owner. An in-flight communication may still complete.",updated_at:new Date()}).where(and(eq(directCaseRuns.authority_id,id),sql`${directCaseRuns.state}<>'migrated'`));
   return revoked;
  });
 }
@@ -66,12 +71,25 @@ export async function resumeCaseAuthority(db:NodePgDatabase,caseId:string,id:str
   const [item]=await tx.select({id:cases.id}).from(cases).where(and(eq(cases.id,caseId),eq(cases.owner_id,userId))).for("update");
   if(!item)throw Error("NOT_FOUND");
   const [authority]=await tx.select().from(caseAuthorities).where(and(eq(caseAuthorities.id,id),eq(caseAuthorities.case_id,caseId),eq(caseAuthorities.approved_by,userId))).for("update");
-  const [run]=await tx.select().from(directCaseRuns).where(and(eq(directCaseRuns.authority_id,id),eq(directCaseRuns.owner_id,userId))).for("update");
-  if(!authority||!run)throw Error("NOT_FOUND");
+  const [run]=await tx.select().from(directCaseRuns).where(and(eq(directCaseRuns.authority_id,id),eq(directCaseRuns.owner_id,userId),sql`EXISTS(SELECT 1 FROM advocacy_direct_case_runs r WHERE r.id=${directCaseRuns.id} AND ${directBlocksNaive})`)).for("update");
+  if(!authority)throw Error("NOT_FOUND");
+  if(!run){
+   const [session]=await tx.select().from(caseAgentSessions).where(and(eq(caseAgentSessions.authority_id,id),eq(caseAgentSessions.case_id,caseId))).for("update");
+   if(!session)throw Error("NOT_FOUND");
+   if(!isOpenCasePermission(authority.policy)||!["active","waiting","human_required"].includes(authority.state)||session.state!=="human_required")throw Error("NOT_RESUMABLE");
+   if(session.lease_until&&session.lease_until>new Date())throw Error("RUN_BUSY");
+   const unresolved=await tx.execute(sql`SELECT id FROM advocacy_outreach_actions WHERE case_id=${caseId} AND state IN ('dispatching','unknown') UNION ALL SELECT p.id FROM advocacy_case_agent_approvals p JOIN advocacy_case_agent_sessions s ON s.id=p.run_id WHERE s.case_id=${caseId} AND p.state='uncertain' LIMIT 1`);
+   if(unresolved.rows.length)throw Error("UNRESOLVED_DISPATCH");
+   const [credential]=await tx.select().from(caseToolCredentials).where(and(eq(caseToolCredentials.id,session.credential_id),eq(caseToolCredentials.case_id,caseId),eq(caseToolCredentials.authority_id,id),eq(caseToolCredentials.issued_by,userId)));
+   if(!credential||credential.revoked_at||(credential.expires_at&&credential.expires_at<=new Date()))throw Error("PERMISSION_ENDED");
+   await tx.update(caseAuthorities).set({state:"active",reason:null,next_wake_at:new Date()}).where(eq(caseAuthorities.id,id));
+   await tx.execute(sql`INSERT INTO advocacy_case_agent_events(run_id,event_key,kind,payload) VALUES(${session.id},${`owner_resume:${crypto.randomUUID()}`},'owner_resumed','{}'::jsonb)`);
+   const [resumed]=await tx.update(caseAgentSessions).set({state:session.session_id?"idle":"starting",reason:null,next_check_at:new Date()}).where(eq(caseAgentSessions.id,session.id)).returning({id:caseAgentSessions.id,state:caseAgentSessions.state});return resumed;
+  }
   if(!isOpenCasePermission(authority.policy)||!["active","waiting","human_required"].includes(authority.state)||run.state!=="human_required")throw Error("NOT_RESUMABLE");
   if(run.lease_until&&run.lease_until>new Date())throw Error("RUN_BUSY");
   if(!Array.isArray(run.pending)||run.pending.some((p:unknown)=>!p||typeof p!=="object"||(p as {started?:boolean}).started!==false))throw Error("UNRESOLVED_DISPATCH");
-  const unresolved=await tx.execute(sql`SELECT id FROM advocacy_outreach_actions WHERE case_id=${caseId} AND state IN ('dispatching','unknown') LIMIT 1`);
+  const unresolved=await tx.execute(sql`SELECT id FROM advocacy_outreach_actions WHERE case_id=${caseId} AND state IN ('dispatching','unknown') UNION ALL SELECT p.id FROM advocacy_case_agent_approvals p JOIN advocacy_case_agent_sessions s ON s.id=p.run_id WHERE s.case_id=${caseId} AND p.state='uncertain' LIMIT 1`);
   if(unresolved.rows.length)throw Error("UNRESOLVED_DISPATCH");
   const [credential]=await tx.select().from(caseToolCredentials).where(and(eq(caseToolCredentials.id,run.credential_id),eq(caseToolCredentials.authority_id,id),eq(caseToolCredentials.case_id,caseId),eq(caseToolCredentials.issued_by,userId)));
   if(!credential||credential.revoked_at||(credential.expires_at&&credential.expires_at<=new Date()))throw Error("PERMISSION_ENDED");
@@ -113,5 +131,6 @@ export async function readCaseAutonomy(db:NodePgDatabase,caseId:string,userId:st
  const sessions=await db.select({id:caseAgentSessions.id,authority_id:caseAgentSessions.authority_id,state:caseAgentSessions.state,next_check_at:caseAgentSessions.next_check_at,reason:caseAgentSessions.reason,created_at:caseAgentSessions.created_at}).from(caseAgentSessions).where(eq(caseAgentSessions.case_id,caseId)).orderBy(desc(caseAgentSessions.created_at));
  const setups=await db.select({id:caseAgentSetups.id,authority_id:caseAgentSetups.authority_id,state:caseAgentSetups.state,reason:caseAgentSetups.reason,created_at:caseAgentSetups.created_at}).from(caseAgentSetups).where(eq(caseAgentSetups.case_id,caseId));
  const direct=await db.select({id:directCaseRuns.id,authority_id:directCaseRuns.authority_id,state:directCaseRuns.state,next_check_at:directCaseRuns.next_check_at,reason:directCaseRuns.reason,created_at:directCaseRuns.created_at,goal:directCaseRuns.goal,finish_condition:directCaseRuns.finish_condition,last_activity_at:directCaseRuns.updated_at}).from(directCaseRuns).where(eq(directCaseRuns.case_id,caseId)).orderBy(desc(directCaseRuns.created_at));
- return {authorities,decisions,sessions:[...direct.map(r=>({...r,engine:"direct_openai",waiting_on:r.reason})),...sessions.map(r=>({...r,engine:"naive"}))],setups,activation_available:directActivationAvailable(),persistent_available:process.env.NAIVE_CASE_PROVISIONING_ENABLED==="true"};
+ const goals=await readNaiveCaseGoals(db,caseId);
+ return {authorities,decisions,sessions:[...direct.filter(r=>r.state!=="migrated").map(r=>({...r,engine:"direct_openai",waiting_on:r.reason})),...sessions.map(r=>({...r,...goals.find(g=>g.run_id===r.id),engine:"naive",waiting_on:r.reason}))],setups,activation_available:directActivationAvailable(),persistent_available:process.env.NAIVE_CASE_PROVISIONING_ENABLED==="true"};
 }

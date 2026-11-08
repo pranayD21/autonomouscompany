@@ -20,3 +20,5 @@ test("case-specific connector URL separates provider sessions and rejects malfor
  assert.throws(()=>caseAgentTools(`https://example.com/mcp/${b}`,a));
  assert.throws(()=>caseAgentTools("https://example.com/other",a));
 });
+
+test("Gmail discovery exposes only read operations under denied default",()=>{const config=caseAgentTools("https://example.com/mcp","11111111-1111-4111-8111-111111111111");const names=Object.keys(config.tools.configs).filter(name=>name.startsWith('gmail.'));assert.equal(names.length,6);assert.ok(names.includes('gmail.GMAIL_FETCH_EMAILS'));assert.ok(!names.some(name=>/SEND|DELETE|MODIFY|DRAFT/.test(name)));assert.equal(config.tools.default_config.permission,'deny');});

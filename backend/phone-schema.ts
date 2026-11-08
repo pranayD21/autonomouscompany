@@ -16,3 +16,14 @@ export const phoneAuthSchema={user:phoneUser,session:phoneSession,account:phoneA
 export const macBridgeStatus=pgTable('advocacy_mac_bridge_status',{id:text('id').primaryKey(),ready:boolean('ready').notNull(),transport:text('transport').notNull(),sender_label:text('sender_label').notNull(),seen_at:time('seen_at').defaultNow().notNull()});
 export const macBridgeDeliveries=pgTable('advocacy_mac_bridge_deliveries',{notification_id:uuid('notification_id').primaryKey().references(()=>phoneNotifications.id),attempt_id:uuid('attempt_id').notNull().unique(),destination:text('destination').notNull(),transport:text('transport').notNull(),state:text('state').notNull().default('claimed'),provider_id:text('provider_id'),reason:text('reason'),claimed_at:time('claimed_at').defaultNow().notNull(),updated_at:time('updated_at').defaultNow().notNull()});
 export const macBridgeInbound=pgTable('advocacy_mac_bridge_inbound',{event_id:text('event_id').primaryKey(),payload_hash:text('payload_hash').notNull(),phone:text('phone').notNull(),body:text('body').notNull(),case_id:uuid('case_id').references(()=>cases.id),disposition:text('disposition').notNull(),received_at:time('received_at').notNull(),created_at:time('created_at').defaultNow().notNull()});
+
+// One explicit outbound onboarding call per verified owner. A missing receipt never permits redial.
+export const phoneOnboarding=pgTable('advocacy_phone_onboarding',{
+ id:uuid('id').primaryKey().defaultRandom(),owner_id:text('owner_id').notNull().unique(),phone:text('phone').notNull(),
+ state:text('state').notNull().default('dispatching'),agent_id:text('agent_id').notNull(),number_id:text('number_id').notNull(),
+ consent:text('consent').notNull(),provider_id:text('provider_id').unique(),provider_status:text('provider_status'),
+ intended_case_id:uuid('intended_case_id').notNull().unique(),case_id:uuid('case_id').references(()=>cases.id),
+ transcript:jsonb('transcript').$type<import('./providers/call-evidence').CallTurn[]>().notNull().default([]),transcript_sha256:text('transcript_sha256'),reason:text('reason'),
+ lease_id:uuid('lease_id'),lease_until:time('lease_until'),next_check_at:time('next_check_at'),
+ created_at:time('created_at').defaultNow().notNull(),updated_at:time('updated_at').defaultNow().notNull(),
+},t=>[index('phone_onboarding_poll_idx').on(t.state,t.next_check_at)]);

@@ -2,13 +2,21 @@
 
 Updated November 8, 2026 UTC. This document supersedes older milestone descriptions. [Hosted agent](hosted-agent.md) explains the runtime; [change log](change-log.md) retains the verification history.
 
-## Hosted release
+## Current integration checkpoint
 
-Assurance is live at https://assurance.claims. The baseline hosted workflow was verified at `d4f535e`; the subsequent submission/progress revision is documented in the change log. GitHub main publishes the frontend automatically. The production Neon branch has all 25 migrations (0000–0024), and all seven Functions were explicitly deployed. Autopoll runs every minute, claims one due direct run, and makes no inference requests for idle cases.
+The Naïve company expansion is in progress and has not yet been published as a frontend release. The production backend has eight Functions, including `firm`, and migrations 0000–0029 (30 journal entries). Six permanent Naïve roles, their separate identities/vaults, and the company board exist. Three recurring role schedules are configured but disabled pending live verification. The selected model rejected the `loose` completion window; hosted company sessions use `immediate`.
 
-A person can sign in by phone, use a fictional shared demo number, or open the older-email-account sign-in link. Workplace-injury and health-insurance paths stay separate. The revised submission flow starts a persistent run with a standard handling scope. Documents are read automatically and supplied as explicitly unverified machine observations; owner confirmation remains optional provenance. The updated backend passed hosted submission, retry/stop, owner-isolation, and real PDF extraction checks with zero outreach. The agent records a stable goal/finish condition, retrieves public sources, uses case-scoped tools, sends authorized communications, monitors replies, follows up, requests input, and records evidence-backed reported outcomes.
+The new local frontend uses email sign-in, email intake, website conversation, uploads, and Gmail connection controls. The public site still serves the previous release until the reviewed changes are pushed. Phone/SMS/Mac Messages are historical experiments, outside the new customer path; `PHONE_FLOW_ENABLED=false` remains in force.
 
-Direct runs use OpenAI `gpt-5.4-mini`; they are clearly labeled and do not claim Naïve runtime execution. Legacy Naïve grants/sessions remain separate and cannot act on the same direct authority. Owner resume retains permission and conversation. Stop revokes credentials and prevents new work; a communication already in flight may finish. Ambiguous sends are never automatically replayed.
+The scoped AgentMail runtime key and five-event signed webhook are configured and deployed. Hosted checks passed public contact discovery, authentication boundaries, invalid-signature rejection, and signed unmapped-event handling without outreach. Actual provider delivery to this webhook, customer Gmail consent, dedicated-inbox advocate hiring, and the full company hiring path remain separate live proof obligations. The zero-contact advocate fixture completed a real hosted question → owner answer → sourced fact continuation in its existing run; owner revoke, credential invalidation, local stop, and remote cancellation were then verified with zero outreach.
+
+One idle direct run was migrated to Naïve staffing under its existing authority, preserving conversation and goal and revoking the old credential. No simultaneous engine execution is intended. The live firm fixture reached Front Desk, read its case, and attempted board work; board-operation reconciliation and staffing are still being completed. Do not present this as a fully operating company yet.
+
+Autonomous insurer-portal submission is an explicit requirement and an actual missing capability at this checkpoint. Gmail/email tools do not provide it. Implementation is deferred until the hosted core workflow and email-first authentication audit pass. The implementation must isolate authenticated browser access per case and retain submission reservations, receipts, and uncertain-result reconciliation. Validation will use a fictional portal unless authorized real access is available. No fictional claim may be submitted to a real insurer.
+
+## Earlier hosted baseline
+
+The earlier direct-model release at https://assurance.claims verified activation, persistence, document extraction, owner isolation, stop, one delivered fictional email, and phone login. These results below remain historical evidence; they do not prove the new Naïve company workflow. GitHub main publishes the frontend automatically, while Neon backend deployment is separate.
 
 ## Verified hosted behavior
 
@@ -29,16 +37,16 @@ The complete fictional insurer exchange used real MCP/service/database code with
 
 Live checks exposed two recoverable issues: a missing required email-tool argument and stale case references after a fact write. Neither produced a dispatch. The runner now distinguishes definite input rejection from uncertain communication, returns actionable stale-evidence errors, and retains final status text. The existing fixtures continued under unchanged permissions after explicit receipt/ledger reconciliation; no replacement grant or duplicate send was created.
 
-## Remaining boundaries
+## Earlier baseline boundaries
 
 AgentPhone is still the only new-call provider. Its SMS registration remains pending with `outboundSms=registration_required`. `PHONE_FLOW_ENABLED=false`: inbound routing and case-notification texts remain off. Twilio Verify handles login codes only; no Twilio number was bought and no voice integration was changed.
 
 Five public fixed-code accounts are shared fictional identities, not proof of real phone ownership. They must contain only made-up data. Existing email cases are not automatically merged into a phone account; linking requires both identities.
 
-Payments remain hypothetical. No real payout, patient outcome, or healthcare-compliance certification is claimed. General public-source retrieval/navigation works; no general search-engine integration was added. Scanned PDFs without a text layer require page images. The optional legacy AI Gateway review remains unavailable and its broken entry button is removed. The JavaScript bundle still produces the size warning.
+The earlier release kept payments hypothetical; the current company implementation permits unconfirmed Stripe test PaymentIntents only, with no real collection. No real payout, patient outcome, or healthcare-compliance certification is claimed. General public-source retrieval/navigation works; no general search-engine integration was added. Scanned PDFs without a text layer require page images. The optional legacy AI Gateway review remains unavailable and its broken entry button is removed. The JavaScript bundle still produces the size warning.
 
 The old revoked Naïve rotation session, vault credentials/vault/identity, and local fixture rows were cleaned successfully with zero outbound rows.
 
 ## Mac messaging implementation
 
-The computer-based bridge is implemented with private send-once journaling, a hosted notification queue, receipts, scoped replies, and STOP handling. Migration0025 is applied (26 total migrations). The user selected the existing Mac SMS sender; local automation/account checks pass, but the running helper still lacks Messages database access after a reported Full Disk Access change. The bridge API is configured, while PHONE_FLOW_ENABLED stays false. No real Mac send or reply has been verified and inbound routing remains unchanged. See mac-messages-bridge.md and mac-messages-local.md.
+This historical experiment is outside the current customer path. The computer-based bridge is implemented with private send-once journaling, a hosted notification queue, receipts, scoped replies, and STOP handling. Migration0025 is applied (26 total migrations). The user selected the existing Mac SMS sender; local automation/account checks pass, but the running helper still lacks Messages database access after a reported Full Disk Access change. The bridge API is configured, while PHONE_FLOW_ENABLED stays false. No real Mac send or reply has been verified and inbound routing remains unchanged. See mac-messages-bridge.md and mac-messages-local.md.

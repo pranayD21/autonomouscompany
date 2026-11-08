@@ -45,3 +45,11 @@ test("native email tool requires its authenticated case and passes a fixed chann
  assert.notEqual((await call({...args,case_id:caseId})).isError,true);assert.equal((actions[0] as {channel:string}).channel,"email");
  assert.equal((await call({...args,case_id:caseId,subject:"Unsafe\r\nHeader"})).isError,true);assert.equal(actions.length,1);
 });
+
+test('goal tool enforces case binding and rejects malformed finish conditions before saving',async()=>{
+ let saves=0;const goalApp=caseTools({authenticate:async()=>({id:'credential',case_id:caseId,owner_id:'owner'}),getCase:async()=>({}),recordFact:async()=>({}),setGoal:async(_identity,input)=>{saves++;return input;}});
+ const call=async(args:unknown)=>(await (await goalApp.request('/mcp',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream',Authorization:'Bearer valid'},body:rpc('tools/call',{name:'set_goal',arguments:args})})).json()).result;
+ assert.equal((await call({case_id:other,goal:'Resolve claim',finish_condition:'Documented decision'})).isError,true);
+ assert.equal((await call({case_id:caseId,goal:'Resolve claim',finish_condition:''})).isError,true);assert.equal(saves,0);
+ assert.equal(JSON.parse((await call({case_id:caseId,goal:'Resolve claim',finish_condition:'Documented decision'})).content[0].text).goal,'Resolve claim');assert.equal(saves,1);
+});

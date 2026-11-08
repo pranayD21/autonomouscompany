@@ -17,3 +17,17 @@ test("binding reads finish sequentially under single-request admission",async()=
   assert.deepEqual(order,["version","identity","attachments"]);
  }finally{if(prior===undefined)delete process.env.NAIVE_CASE_TOOLS_URL;else process.env.NAIVE_CASE_TOOLS_URL=prior;}
 });
+
+test("open permission binding uses configured provider budget without legacy caps",()=>{
+ const prior=process.env.NAIVE_OPEN_SESSION_BUDGET_MICRO_USD;
+ try{
+  process.env.NAIVE_OPEN_SESSION_BUDGET_MICRO_USD='9000000';
+  const openEvidence=structuredClone(evidence);openEvidence.version.budget={period:'month',cap_micro_usd:9000000,max_task_micro_usd:9000000};
+  assert.equal(caseBindingMatches({...binding,open_permission:true},base,openEvidence),true);
+  assert.equal(caseBindingMatches(binding,base,openEvidence),false);
+  openEvidence.version.budget.max_task_micro_usd=250000;
+  assert.equal(caseBindingMatches({...binding,open_permission:true},base,openEvidence),false);
+  process.env.NAIVE_OPEN_SESSION_BUDGET_MICRO_USD='';
+  assert.throws(()=>caseBindingMatches({...binding,open_permission:true},base,evidence),/OPEN_NAIVE_BUDGET_NOT_CONFIGURED/);
+ }finally{if(prior===undefined)delete process.env.NAIVE_OPEN_SESSION_BUDGET_MICRO_USD;else process.env.NAIVE_OPEN_SESSION_BUDGET_MICRO_USD=prior;}
+});

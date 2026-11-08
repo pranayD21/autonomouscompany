@@ -1,0 +1,22 @@
+import {Hono} from 'hono';
+import {bodyLimit} from 'hono/body-limit';
+import {Pool} from 'pg';
+import {drizzle} from 'drizzle-orm/node-postgres';
+import {attachDatabasePool} from '@neon/functions';
+import {parseTriggerDelivery} from '@neon/functions/triggers';
+import {firmToolsRoutes} from './firm-tools';
+import {agentmailWebhookRoutes} from './agentmail-webhook';
+import {pollEmailAttachments} from './email-attachments';
+import {pollFirmEvents} from './firm-runner';
+const pool=new Pool({connectionString:process.env.DATABASE_URL?.replace('sslmode=require','sslmode=verify-full'),max:3,connectionTimeoutMillis:15000,query_timeout:30000});attachDatabasePool(pool);
+const app=new Hono();app.use('*',bodyLimit({maxSize:1024*1024}));
+app.route('/agentmail/webhook',agentmailWebhookRoutes(drizzle(pool)));
+app.route('/',firmToolsRoutes(drizzle(pool)));
+app.post('/poll',async c=>{
+ const delivery=await parseTriggerDelivery(c.req.raw);
+ if(!delivery.ok||delivery.invocation.type!=='schedule'||delivery.invocation.trigger.name!=='firm-operations')return c.json({error:'Verified firm schedule required'},401);
+ const attachments=await pollEmailAttachments(pool);const firm=await pollFirmEvents(drizzle(pool));
+ return c.json({attachments,firm});
+});
+app.onError(()=>Response.json({error:'Company service temporarily unavailable'},{status:503}));
+export default app;
