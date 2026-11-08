@@ -16,8 +16,8 @@ export function ArrowLeft({size = 18, ...props}: IconProps) {
   return <svg {...base(size)} {...props}><path d="M20 12H4m6-6-6 6 6 6"/></svg>;
 }
 
-export function Asterisk({size = 27, ...props}: IconProps) {
-  return <svg {...base(size)} strokeWidth={2.5} {...props}><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/></svg>;
+export function Logo({size = 27, ...props}: IconProps) {
+  return <svg width={size} height={size * 53 / 104} viewBox="0 0 104 53" fill="currentColor" {...props}><path d="M42.4 0H67.2L24.8 53H0Z"/><path d="M67.5 8.25 103.3 53H74.6L53.2 26.2Z"/></svg>;
 }
 
 export function ShieldCheck({size = 20, ...props}: IconProps) {

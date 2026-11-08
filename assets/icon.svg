@@ -1,4 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#0284c7"/>
-  <text x="32" y="32" dy="0.35em" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="32" font-weight="600" fill="#ffffff">A</text>
+  <rect width="64" height="64" rx="14" fill="#ffffff"/>
+  <g transform="translate(8 18.5) scale(0.4615)" fill="#111111"><path d="M42.4 0H67.2L24.8 53H0Z"/><path d="M67.5 8.25 103.3 53H74.6L53.2 26.2Z"/></g>
 </svg>

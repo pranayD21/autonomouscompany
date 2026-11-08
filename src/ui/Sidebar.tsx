@@ -3,7 +3,7 @@
 // becomes a slide-in sheet on mobile. Restyled for Assurance with plain CSS.
 import {createContext, useContext, useEffect, useState, type ReactNode} from "react";
 import {AnimatePresence, motion, useReducedMotion} from "motion/react";
-import {Asterisk, Close, Menu} from "../Icons";
+import {Logo, Close, Menu} from "../Icons";
 
 const SidebarContext = createContext<{open: boolean; mobile: boolean; close: () => void}>({open: true, mobile: false, close: () => {}});
 export const useSidebar = () => useContext(SidebarContext);
@@ -32,7 +32,7 @@ export function Sidebar({children, footer}: {children: ReactNode; footer?: React
     return () => window.removeEventListener("keydown", onKey);
   }, [sheet]);
 
-  const brand = <a href="#home" className="sidebar-brand" aria-label="Assurance home"><motion.span className="sidebar-brand-mark" whileHover={{rotate: 90}} transition={{type: "spring", stiffness: 260, damping: 14}}><Asterisk size={24}/></motion.span><SidebarText className="sidebar-brand-word">assurance<span className="brand-period">.</span></SidebarText></a>;
+  const brand = <a href="#home" className="sidebar-brand" aria-label="Assurance home"><span className="sidebar-brand-mark"><Logo size={24} aria-hidden="true"/></span><SidebarText className="sidebar-brand-word">assurance<span className="brand-period">.</span></SidebarText></a>;
 
   if (mobile) return <SidebarContext.Provider value={{open: true, mobile: true, close: () => setSheet(false)}}>
     <div className="mobile-bar">{brand}<button className="icon-button" aria-label="Open navigation" aria-expanded={sheet} onClick={() => setSheet(true)}><Menu/></button></div>

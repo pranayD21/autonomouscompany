@@ -8,7 +8,7 @@ import { auth, realtime, sealCases } from "./services";
 import "./style.css";
 import {Landing} from "./Landing";
 import {Workspace} from "./Workspace";
-import {Asterisk} from "./Icons";
+import {Logo} from "./Icons";
 import {MotionConfig} from "motion/react";
 
 const message = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Please try again.";
@@ -77,7 +77,7 @@ function App() {
   }
   if (!isPending && (locationHash === "#home" || (!session?.user && locationHash !== "#workspace" && !locationHash.startsWith("#case/") && !error))) return <Landing/>;
   if (!isPending && !error && session?.user) return <>{signOutError && <p role="alert" className="error floating-error">{signOutError}</p>}<Dashboard key={session.user.id} userId={session.user.id} userName={session.user.name || session.user.email} onSignOut={() => void signOut()}/></>;
-  return <><a className="skip-link" href="#workspace-content">Skip to content</a><header className="app-header"><a href="#home" className="brand" aria-label="Assurance home"><Asterisk strokeWidth={2.5} aria-hidden="true"/>assurance<span className="brand-period">.</span></a></header>
+  return <><a className="skip-link" href="#workspace-content">Skip to content</a><header className="app-header"><a href="#home" className="brand" aria-label="Assurance home"><Logo aria-hidden="true"/>assurance<span className="brand-period">.</span></a></header>
     <main id="workspace-content" className="app-main">{isPending ? <p role="status">Loading your session…</p> : error ? <p role="alert" className="error">Authentication is unavailable. Please reload and try again.</p> : <SignIn/>}</main>
     <footer className="app-footer"><span>assurance<span className="brand-period">.</span></span><small>Your case, handled.</small></footer></>;
 }

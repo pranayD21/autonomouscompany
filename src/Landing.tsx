@@ -1,4 +1,4 @@
-import { ArrowUpRight, Asterisk, ShieldCheck } from "./Icons";
+import { ArrowUpRight, Logo, ShieldCheck } from "./Icons";
 import { MinimalHero } from "./components/minimal-hero";
 import { StrikethroughReplace } from "./components/strikethrough-replace";
 
@@ -15,7 +15,7 @@ export function Landing() {
     <main className="landing-page">
       <a className="skip-link" href="#main-content">Skip to content</a>
       <header className="site-header">
-        <a className="brand" href="#" aria-label="Assurance home"><Asterisk strokeWidth={2.5} aria-hidden="true" />assurance<span className="brand-period">.</span></a>
+        <a className="brand" href="#" aria-label="Assurance home"><Logo aria-hidden="true" />assurance<span className="brand-period">.</span></a>
         <nav aria-label="Main navigation"><a className="nav-explain" href="#how-it-works">How it works</a><a className="nav-workspace" href={workspaceUrl}>Open workspace <ArrowUpRight size={15} aria-hidden="true" /></a></nav>
       </header>
 
