@@ -31,7 +31,7 @@ Deployment proves provisioning, not successful authenticated end-to-end operatio
 
 ## Configuration
 
-`neon.ts` declares Auth, AI Gateway, Realtime, and the two Functions. Existing branches retain their branch settings; newly created non-default branches get a seven-day TTL. No additional project was created.
+`neon.ts` declares Auth, AI Gateway, Realtime, and the application/monitoring Functions. Existing branches retain their branch settings; newly created non-default branches get a seven-day TTL. No additional project was created.
 
 Local variable names: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_BRANCH`, `NEON_BRANCH_ID`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_JWKS_URL`, `NEON_FUNCTION_HOST_SUFFIX`, `NEON_AI_GATEWAY_TOKEN`, `NEON_AI_GATEWAY_BASE_URL`, `NEON_REALTIME_URL`, and `NEON_REALTIME_SECRET`.
 
@@ -51,7 +51,7 @@ These are user-level installations available to this project, not portable repos
 
 AI Gateway reported that no models were available until the organization adds a card and buys gateway credits. Billing: https://console.neon.tech/app/org-shy-darkness-62773978/billing. No credits were purchased by the agent. Successful inference remains unverified.
 
-Before frontend deployment, merge the actual frontend origin into Function CORS, Realtime allowed origins, and Auth trusted domains. Preserve existing entries. The local preview command uses `127.0.0.1`, while the allowlists contain `localhost`; test with `http://localhost:4173` or deliberately reconcile the origin mismatch.
+The hosted origin https://assurance-claims.vercel.app is configured in Function CORS, Realtime allowed origins, and Auth trusted domains. For future frontend domains, merge the exact origin into all three. Preserve existing entries. The local preview command uses `127.0.0.1`, while the allowlists contain `localhost`; test with `http://localhost:4173` or deliberately reconcile the origin mismatch.
 
 Official references: https://neon.com/docs/llms.txt and the installed Neon service-specific skills. Preserve existing provider choices, project linkage, env files, and service settings when continuing setup.
 

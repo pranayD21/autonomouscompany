@@ -21,13 +21,13 @@ Updated November 7, 2026. See [stack operations](stack.md) for account configura
 - AgentPhone initially rejected the test with HTTP 402. The operator added $25, then the authorized retry completed (46 seconds; no recording URL), and the user confirmed receipt. SIP access request remains pending; ElevenLabs routing is not verified.
 - ElevenLabs free-plan UI limits use to personal/non-commercial purposes. No paid commercial license selected.
 - Crew runs are restricted by `CREW_ALLOWED_USER_IDS`, currently empty. Configure actual test operators before trying the dashboard's run action.
-- Case-linked outreach drafts, explicit authorization, dispatch records, and provider status reads are implemented. One explicitly authorized case-linked AgentMail email was sent and independently found in the operator’s Gmail inbox. Case-linked live calling remains unverified; approved-recipient lists are restored after testing. Scanned-PDF OCR, consent, evidence-backed outcomes, appeal submission, automatic outbound follow-up, payments, and public frontend hosting remain incomplete.
+- Case-linked outreach drafts, explicit authorization, dispatch records, and provider status reads are implemented. One explicitly authorized case-linked AgentMail email was sent and independently found in the operator’s Gmail inbox. Case-linked live calling remains unverified; approved-recipient lists are restored after testing. Scanned-PDF OCR, consent, evidence-backed outcomes, appeal submission, automatic outbound follow-up, payments, remain incomplete.
 - Two-user isolation is verified for case listing, Realtime, crew routes, and deletion. Case analysis crash recovery and broader spend/rate controls need work.
 - Four moderate development dependency findings remain in Drizzle Kit/esbuild; no forced breaking upgrade performed. Migration driver printed a future SSL-mode semantics warning; API uses verify-full.
 
 ## Next work
 
-Add agent-driven outreach proposals and authorized follow-ups; verify a newly authorized case-linked call when a recipient agrees. Resolve AgentPhone SIP and gateway credits with the operator before paid operations. Publish a frontend only after configuring its exact Auth/CORS/Realtime origin.
+Add agent-driven outreach proposals and authorized follow-ups; verify a newly authorized case-linked call when a recipient agrees. Resolve AgentPhone SIP and gateway credits with the operator before paid operations. The frontend is hosted at https://assurance-claims.vercel.app with exact Auth/CORS/Realtime origins. GitHub auto-deployment still needs a working account connection.
 
 The team still needs a real interview participant. No customer savings or testimonial has been established. See [demo and research](demo-and-research.md).
 
@@ -56,3 +56,7 @@ The app now reads the authorized AgentMail thread and stores matching received r
 ## Scheduled reply monitoring update
 
 Owner controls, a separate scheduler Function, retry delays, and durable processing leases are implemented. Migration 0009 applied to production after five isolated scheduler tests passed. The worker and five-minute Neon trigger are deployed. The real 00:50 UTC delivery checked the authorized synthetic thread successfully, retained the existing reply without duplicating it, and persisted its invocation and success timestamp. UI status and pause/resume passed. Seven ingestion tests passed after network-unreachable failures on an earlier run. Nineteen pure regression tests, the app E2E suite, and the build pass. Anonymous/cross-user monitoring access and forged trigger calls are denied. The existing crew/document spending controls still return 403. See [monitoring](reply-monitoring.md).
+
+## Hosted app
+
+https://assurance-claims.vercel.app is deployed on the existing Vercel Hobby account. Hosted signup, password sign-in, session reload, persistence, live updates, cross-user isolation, and sign-out passed. New users can create synthetic cases but cannot spend agent credits until explicitly configured. Only public service URLs are on Vercel; backend credentials remain on Neon. See [hosting](hosting.md).

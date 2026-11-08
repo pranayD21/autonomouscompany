@@ -1,9 +1,11 @@
 import { defineConfig } from "@neon/config/v1";
 
+const appOrigins = ["http://localhost:5173", "http://localhost:4173", "https://assurance-claims.vercel.app"];
+
 export default defineConfig({
   // Declare your Neon services here
   preview: {
-    realtime: { allowedOrigins: ["http://localhost:5173", "http://localhost:4173"] },
+    realtime: { allowedOrigins: appOrigins },
   },
   buckets: { "case-documents": { access: "private" } },
   auth: true,
@@ -23,7 +25,7 @@ export default defineConfig({
       source: "./backend/api.ts",
       env: {
         REALTIME_SECRET: { value: process.env.NEON_REALTIME_SECRET, required: true },
-        APP_ORIGINS: "http://localhost:5173,http://localhost:4173",
+        APP_ORIGINS: appOrigins.join(","),
         NAIVE_API_KEY: { value: process.env.NAIVE_API_KEY, required: true },
         NAIVE_FILES_API_KEY: process.env.NAIVE_FILES_API_KEY ?? "",
         NAIVE_INTAKE_ID: process.env.NAIVE_INTAKE_ID ?? "",

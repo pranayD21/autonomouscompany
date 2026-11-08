@@ -122,6 +122,12 @@ Deployment retry succeeded and created the five-minute trigger. The UI enabled m
 
 Final checks: build passed at 546.51 kB; 19 pure regression, seven reply-ingestion, and five scheduler tests passed. App E2E passed with Gateway inference still unavailable. Crew starts, corrections, and document-reader starts still return 403 for the restored operator configuration. No configured secret appeared in staged changes or the frontend bundle.
 
-## Hosted frontend (November 7, in progress)
+## Hosted frontend (November 7)
 
 Signed into the existing Vercel Hobby account using the authorized Google identity. Optional model-training consent remained off. The CLI device page had disabled controls; its pending login was stopped, and setup continued through the dashboard. Added explicit public build variables, Vercel build settings, and ignored CLI metadata. Hosting deployment and origin verification are pending.
+
+The dashboard import failed because Vercel could not access the GitHub repository through its existing connection. Created and linked `assurance-claims` with a one-hour team token after operator verification. The upload dry run exposed that Git exclusions were not sufficient; added `.vercelignore` before any upload. A second dry run found no excluded files or configured credentials among 102 source files. The frontend also passed an isolated build with only three public URLs and no server env file. Direct deployment is in progress.
+
+Vercel deployment completed successfully and assigned `assurance-claims.vercel.app`. The exact domain was added to Neon Auth; the API/Realtime configuration preserves both existing localhost origins and adds that production origin. The E2E suite now accepts a hosted base URL and explicitly verifies password sign-in after sign-out. Backend deployment and hosted tests are running.
+
+Hosted E2E passed against https://assurance-claims.vercel.app: signup, session reload, Postgres writes, Realtime updates, ownership isolation, denial of unapproved model spending, deletion, password sign-in, and sign-out. Gateway inference still correctly reports unavailable. The three public URLs are saved in Vercel Production configuration. The one-hour deployment token was revoked after verification. No provider secret or private test artifact was uploaded.

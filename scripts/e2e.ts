@@ -3,14 +3,16 @@ import { randomUUID } from "node:crypto";
 const browser = await chromium.launch({headless:true});
 const context = await browser.newContext();
 const page = await context.newPage();
+const appUrl=process.env.E2E_BASE_URL??"http://localhost:4173";
+const email=`stack-${randomUUID()}@example.com`,password=randomUUID()+"aA1!";
 let authorization="", apiBase="";
 page.on("request", request=>{if(request.url().includes("-cases.compute.")&&request.headers().authorization){authorization=request.headers().authorization;apiBase=new URL(request.url()).origin;}});
 try {
-  await page.goto("http://localhost:4173");
+  await page.goto(appUrl);
   await page.getByRole("button", {name:"New here? Create an account"}).click();
   await page.getByLabel("Name", {exact:true}).fill("Synthetic stack test");
-  await page.getByLabel("Email", {exact:true}).fill(`stack-${randomUUID()}@example.com`);
-  await page.getByLabel("Password", {exact:true}).fill(randomUUID()+"aA1!");
+  await page.getByLabel("Email", {exact:true}).fill(email);
+  await page.getByLabel("Password", {exact:true}).fill(password);
   await page.getByRole("button", {name:"Create account",exact:true}).click();
   await expect(page.getByText("Live updates connected", {exact:true})).toBeVisible({timeout:45000});
   console.log("PASS Auth signup/session + authenticated Function + Realtime subscription");
@@ -44,7 +46,7 @@ try {
   try {
     const other=await otherContext.newPage();let otherAuthorization="";
     other.on("request",request=>{if(request.url().startsWith(apiBase)&&request.headers().authorization)otherAuthorization=request.headers().authorization;});
-    await other.goto("http://localhost:4173");
+    await other.goto(appUrl);
     await other.getByRole("button",{name:"New here? Create an account"}).click();
     await other.getByLabel("Name",{exact:true}).fill("Isolation test");
     await other.getByLabel("Email",{exact:true}).fill(`isolation-${randomUUID()}@example.com`);
@@ -72,6 +74,13 @@ try {
   await page.getByRole("button", {name:"Sign out",exact:true}).click();
   await expect(page.getByRole("button", {name:"Sign in",exact:true})).toBeVisible({timeout:15000});
   console.log("PASS sign-out");
+  await page.getByLabel("Email",{exact:true}).fill(email);
+  await page.getByLabel("Password",{exact:true}).fill(password);
+  await page.getByRole("button",{name:"Sign in",exact:true}).click();
+  await expect(page.getByText("Live updates connected",{exact:true})).toBeVisible({timeout:45000});
+  await page.getByRole("button",{name:"Sign out",exact:true}).click();
+  await expect(page.getByRole("button",{name:"Sign in",exact:true})).toBeVisible({timeout:15000});
+  console.log("PASS password sign-in after sign-out, restored live access, and final sign-out");
 } catch (error) {
   console.error("E2E failed:", error instanceof Error ? error.message : "unknown");
   console.error("Visible page:", (await page.locator("main").innerText()).slice(0,1800));

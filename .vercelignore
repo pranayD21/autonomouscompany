@@ -1,0 +1,8 @@
+.git
+.neon
+.env*
+.vercel
+.playwriter*
+node_modules
+dist
+test-results
