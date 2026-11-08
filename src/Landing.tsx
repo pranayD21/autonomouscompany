@@ -62,8 +62,8 @@ export function Landing() {
         <div id="main-content" className="hero-content">
                     <h1 className="hero-wordmark" aria-label="Assurance"><span aria-hidden="true"><StrikethroughReplace from="in" to="as" fadeBelow=".hero-message h2" /><span className="wordmark-rest">surance</span><span className="wordmark-dot">.</span></span></h1>
           <div className="hero-bottom">
-            <div className="hero-message"><h2>Insurance is complicated.<br /><span>Getting help shouldn’t be.</span></h2></div>
-            <div className="hero-action"><a className="primary-button" href={workspaceUrl}><span className="button-label">Open a case</span><span className="button-arrow"><ArrowUpRight size={26} aria-hidden="true" /></span></a></div>
+            <div className="hero-message"><h2>Insurance is complicated.<br /><span>Getting help shouldn’t be.</span></h2><p className="landing-mobile-only">Start with your phone number.<br />We’ll call you and take it from there.</p></div>
+            <div className="hero-action"><a className="primary-button" href={workspaceUrl}><span className="button-label">Tell us what happened</span><span className="button-arrow"><ArrowUpRight size={26} aria-hidden="true" /></span></a><a className="landing-mobile-only hero-how-link" href="#how-it-works">See how it works <span aria-hidden="true">↓</span></a></div>
           </div>
         </div>
       </MinimalHero>

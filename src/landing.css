@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700;750;800;850;900;1000&family=Nothing+You+Could+Do&display=swap");
 @property --in-y{syntax:"<length>";inherits:false;initial-value:0px}
+.landing-mobile-only{display:none}
 
 
 :root{--paper:#f5f4ef;--ink:#181b18;--blue:#2465ef;--quiet:#64675f;--rule:#d6d7cf;--background:var(--paper);--foreground:var(--ink);--font-sans:"DM Sans",Arial,sans-serif;color-scheme:light}

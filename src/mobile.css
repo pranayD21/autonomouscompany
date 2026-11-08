@@ -78,18 +78,37 @@
   .surface .ov-filter { min-height: 44px; }
   .ov-new { min-height: 48px; }
 
-  .site-header { height: auto; min-height: 76px; padding: 16px 6%; flex-wrap: wrap; gap: 8px 16px; }
-  .site-header nav { gap: 16px; }
+  .landing-page .landing-mobile-only { display: block; }
+  .landing-page .landing-desktop-only { display: none; }
+  .site-header { height: auto; min-height: 72px; padding: 12px 6%; flex-wrap: nowrap; gap: 12px; }
+  .site-header nav { gap: 0; flex-shrink: 0; }
   .site-header nav a { min-height: 44px; display: inline-flex; align-items: center; }
-  .hero-bottom { align-items: flex-start; flex-direction: column; gap: 28px; }
-  .hero-message { min-width: 0; }
-  .hero-message h2 { font-size: clamp(26px, 5.2vw, 40px); letter-spacing: -1.2px; line-height: 1.2; }
-  .hero-action { max-width: 100%; }
-  .hero-action .primary-button { min-height: 64px; padding: 9px 9px 9px 26px; font-size: 19px; gap: 32px; }
+  .site-header .nav-explain { display: none; }
+  .hero-content { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; padding: 64px 6% 36px; }
+  .hero-wordmark { margin: 0; font-size: 17.1vw; }
+  .hero-bottom { display: contents; }
+  .hero-message { min-width: 0; display: grid; gap: 16px; }
+  .hero-message h2 { font-size: clamp(28px, 5.2vw, 40px); letter-spacing: -1px; line-height: 1.2; }
+  .hero-message p { margin: 0; font-size: 15px; line-height: 1.6; }
+  .hero-action { width: 100%; max-width: 400px; align-items: stretch; margin: 0; gap: 12px; }
+  .hero-action .primary-button { width: 100%; min-height: 62px; padding: 8px 8px 8px 24px; font-size: clamp(15px, 4.3vw, 18px); gap: 12px; box-shadow: 0 10px 26px -18px rgb(36 101 239 / .5); }
+  .hero-action .primary-button::after { display: none; }
+  .hero-action .primary-button::before { animation: none; }
+  .hero-action .button-label { animation: none; color: var(--paper); background: none; }
   .hero-action .button-arrow { width: 46px; height: 46px; flex-shrink: 0; }
-  .how-section { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .hero-action .button-arrow { animation: none; }
+  .hero-action .hero-how-link { display: flex; justify-content: center; align-items: center; gap: 10px; min-height: 44px; font-size: 13px; color: var(--quiet); }
+  .hero-how-link:hover { color: var(--blue); }
+  .landing-page .hero-backdrop, .landing-page.is-at-top .hero-backdrop { height: var(--hero-end, 100svh); }
+  .landing-page .hero-backdrop::after { background: linear-gradient(to bottom, rgb(245 244 239 / .55), rgb(245 244 239 / .65) 55%, var(--paper)); }
+  .landing-page .how-section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 40px 6% 48px; background: var(--paper); border-top: 1px solid var(--rule); }
+  .how-section .section-intro h2 { margin: 0; font-size: 34px; line-height: 1.1; }
+  .how-section .steps { margin: 0; }
+  .how-section .step-row { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 14px; padding: 22px 0; }
   .step-row > div { min-width: 0; }
-  .site-footer { flex-wrap: wrap; gap: 16px 24px; padding-bottom: max(28px, env(safe-area-inset-bottom, 0px)); }
+  .landing-page .site-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; margin: 0 6%; gap: 16px; padding: 24px 0 max(28px, env(safe-area-inset-bottom, 0px)); }
+  .site-footer > span { width: auto; margin: 0; }
+  .site-footer .photo-credit { grid-column: 1 / -1; }
   .site-footer .photo-credit { flex-basis: 100%; line-height: 1.8; overflow-wrap: anywhere; }
 }
 
@@ -108,11 +127,8 @@
   .ov-row-status { font-size: 12px; }
   .site-header .brand { font-size: 22px; }
   .site-header .nav-workspace { font-size: 11px; gap: 4px; }
-  .hero-content { padding-inline: 6%; }
-  .hero-wordmark { margin-top: 85px; margin-bottom: 30px; }
-  .hero-message h2 { font-size: clamp(24px, 6.8vw, 32px); }
-  .hero-action { width: 100%; margin-top: 28px; }
-  .hero-action .primary-button { width: 100%; max-width: 360px; }
+  .hero-content { padding-top: 48px; gap: 24px; }
+  .hero-message h2 { font-size: clamp(26px, 7.2vw, 34px); }
   .section-intro h2 { font-size: clamp(32px, 9vw, 39px); }
   .step-row { gap: 16px; }
   .step-row h3 { font-size: 19px; }

@@ -1,5 +1,11 @@
 # Change log
 
+## November 8, 2026 — Friendlier landing CTA and mobile hero layout
+
+Changed the landing CTA from **Open a case** to **Tell us what happened** (user-chosen wording), on desktop and mobile. On screens 820px and narrower, rearranged the landing hero into one column: wordmark, headline, a short line explaining the phone-first start, full-width CTA, and a “See how it works” link; also tightened the header, steps and footer. Desktop layout rules are unchanged; the only desktop-visible change is the CTA label. `scripts/phone-ui-check.ts` now looks for the new CTA name. See [frontend.md](frontend.md).
+
+Verification: `npm run build` passed with placeholder public service URLs. Playwright screenshots of `#home` at 390×844, 360×740 and 1440×900 were inspected; no horizontal overflow at either phone width. `scripts/phone-ui-check.ts` was not run. No real-device checks or deployment.
+
 ## November 8, 2026 — Chat-first claim workspace
 
 Made the persistent conversation the main claim surface, with landing-inspired warm paper, blue accents, restrained lilac/peach gradients and pale-blue owner messages. Moved the existing Aceternity animated uploader into the 21st.dev-inspired composer through a shared owner/case-keyed document provider. Uploads remain immediate and independent of text Send; errors and reading-request receipts remain visible. Documents/downloads/extraction, case facts/editing/Gmail/delete, and the activity audit trail stay accessible in disclosures. Kept Stop directly above chat on mobile and desktop, removed the duplicate orb, discrepancy strip and repeated question, and changed outcomes from “You save” to an attributed “Reported reduction” with detailed responsibility/refund evidence collapsed and stale warnings visible. Three independent GPT design jurors completed their critiques. See [claim-chat-design.md](claim-chat-design.md), [frontend.md](frontend.md), and [outcomes.md](outcomes.md).
