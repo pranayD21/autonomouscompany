@@ -1139,3 +1139,9 @@ The inbox of the revoked, fictional QA case had no messages and no outreach, and
 
 Verification: firm service and runner suites on the disposable database, with a mocked provider and mailbox, including a failing mailbox step followed by success.
 
+## 2026-11-08 — Cases share one AgentMail inbox
+
+At the user's direction, hiring no longer creates a dedicated inbox and new cases send from the shared company inbox, which also removes the 3-inbox plan limit from hiring. The user explicitly set aside per-case mail separation here. Incoming mail in the shared inbox reaches a case by thread or message ID as untrusted evidence, and anything else stays a lead. Older dedicated mappings still work. See [AgentMail ingress](agentmail-ingress.md).
+
+Verification: AgentMail ingress, email routing, and firm suites passed on the disposable database with mocked providers. Two `scripts/outreach.test.ts` tests fail with `EMAIL_INBOX_NOT_CONFIGURED`, the same as on clean main, because that test setup has no inbox configured. No email was sent.
+

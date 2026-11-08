@@ -1,6 +1,6 @@
 import { and, eq, sql, type SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { outreachActions, caseMailboxes, firmStaffing, type OutreachAction } from "./schema";
+import { outreachActions, caseMailboxes, type OutreachAction } from "./schema";
 import { DispatchFailure, sendOutreach, type DispatchResult } from "./providers/outreach";
 
 export async function dispatchOnce(db: NodePgDatabase, action: OutreachAction, userId: string,
@@ -14,8 +14,8 @@ export async function dispatchOnce(db: NodePgDatabase, action: OutreachAction, u
       inbox=previous.provider_inbox_id||process.env.AGENTMAIL_INBOX_ID||null;
     }else{
       const [mailbox]=await db.select().from(caseMailboxes).where(eq(caseMailboxes.case_id,action.case_id));
-      const [firm]=await db.select().from(firmStaffing).where(eq(firmStaffing.case_id,action.case_id));
-      inbox=mailbox?.inbox_id||(!firm?process.env.AGENTMAIL_INBOX_ID:null)||null;
+      // Cases share the company inbox. Older cases keep any mailbox already mapped to them.
+      inbox=mailbox?.inbox_id||process.env.AGENTMAIL_PUBLIC_INBOX_ID||process.env.AGENTMAIL_INBOX_ID||null;
     }
     if(!inbox)throw new DispatchFailure("EMAIL_INBOX_NOT_CONFIGURED",true);
   }
