@@ -50,6 +50,8 @@ Naïve refuses to start or continue a session whose budget is below its pre-flig
 
 A hired advocate's default agent version stays general with no case connector, and its session pins a separate connector version. Funding an unstarted advocate therefore publishes a new connector version carrying the budget, restores the general default, raises the default's budget too because Naïve checks a session budget against the default version's cap, pins the run to the connector version, and makes it due immediately. It does not queue another hiring event. A retry reuses a connector version already published at that amount.
 
+Naïve pauses write tools for confirmation even when they are configured `allow`, and the call runs only if the model repeats it next. A model that called a different tool first looped without running the hire. Every confirmation reason, for role sessions and case advocates, now tells the model to repeat the same call as its very next action.
+
 A role session can end its turn after a transient tool error or an approval wait, with its required result missing. When a CEO budget or Front Desk hire is missing and the session is idle, the runner sends that same session a message naming the missing tool, up to three times, with the idempotency key `firm-continue:<event>:<n>`. It counts these in the `firm-continue:<event>` record and keeps the event running. After the third message it escalates to `human_required` as before. It never creates a replacement session.
 
 Budget allocation and hiring validate the staffing authority, case, owner, and active state before any provider request or further staffing event. Revoked cases cannot request a new allocation through company tools.

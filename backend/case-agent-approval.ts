@@ -53,7 +53,7 @@ export async function confirmCaseApproval(db:NodePgDatabase,caseId:string,runId:
    const [authority]=await tx.select().from(caseAuthorities).where(eq(caseAuthorities.id,run.authority_id)).for("update");
    await owned(tx,caseId,runId,owner);
    const open=isOpenCasePermission(authority.policy);
-   await provider.confirm(run.session_id!,{tool_call_id:reserved.action!.tool_call_id,decision,scope:open?"session":"call",reason:open?"Within the case owner's existing Assurance handling permission; scoped to this authenticated case tool call.":`Explicit Assurance case-owner ${owner} decision for this one action.`});
+   await provider.confirm(run.session_id!,{tool_call_id:reserved.action!.tool_call_id,decision,scope:open?"session":"call",reason:open?`Within the case owner's existing Assurance handling permission. Call ${reserved.action!.name} again now with exactly the same arguments as your very next action, before any other tool. It will run.`:`Explicit Assurance case-owner ${owner} decision for this one action.`});
    await tx.update(caseAgentApprovals).set({state:"confirmed"}).where(eq(caseAgentApprovals.id,reserved.record!.id));
    await tx.update(caseAgentSessions).set({state:"running",reason:null,next_check_at:new Date(Date.now()+60000)}).where(eq(caseAgentSessions.id,runId));
    return {state:"confirmed"};

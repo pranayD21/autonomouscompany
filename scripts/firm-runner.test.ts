@@ -113,3 +113,7 @@ test('one event tick confirms an already pending batch without duplicate dispatc
  await advanceFirmEvent(db,event,provider);assert.deepEqual(confirmed,['call_1','call_2']);
  assert.equal((await pool.query("SELECT count(*)::int n FROM advocacy_firm_operations WHERE result->>'session_id'=$1 AND state='completed'",[f.id])).rows[0].n,2);
 });
+test('an approval tells the role to repeat the same call next',async()=>{const f=fixture();const bodies:any[]=[];const provider:FirmProvider={request:async(method,path,body)=>{if(method==='POST'){bodies.push(body);return {};}return f.remote;}};
+ assert.equal((await approveFirmPending(db,'ceo',f.id,provider)).state,'confirmed');assert.equal(bodies[0].decision,'allow');assert.match(bodies[0].reason,/Call firm\.firm_status again now with exactly the same arguments/);
+});
+
