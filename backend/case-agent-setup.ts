@@ -1,3 +1,4 @@
+import {isNaiveCapacityError,naiveRetryAt} from "./naive-retry";
 import {and,eq,sql} from "drizzle-orm";
 import type {NodePgDatabase} from "drizzle-orm/node-postgres";
 import {cases,caseAuthorities,caseAgentSetups} from "./schema";
@@ -5,7 +6,7 @@ import {provisionCaseSession,type ProvisionInput} from "./provision-case-session
 import {naiveClient} from "./providers/naive";
 export type SetupDependencies={provision:(input:ProvisionInput)=>Promise<unknown>};
 export async function pollCaseAgentSetups(db:NodePgDatabase,deps?:SetupDependencies){
- const stats={checked:0,failed:0,configured:!!deps||process.env.NAIVE_CASE_PROVISIONING_ENABLED==="true"&&!!process.env.NAIVE_SETUP_API_KEY};
+ const stats={checked:0,failed:0,deferred:0,configured:!!deps||process.env.NAIVE_CASE_PROVISIONING_ENABLED==="true"&&!!process.env.NAIVE_SETUP_API_KEY};
  if(!stats.configured)return stats;
  const result=await db.execute(sql`WITH due AS (
   SELECT id FROM advocacy_case_agent_setups WHERE state='queued' AND next_check_at<=now()
@@ -27,9 +28,9 @@ export async function pollCaseAgentSetups(db:NodePgDatabase,deps?:SetupDependenc
    await db.update(caseAgentSetups).set({state:"ready",reason:null}).where(bound);
   }
   stats.checked++;
- }catch{
-  stats.failed++;
-  await db.update(caseAgentSetups).set({next_check_at:new Date(Date.now()+Math.min(900000,60000*2**Math.min(job.attempts,4))),reason:"Case setup is waiting for provider access. The same authorization will be retried; no replacement grant was created."}).where(bound);
+ }catch(error){
+  if(isNaiveCapacityError(error))stats.deferred++;else stats.failed++;
+  await db.update(caseAgentSetups).set({next_check_at:await naiveRetryAt(db,error,Math.min(900000,60000*2**Math.min(job.attempts,4))),reason:"Case setup is waiting for provider access. The same authorization will be retried; no replacement grant was created."}).where(bound);
  }finally{await db.update(caseAgentSetups).set({lease_id:null,lease_until:null}).where(bound);}
  return stats;
 }

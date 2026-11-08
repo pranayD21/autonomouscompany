@@ -1,4 +1,4 @@
-import {NaiveDeferred} from "./providers/naive-capacity";
+import {isNaiveAdmissionRejected} from "./naive-retry";
 import {createHash} from "node:crypto";
 import {and,eq} from "drizzle-orm";
 import type {NodePgDatabase} from "drizzle-orm/node-postgres";
@@ -41,7 +41,7 @@ export async function confirmCaseApproval(db:NodePgDatabase,caseId:string,runId:
   let state:"confirmed"|"uncertain"="uncertain";
   try{
    await provider.confirm(run.session_id!,{tool_call_id:action.tool_call_id,decision,scope:"call",reason:`Explicit Assurance case-owner ${owner} decision for this one action.`});state="confirmed";
-  }catch(error){if(error instanceof NaiveDeferred)throw error;/* An uncertain confirmation is never automatically replayed. */}
+  }catch(error){if(isNaiveAdmissionRejected(error))throw error;/* An uncertain confirmation is never automatically replayed. */}
   await tx.insert(caseAgentApprovals).values({run_id:runId,pending_hash:hash,tool_name:action.name,tool_call_id:action.tool_call_id,decision,approved_by:owner,state});
   await tx.update(caseAgentSessions).set(state==="confirmed"?{state:"running",reason:null,next_check_at:new Date(Date.now()+300000)}:{state:"human_required",reason:"Provider confirmation was uncertain. Inspect the existing session before taking further action.",next_check_at:null}).where(eq(caseAgentSessions.id,runId));
   return {state};

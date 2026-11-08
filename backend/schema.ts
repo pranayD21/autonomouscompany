@@ -158,6 +158,7 @@ export const replyMonitors=pgTable("advocacy_reply_monitors",{
 export type ReplyMonitor=typeof replyMonitors.$inferSelect;
 
 export const caseToolCredentials=pgTable("advocacy_case_tool_credentials",{
+ authority_id:uuid("authority_id").references(()=>caseAuthorities.id,{onDelete:"cascade"}),
  id:uuid("id").primaryKey().defaultRandom(),
  case_id:uuid("case_id").notNull().references(()=>cases.id,{onDelete:"cascade"}),
  token_hash:text("token_hash").notNull(),

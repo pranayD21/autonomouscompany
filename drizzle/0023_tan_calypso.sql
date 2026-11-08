@@ -1,0 +1,2 @@
+ALTER TABLE "advocacy_case_tool_credentials" ADD COLUMN "authority_id" uuid;--> statement-breakpoint
+ALTER TABLE "advocacy_case_tool_credentials" ADD CONSTRAINT "advocacy_case_tool_credentials_authority_id_advocacy_case_authorities_id_fk" FOREIGN KEY ("authority_id") REFERENCES "public"."advocacy_case_authorities"("id") ON DELETE cascade ON UPDATE no action;

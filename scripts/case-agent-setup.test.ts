@@ -62,3 +62,12 @@ for(const change of ["revoke","owner","operator"]){test(`${change} change stops 
   const [job]=await db.select().from(caseAgentSetups).where(eq(caseAgentSetups.case_id,item.id));assert.equal(job.state,"stopped");
  }finally{process.env.CREW_ALLOWED_USER_IDS=owner;}
 });}
+
+test("capacity rejection defers setup until the shared provider cooldown without replacing its authority",async()=>{
+ const item=await fixture(),authority=await authorize(item.id),retryAt=new Date(Date.now()+3600000);
+ await db.execute((await import('drizzle-orm')).sql`INSERT INTO advocacy_naive_capacity(id,next_allowed_at) VALUES ('naive',${retryAt.toISOString()}) ON CONFLICT(id) DO UPDATE SET next_allowed_at=excluded.next_allowed_at,lease_until=NULL`);
+ const result=await pollCaseAgentSetups(db,{provision:async()=>{throw Object.assign(Error("at capacity"),{status:429});}});
+ assert.equal(result.failed,0);assert.equal(result.deferred,1);
+ const [job]=await db.select().from(caseAgentSetups).where(eq(caseAgentSetups.authority_id,authority.id));
+ assert.equal(job.state,"queued");assert.equal(job.next_check_at.getTime(),retryAt.getTime());assert.equal(job.lease_id,null);
+});

@@ -231,3 +231,34 @@ test("reply and due followup survive together through one session until final st
  const late=(await db.select().from(caseAgentEvents).where(eq(caseAgentEvents.run_id,f.run.id))).find(e=>e.event_key==="reply:late");
  assert.equal(late?.delivered_at,null);
 });
+
+for(const status of [429,503])test(`provider HTTP ${status} approval preserves rejection versus uncertainty`,async()=>{
+ const f=await approvalFixture();const error=Object.assign(Error("Provider unavailable"),{status});
+ const attempt=()=>confirmCaseApproval(db,f.item.id,f.run.id,owner,pendingHash(f.action),"allow",{...f.provider,confirm:async()=>{throw error;}});
+ if(status===429){
+  await assert.rejects(attempt,error);
+  assert.equal((await readCaseApprovals(db,f.item.id,f.run.id,owner,f.provider)).history.length,0);
+  assert.deepEqual(await confirmCaseApproval(db,f.item.id,f.run.id,owner,pendingHash(f.action),"allow",f.provider),{state:"confirmed"});
+ }else{
+  assert.deepEqual(await attempt(),{state:"uncertain"});
+  assert.deepEqual(await confirmCaseApproval(db,f.item.id,f.run.id,owner,pendingHash(f.action),"allow",f.provider),{state:"uncertain"});
+  assert.equal(f.count(),0);
+ }
+});
+
+test("capacity rejection preserves the session and event until the shared cooldown",async()=>{
+ if(ids.length)await db.update(caseAgentSessions).set({state:"stopped"}).where(inArray(caseAgentSessions.case_id,ids));
+ const f=await fixture();await advanceCaseAgentSession(db,f.run.id,deps);
+ const sessionId=(await get(f.run.id)).session_id!;await queueCaseAgentEvent(db,f.item.id,"capacity:event","reply_received",{});
+ const retryAt=new Date(Date.now()+3600000);
+ await db.execute((await import('drizzle-orm')).sql`INSERT INTO advocacy_naive_capacity(id,next_allowed_at) VALUES ('naive',${retryAt.toISOString()}) ON CONFLICT(id) DO UPDATE SET next_allowed_at=excluded.next_allowed_at,lease_until=NULL`);
+ const keys:string[]=[];
+ const result=await pollCaseAgentSessions(db,{...deps,send:async(id,_message,key)=>{assert.equal(id,sessionId);keys.push(key);throw Object.assign(Error("at capacity"),{status:429});}});
+ assert.equal(result.failed,0);assert.equal(result.deferred,1);
+ const run=await get(f.run.id);assert.equal(run.session_id,sessionId);assert.equal(run.next_check_at?.getTime(),retryAt.getTime());
+ const [event]=await db.select().from(caseAgentEvents).where(eq(caseAgentEvents.run_id,f.run.id));assert.equal(event.delivered_at,null);
+ await db.update(caseAgentSessions).set({next_check_at:new Date(0),lease_until:null}).where(eq(caseAgentSessions.id,f.run.id));
+ await pollCaseAgentSessions(db,{...deps,send:async(id,_message,key)=>{assert.equal(id,sessionId);keys.push(key);return {accepted_seq:42};}});
+ assert.deepEqual(keys,[`case-event:${event.id}`,`case-event:${event.id}`]);
+ assert.equal((await db.select().from(caseAgentEvents).where(eq(caseAgentEvents.id,event.id)))[0].accepted_seq,42);
+});

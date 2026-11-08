@@ -529,3 +529,28 @@ Phone rollout verification: post-fix commit 2c23098 auto-deployed and hosted E2E
 ### Live vault replacement fails same-session authentication
 
 A fresh bounded synthetic session read revision 1, then its idle-session vault credential was replaced and old database token revoked. The original session accepted revision-2 event sequence 30. After an explicit approval for that case read, the tool returned HTTP 401 and the session ended without revision 2. This is evidence against transparent in-place credential rotation, not proof of a particular provider caching implementation. Automatic rotation remains disabled. Cleanup revoked all local case credentials and the authority; remote cancellation repeatedly returned capacity 429. The ignored rotation-live-smoke-2 fixture retains the remote session and resource IDs for cleanup. Database readback confirmed zero outbound actions. No spending caps or phone settings changed.
+
+### Approved individual SMS registration submitted
+
+With explicit approval for the $25 registration only, submitted the prepared individual/no-EIN registration once to AgentPhone. HTTP 200 accepted it with campaign_status pending; status readback says under review, no issue. The existing number still requires SMS registration. Phone features, test sends, and inbound routing remain disabled; no real call/text was placed. Private contact data, provider response, and send-once journal remain ignored. Request ID: 8f72635d-8ca0-4ec9-940f-b98730e42205.
+
+### Resume persistent workflow migration
+
+Confirmed the main task's cleanup failure was a real Naïve 429 followed by a local cooldown, with the fixture locally revoked. Continued the local persistent-only migration independently. Recorded the latest user override in agents.md and verified mandatory provider budgets, nullable vault expiry, and send-once API behavior. No claim of recovery or deployed migration is made at this stage.
+
+### Preserve queued work through Naïve capacity rejection
+
+Added shared cooldown scheduling for persistent setup and session jobs and separate deferred-job reporting. A definite HTTP 429 approval rejection no longer creates an uncertain receipt; HTTP 503 and network-loss writes still require reconciliation. Approval endpoints expose capacity as HTTP 503 with a retry time. The existing transport governor and send-once behavior remain intact.
+
+Verification: production build and type checking passed. All 55 focused checks passed: seven capacity/retry unit tests, two governor database tests, eight setup tests, and 38 session/approval/event tests. Database tests ran on an isolated temporary Neon branch, which was deleted afterward. The 429 event test preserved the session and event identity through recovery; the approval tests distinguished rejected 429 requests from uncertain 503 writes. No production deployment or external case communication was performed. A retry of the already revoked cleanup fixture returned another provider HTTP 429; remote cleanup remains pending. This patch does not complete the persistent-only workflow migration.
+
+### Prepare minimal-Naïve demo fallback
+
+Added an isolated local direct-model runner under scripts/demo, preserving the ongoing persistent-workflow migration. It can cache a genuine Naïve handoff with one events read, then run real case-scoped MCP tools without Naïve runtime requests. Private durable conversation state, case checks, exclusive-engine checks, and a persisted uncertain-dispatch stop prevent blind tool replay. Four focused tests and TypeScript compilation passed. A private direct OpenAI key request is pending; live inference and exclusive-case demo verification remain incomplete. No production deployment or communications occurred.
+
+Live fallback verification subsequently passed: direct OpenAI tool-call generation, two model/MCP turns with persisted conversation, exactly one sourced fact and revision-2 readback, zero outbound actions. The synthetic fixture/raw token were cleaned. The direct-model key is stored only in the private local environment; no deployment or automatic engine switch occurred. Added a reproducible no-outreach fixture preparation/cleanup command.
+
+
+### Commit the complete repository checkpoint
+
+At the user's request, committed all pending repository source, tests, migration files, and documentation alongside the previously committed direct-model demo fallback. The persistent-only migration remains unfinished; migration 0023 and the pending backend changes are not deployed by this Git push. Build and seven focused capacity/demo tests passed. A scan of changed files found no configured secret values or credential-shaped strings; private environment files and test artifacts remain ignored. GitHub pushes trigger frontend deployment only.

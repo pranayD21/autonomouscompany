@@ -13,6 +13,10 @@ Whenever you change anything in this repository, update or add the corresponding
 - Keep documentation current rather than accumulating contradictory historical descriptions. Agents should be able to recover the working context from these files without rereading a chat transcript or scanning the entire repository.
 - If only documentation changes, update its index or change log as appropriate; do not create a separate document for every line edit.
 
+## Current autonomy instruction
+
+The latest user instruction supersedes earlier synthetic-only, bounded-review, per-contact approval, recipient allowlist, decision/message-count, contact-spacing, case-expiry, and fixed repository-budget requirements. Implement one persistent Naïve session per case. The owner grants permission once in their own words; the agent writes a stable goal/finish condition and chooses sources, contacts, message content, timing, questions, and completion. Preserve identity boundaries, source integrity, revocation, truthful evidence, and duplicate-send protections. Request-level Naïve capacity controls remain in force and are not case-work caps. Authentication abuse controls and provider protocol constraints are separate. See [persistent workflow migration](docs/persistent-workflow-migration.md). Earlier demo limits below are historical and must not be reintroduced into the new path.
+
 ## Product direction
 
 The product name is **Assurance**, selected by the user on November 7, 2026. Use Assurance in customer-facing copy. Existing `bill-advocate` provider/resource identifiers remain stable for now; they are infrastructure names, not the product brand.
@@ -27,7 +31,7 @@ The user says the team has a working product. The local scaffold described in th
 
 ## Phone-first entry direction
 
-The user wants callers to begin by calling Assurance, with accounts tied to verified phone numbers. Document requests and detected problems should text a sign-in-required portal/dashboard link. Existing accounts may link a phone only after proving both identities; caller ID alone never unlocks a case. The additive phone service is implemented behind a disabled flag while individual/no-EIN AgentPhone SMS registration and live verification are completed. Keep registration contact details in ignored private files. No $25 registration submission, real test SMS, or inbound routing change has been approved yet. See [phone-first accounts](docs/phone-first.md).
+The user wants callers to begin by calling Assurance, with accounts tied to verified phone numbers. Document requests and detected problems should text a sign-in-required portal/dashboard link. Existing accounts may link a phone only after proving both identities; caller ID alone never unlocks a case. The additive phone service is implemented behind a disabled flag while individual/no-EIN AgentPhone SMS registration and live verification are completed. Keep registration contact details in ignored private files. The user approved the $25 individual SMS registration; AgentPhone accepted it and reports pending review. Real test calls/texts and inbound routing activation remain unapproved and disabled. See [phone-first accounts](docs/phone-first.md).
 
 ## Hackathon context
 

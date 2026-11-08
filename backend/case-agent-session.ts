@@ -1,3 +1,4 @@
+import {isNaiveCapacityError,naiveRetryAt} from "./naive-retry";
 import {verifyCaseBinding,type CaseBinding} from "./providers/case-binding";
 import {and,desc,eq,inArray,isNull,sql} from "drizzle-orm";
 import type {NodePgDatabase} from "drizzle-orm/node-postgres";
@@ -12,7 +13,7 @@ export async function registerCaseAgentSession(db:NodePgDatabase,input:{case_id:
   const [authority]=await tx.select().from(caseAuthorities).where(and(eq(caseAuthorities.id,input.authority_id),eq(caseAuthorities.case_id,input.case_id),eq(caseAuthorities.approved_by,owner))).for("update");
   const [item]=await tx.select().from(cases).where(and(eq(cases.id,input.case_id),eq(cases.owner_id,owner))).for("update");
   const [credential]=await tx.select().from(caseToolCredentials).where(and(eq(caseToolCredentials.id,input.credential_id),eq(caseToolCredentials.case_id,input.case_id),eq(caseToolCredentials.issued_by,owner)));
-  if(!item||!authority||!credential||credential.revoked_at||credential.expires_at<=new Date())throw Error("INVALID_CASE_BINDING");
+  if(!item||!authority||!credential||credential.authority_id&&credential.authority_id!==authority.id||credential.revoked_at||credential.expires_at<=new Date())throw Error("INVALID_CASE_BINDING");
   if(!["active","waiting"].includes(authority.state)||new Date(authority.policy.expires_at)<=new Date())throw Error("AUTHORITY_NOT_ACTIVE");
   const [prior]=await tx.select().from(caseAgentSessions).where(eq(caseAgentSessions.authority_id,authority.id));
   if(prior){for(const key of Object.keys(input) as (keyof typeof input)[])if(prior[key]!==input[key])throw Error("SESSION_BINDING_CONFLICT");return prior;}
@@ -84,7 +85,7 @@ export async function advanceCaseAgentSession(db:NodePgDatabase,id:string,deps:C
  }else await db.update(caseAgentSessions).set({state:"idle",next_check_at:nextCheck()}).where(eq(caseAgentSessions.id,id));
 }
 export async function pollCaseAgentSessions(db:NodePgDatabase,deps:CaseSessionDependencies=defaults){
- const stats={checked:0,failed:0};
+ const stats={checked:0,failed:0,deferred:0};
  for(let n=0;n<3;n++){
   const result=await db.execute(sql`WITH due AS (SELECT s.id FROM advocacy_case_agent_sessions s JOIN advocacy_case_authorities a ON a.id=s.authority_id
    JOIN advocacy_cases c ON c.id=s.case_id JOIN advocacy_case_tool_credentials k ON k.id=s.credential_id
@@ -98,7 +99,16 @@ export async function pollCaseAgentSessions(db:NodePgDatabase,deps:CaseSessionDe
    UPDATE advocacy_case_agent_sessions s SET lease_id=gen_random_uuid(),lease_until=now()+interval '10 minutes' FROM due WHERE s.id=due.id RETURNING s.id,s.lease_id`);
   const claim=result.rows[0] as {id:string;lease_id:string}|undefined;if(!claim)break;
   let failed=false;
-  try{await advanceCaseAgentSession(db,claim.id,deps);stats.checked++;}catch{failed=true;stats.failed++;await db.update(caseAgentSessions).set({next_check_at:new Date(Date.now()+900000),lease_until:new Date(Date.now()+900000),reason:"Provider unavailable; retry the same session/event identity."}).where(eq(caseAgentSessions.id,claim.id));}
+  try{await advanceCaseAgentSession(db,claim.id,deps);stats.checked++;}
+  catch(error){
+   failed=true;
+   const deferred=isNaiveCapacityError(error);
+   if(deferred)stats.deferred++;else stats.failed++;
+   const retryAt=await naiveRetryAt(db,error,900000);
+   await db.update(caseAgentSessions).set({next_check_at:retryAt,lease_until:retryAt,
+    reason:deferred?"Naïve is at capacity. The same session and pending event are queued for retry.":"Provider unavailable; retry the same session/event identity."
+   }).where(and(eq(caseAgentSessions.id,claim.id),eq(caseAgentSessions.lease_id,claim.lease_id)));
+  }
   finally{if(!failed)await db.update(caseAgentSessions).set({lease_id:null,lease_until:null}).where(and(eq(caseAgentSessions.id,claim.id),eq(caseAgentSessions.lease_id,claim.lease_id)));}
  }
  return stats;

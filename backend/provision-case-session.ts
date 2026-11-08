@@ -52,7 +52,7 @@ export async function provisionCaseSession(db:NodePgDatabase,input:ProvisionInpu
    if(!old.key.startsWith(`${name}:`)||old.agent_id!==input.agentId||old.mcp_server_url!==connector.mcp_servers[0].url)throw Error("UNEXPECTED_VAULT_CREDENTIAL");
    await client.vaults.credentials.delete(vault.id,old.id);
   }
-  const credential=await issueCaseToolCredential(tx,input.caseId,input.owner);
+  const credential=await issueCaseToolCredential(tx,input.caseId,input.owner,authority.id);
   const sealed=await client.vaults.credentials.create(vault.id,{kind:"static_bearer",key:`${name}:${credential.id}`,value:credential.token,mcp_server_url:connector.mcp_servers[0].url,agent_id:input.agentId,expires_at:credential.expires_at.toISOString()});
   if(sealed.key!==`${name}:${credential.id}`||sealed.kind!=="static_bearer"||sealed.agent_id!==input.agentId||sealed.mcp_server_url!==connector.mcp_servers[0].url||new Date(sealed.expires_at??0).getTime()!==credential.expires_at.getTime())throw Error("SEALED_CREDENTIAL_MISMATCH");
   const versions=await client.agents.listVersions(input.agentId);

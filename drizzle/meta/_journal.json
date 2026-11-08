@@ -162,6 +162,13 @@
       "when": 1794115282072,
       "tag": "0022_shallow_tigra",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794116108873,
+      "tag": "0023_tan_calypso",
+      "breakpoints": true
     }
   ]
 }

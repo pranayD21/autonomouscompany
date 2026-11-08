@@ -165,3 +165,11 @@ A second isolated experiment reached a real idle session after a successful revi
 This disproves transparent same-session rotation for the tested path. Cached credentials are a possible explanation, not a verified provider implementation detail. Do not enable automatic create-new/delete-old rotation on this evidence. Renewal needs a provider-supported refresh mechanism or another tested design that preserves authorization and total spending limits.
 
 Cleanup of this second experiment is pending remote cancellation after repeated capacity 429 responses. Local credentials and authority are revoked, and the database confirms zero outbound rows. Resume the ignored `rotation-runner-2.ts cleanup` command with its existing state; do not replace this fixture. An alternative to investigate is issuing credentials with the existing owner-approved authority expiry, avoiding mid-session replacement without extending the authority itself.
+
+## Capacity rejection recovery
+
+`backend/naive-retry.ts` separates a definite admission rejection (HTTP 429 or a local `NaiveDeferred`) from an uncertain approval write. A rejected confirmation leaves no approval receipt, so the owner can retry the same still-pending action after the cooldown. HTTP 503 and network failures during confirmation remain uncertain and are never automatically replayed.
+
+Persistent setup and session polling read the shared `advocacy_naive_capacity` deadline when capacity rejects a request. They retain the existing authority, session, event, and idempotency key and schedule the next check no earlier than that deadline. Capacity waits count as `deferred`, separately from other failures. This is request recovery, not a case duration or work limit. Approval routes return HTTP 503 with `Retry-After` and `retry_at` for capacity waits, rather than presenting them as stale-action conflicts.
+
+A live retry of the already revoked second rotation fixture still returned HTTP 429, request `req_6x7x7xsyz5hqq6eak2zd6x08h3`. Its remote cleanup remains pending. The configured API address matches the current official Naïve docs; changing that address is not a supported workaround. The recovery patch is local until explicitly recorded as deployed. The broader persistent-only migration remains unfinished.

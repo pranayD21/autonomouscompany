@@ -50,3 +50,7 @@ Every repository change must update the relevant documentation in the same chang
 - [Automatic frontend deployments](auto-deploy.md): GitHub connection, production branch, and separate Neon backend deployment.
 
 - [Phone-first accounts and document texts](phone-first.md): inbound intake, verified phone sign-in, existing-account linking, portal requests, notifications, and SMS activation gate.
+
+- [Persistent workflow migration](persistent-workflow-migration.md): current user override, provider requirements, migration plan, and recovery status.
+
+- [Direct-model demo fallback](demo-fallback.md): minimal Naïve handoff, local direct inference, exclusive-case requirements, and verification limits.
