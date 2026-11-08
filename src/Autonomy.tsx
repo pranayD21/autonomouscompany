@@ -82,7 +82,7 @@ export function Autonomy({caseId, userId, enabled, between}: {caseId: string; us
   else { label = "Not started"; detail = "This saved case has not started yet."; tone = "idle"; }
   if (label === "Stopped" && session) detail = "Assurance is not working on this case. A message that was already sending may still finish.";
 
-  return <><section className="status-panel" data-tone={tone} aria-label="Case agent activation">
+  return <><section id="section-status" className="status-panel" data-tone={tone} aria-label="Case agent activation">
     {!loaded && !loadError ? <p className="quiet-line">Loading…</p> : <>
       <div className="status-head">
         <span className="status-light" aria-hidden="true"/>
@@ -150,7 +150,7 @@ function Activity({decisions, actions, replies}: {decisions: Decision[]; actions
   </>});
   items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
-  return <section className="case-section activity" aria-label="Activity">
+  return <section id="section-activity" className="case-section activity" aria-label="Activity">
     <header className="case-section-head"><h3>Activity</h3></header>
     {items.length === 0
       ? <p className="quiet-line">Messages Assurance sends and replies it receives will appear here.</p>

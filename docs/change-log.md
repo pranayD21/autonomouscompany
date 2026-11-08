@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-08 — Restore workspace motion and add reported savings
+
+At the user's request, restored the animated file drop zone (now uploads on drop or pick, with a spring tilt on hover/drag) and the sliding-pill section tabs on the case page. Money is shown only from agent-reported outcomes: a "You save" card with count-up and before/now bars on the case page, and a reported-savings total in a new overview stat strip. The bill-minus-EOB discrepancy was not restored because it is not a verified figure. The overview also gained a greeting, staggered tile entrance, a shared hover highlight and status-colored tile accents. See frontend.md.
+
+Verification: `tsc --noEmit` and `vite build` (placeholder `VITE_*` URLs) passed; 10 progress/activation-state tests and both mocked browser fixtures passed. Overview (desktop and 390px) and the finished case page were rendered against mocked data and checked visually. Not deployed or checked against the hosted backend.
+
 ## 2026-11-08 — Hero backdrop: real people, 5-second photo switch
 
 At the user's request the landing hero backdrop no longer scrolls, and its stock photos were replaced with nine documentary photos of real people recovering from injuries (public domain plus one CC BY 2.0 photo, credited in the new footer line). One photo shows for 5 seconds, then a quick crossfade switches to the next. The photos keep a little colour and are more visible (42% opacity instead of 20%). Sources and selection rules are in frontend.md.

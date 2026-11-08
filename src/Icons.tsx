@@ -32,6 +32,10 @@ export function Close({size = 22, ...props}: IconProps) {
   return <svg {...base(size)} {...props}><path d="M6 6l12 12M18 6 6 18"/></svg>;
 }
 
+export function Upload({size = 20, ...props}: IconProps) {
+  return <svg {...base(size)} {...props}><path d="M12 16V4m-5 5 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>;
+}
+
 export function FileIcon({size = 20, ...props}: IconProps) {
   return <svg {...base(size)} {...props}><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/></svg>;
 }

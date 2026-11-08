@@ -1,9 +1,10 @@
-import {useEffect, useState, type ChangeEvent} from "react";
+import {useEffect, useState} from "react";
 import {api, auth} from "./services";
 import type {DocumentExtraction} from "../backend/providers/document-reader";
 import type {CaseDocument} from "../backend/schema";
 import {AnimatePresence, motion} from "motion/react";
-import {FileIcon, Plus} from "./Icons";
+import {FileIcon} from "./Icons";
+import {FileDrop} from "./ui/FileDrop";
 
 type DocumentView = Omit<CaseDocument, "object_key"> & {extraction_state: string | null; extraction_result: DocumentExtraction | null; extraction_error: string | null; confirmed_at: string | null};
 const READING = ["running", "preparing", "direct_running"];
@@ -19,26 +20,24 @@ function readingLabel(doc: DocumentView) {
 }
 
 export function Documents({caseId, userId, revision}: {caseId: string; userId: string; revision: number}) {
-  const [docs, setDocs] = useState<DocumentView[]>([]), [error, setError] = useState(""), [busy, setBusy] = useState(false);
+  const [docs, setDocs] = useState<DocumentView[]>([]), [error, setError] = useState(""), [busy, setBusy] = useState(false), [uploading, setUploading] = useState<string | null>(null);
   const path = `/cases/${caseId}/documents`;
   async function refresh() { setDocs(await api(path, {}, userId)); }
   useEffect(() => { void refresh().catch(e => setError(e.message)); }, [caseId, userId, revision]);
 
-  async function upload(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []);
-    event.target.value = "";
-    if (!files.length) return;
+  async function upload(files: File[]) {
     setBusy(true); setError("");
     try {
-      for (const file of files) {
+      for (const [n, file] of files.entries()) {
         if (file.size > 5 * 1024 * 1024) throw new Error(`${file.name} is larger than 5 MB.`);
+        setUploading(files.length > 1 ? `Uploading ${n + 1} of ${files.length}: ${file.name}` : `Uploading ${file.name}`);
         const id = crypto.randomUUID(), body = new FormData();
         body.set("file", file); body.set("kind", "other"); body.set("id", id);
         await api(path, {method: "POST", body}, userId);
         await api(`${path}/${id}/extraction`, {method: "POST"}, userId);
       }
     } catch (e) { setError(e instanceof Error ? e.message : "Upload failed. Try the same file again."); }
-    finally { await refresh().catch(() => {}); setBusy(false); }
+    finally { await refresh().catch(() => {}); setUploading(null); setBusy(false); }
   }
   async function download(doc: DocumentView) {
     setError("");
@@ -58,16 +57,10 @@ export function Documents({caseId, userId, revision}: {caseId: string; userId: s
     finally { setBusy(false); }
   }
 
-  return <section className="case-section documents" aria-label="Documents">
-    <header className="case-section-head">
-      <h3>Documents</h3>
-      <label className="add-file" data-busy={busy}>
-        <Plus size={15} aria-hidden="true"/>{busy ? "Uploading…" : "Add a document"}
-        <input className="visually-hidden" type="file" multiple accept={ACCEPT} disabled={busy} onChange={e => void upload(e)} aria-label="Document file"/>
-      </label>
-    </header>
+  return <section id="section-documents" className="case-section documents" aria-label="Documents">
+    <header className="case-section-head"><h3>Documents</h3></header>
+    <FileDrop label="Add documents" hint="Drop insurance cards, claim letters, bills or EOBs here, or click to choose · PDF or image, up to 5 MB" accept={ACCEPT} disabled={busy} busy={uploading} onFiles={files => void upload(files)}/>
     {error && <p role="alert">{error}</p>}
-    {docs.length === 0 && <p className="quiet-line">No documents yet. Add insurance cards, claim letters, bills, or EOBs (PDF or image, up to 5 MB).</p>}
     <ul className="doc-list"><AnimatePresence initial={false}>{docs.map(doc => {
       const result = doc.extraction_result;
       const canRead = doc.state === "ready" && (!doc.extraction_state || ["source_ready", "direct_failed"].includes(doc.extraction_state));

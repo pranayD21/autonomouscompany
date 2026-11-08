@@ -10,9 +10,11 @@ import {CaseForm} from "./CaseForm";
 import {Documents} from "./Documents";
 import {Autonomy} from "./Autonomy";
 import {Outcomes} from "./Outcomes";
-import {ArrowLeft, Home, LogOut, Plus} from "./Icons";
+import {ArrowLeft, ArrowUpRight, Home, LogOut, Plus} from "./Icons";
 import {Sidebar, SidebarLink, SidebarSection, SidebarText} from "./ui/Sidebar";
 import {OWNER_LABEL, useProgressMap} from "./progress";
+import {SectionNav} from "./ui/SectionNav";
+import {NumberTicker} from "./ui/motion";
 
 const message = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Please try again.";
 const money = (cents: number) => new Intl.NumberFormat("en-US", {style: "currency", currency: "USD"}).format(cents / 100);
@@ -86,7 +88,7 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
   else if (showIntake) { view = <Intake hasCases={cases.length > 0} disabled={busy !== null} onCancel={() => go("#workspace")} onSave={(d,files) => saveDetails(d,undefined,files)} live={live}/>; viewKey = "new"; }
   else if (route.view === "case" && !selected) { view = <div className="empty"><p>This case isn’t available. It may have been deleted.</p><a className="text-link" href="#workspace">Back to all cases</a></div>; viewKey = "missing"; }
   else if (selected) { view = <CaseView key={selected.id} item={selected} userId={userId} crewEnabled={crewEnabled} busy={busy} live={live} onSave={d => saveDetails(d, selected)} onAct={() => remove(selected.id)}/>; viewKey = `case-${selected.id}`; }
-  else { view = <Overview cases={cases} userId={userId} crewEnabled={crewEnabled} live={live}/>; viewKey = "overview"; }
+  else { view = <Overview cases={cases} userId={userId} userName={userName} crewEnabled={crewEnabled} live={live}/>; viewKey = "overview"; }
 
   return <div className="shell">
     <Sidebar footer={<div className="sidebar-user"><span className="avatar" aria-hidden="true">{userName.slice(0, 1).toUpperCase()}</span><SidebarText className="sidebar-user-name">{userName}</SidebarText><button className="icon-button sign-out" onClick={onSignOut} aria-label="Sign out" title="Sign out"><LogOut size={18}/></button></div>}>
@@ -107,21 +109,48 @@ export function Workspace({sealed, userId, userName, onSignOut}: {sealed: Sealed
   </div>;
 }
 
-export function Overview({cases, userId, crewEnabled, live}: {cases: readonly BillCase[]; userId: string; crewEnabled: boolean; live: ReactNode}) {
+function Greeting({name}: {name: string}) {
+  const hour = new Date().getHours();
+  return <>{hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"}, {name.split(" ")[0]}</>;
+}
+
+const ease = [0.16, 1, 0.3, 1] as const;
+
+export function Overview({cases, userId, userName, crewEnabled, live}: {cases: readonly BillCase[]; userId: string; userName: string; crewEnabled: boolean; live: ReactNode}) {
   const progress = useProgressMap(cases, userId, crewEnabled);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const all = cases.map(c => progress.get(c.id));
+  const needYou = all.filter(p => p?.loaded && p.owner === "you").length;
+  const saved = all.reduce((sum, p) => sum + (p?.outcome?.reduction_cents ?? 0), 0);
   return <>
-    <div className="page-head"><h1>Your cases</h1>{live}</div>
+    <div className="page-head">
+      <div><p className="eyebrow"><Greeting name={userName}/></p><h1>Your cases</h1></div>
+      {live}
+    </div>
     <PhoneIntakes userId={userId}/>
-    <div className="case-grid">
-      {cases.map(item => {
+    <motion.div className="overview-stats" initial={{opacity: 0, y: 6}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, ease}}>
+      <div><span>Open cases</span><strong>{cases.length}</strong></div>
+      <div data-alert={needYou > 0}><span>Need you</span><strong>{needYou}</strong></div>
+      <div className="overview-savings"><span>Reported savings</span><strong><NumberTicker value={saved} format={n => money(Math.round(n))}/></strong><small>{saved ? "From recorded insurer decisions. Not a verified payout." : "Shows up once an insurer decision is recorded."}</small></div>
+    </motion.div>
+    <div className="case-grid" onMouseLeave={() => setHovered(null)}>
+      {cases.map((item, i) => {
         const p = progress.get(item.id);
-        return <a key={item.id} href={`#case/${item.id}`} className="case-tile">
-          <span className="case-tile-top"><span className="case-tile-kind">{caseKind(item)}</span>{p?.loaded && <span className="badge" data-owner={p.owner}>{OWNER_LABEL[p.owner]}</span>}</span>
-          <strong className="case-tile-title">{item.title}</strong>
-          {p?.loaded && <span className="case-tile-desc">{p.title}</span>}
-        </a>;
+        return <motion.a key={item.id} href={`#case/${item.id}`} className="case-tile" onMouseEnter={() => setHovered(item.id)} onFocus={() => setHovered(item.id)}
+          initial={{opacity: 0, y: 12}} animate={{opacity: 1, y: 0}} transition={{duration: 0.45, delay: 0.06 * i, ease}}>
+          <AnimatePresence>{hovered === item.id && <motion.span className="case-tile-hover" layoutId="case-hover" initial={{opacity: 0}} animate={{opacity: 1, transition: {duration: 0.15}}} exit={{opacity: 0, transition: {duration: 0.15, delay: 0.1}}}/>}</AnimatePresence>
+          <span className="case-tile-inner" data-owner={p?.loaded ? p.owner : undefined}>
+            <span className="case-tile-top"><span className="case-tile-kind">{caseKind(item)}</span>{p?.loaded && <span className="badge" data-owner={p.owner}><span className="badge-dot"/>{OWNER_LABEL[p.owner]}</span>}</span>
+            <strong className="case-tile-title">{item.title}</strong>
+            <span className="case-tile-foot"><span className="case-tile-desc">{p?.loaded ? p.title : " "}</span><ArrowUpRight size={16} aria-hidden="true"/></span>
+          </span>
+        </motion.a>;
       })}
-      <a href="#new" className="case-tile case-tile--new"><Plus size={18} aria-hidden="true"/><strong>Open a new case</strong></a>
+      <motion.a href="#new" className="case-tile case-tile--new" onMouseEnter={() => setHovered("new")}
+        initial={{opacity: 0, y: 12}} animate={{opacity: 1, y: 0}} transition={{duration: 0.45, delay: 0.06 * cases.length, ease}}>
+        <AnimatePresence>{hovered === "new" && <motion.span className="case-tile-hover" layoutId="case-hover" initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}}/>}</AnimatePresence>
+        <span className="case-tile-inner"><span className="new-plus" aria-hidden="true"><Plus size={20}/></span><strong>Open a new case</strong></span>
+      </motion.a>
     </div>
   </>;
 }
@@ -135,6 +164,13 @@ function Intake({hasCases, disabled, onCancel, onSave, live}: {hasCases: boolean
     <div className="intake-card"><CaseForm disabled={disabled} onSave={onSave}/></div>
   </>;
 }
+
+const SECTIONS = [
+  {id: "section-status", label: "Status"},
+  {id: "section-activity", label: "Activity"},
+  {id: "section-documents", label: "Documents"},
+  {id: "section-details", label: "Details"},
+];
 
 export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}: {item: BillCase; userId: string; crewEnabled: boolean; busy: string | null; live: ReactNode; onSave: (d: CaseInput) => Promise<void>; onAct: (action: "delete") => Promise<boolean>}) {
   const [editing, setEditing] = useState(false);
@@ -159,11 +195,13 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
       </div>
     </div>
 
+    <SectionNav sections={SECTIONS}/>
+
     <Autonomy caseId={item.id} userId={userId} enabled={crewEnabled} between={<Outcomes caseId={item.id} userId={userId} revision={item.revision}/>}/>
 
     <Documents key={`documents-${item.id}`} caseId={item.id} userId={userId} revision={item.revision}/>
 
-    <section className="case-section" aria-label="Case details">
+    <section id="section-details" className="case-section" aria-label="Case details">
       <header className="case-section-head"><h3>Details</h3><button className="text-button" onClick={() => setEditing(e => !e)} aria-expanded={editing}>{editing ? "Cancel" : "Edit details"}</button></header>
       <AnimatePresence initial={false}>
         {editing && <motion.div className="edit-panel" initial={{height: 0, opacity: 0}} animate={{height: "auto", opacity: 1}} exit={{height: 0, opacity: 0}} transition={{duration: 0.3, ease: [0.16, 1, 0.3, 1]}}>
