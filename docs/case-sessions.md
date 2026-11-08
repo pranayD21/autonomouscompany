@@ -147,3 +147,11 @@ A `request_human` tool action still changes the authority to `human_required`. T
 ### Combined reply and follow-up lifecycle regression
 
 The disposable-database test `reply and due followup survive together through one session until final stop` exercises a reply arriving when a scheduled follow-up is due. It verifies that both events receive distinct delivery receipts in the same provider session, the timer clears, and authorization policy/counters remain unchanged. A late reply after the authority stops stays undelivered; the worker cancels once and creates no replacement session. The provider is simulated, so this test does not establish live delivery or claim resolution.
+
+### Credential-renewal investigation
+
+The installed Managed Agents 0.12.3 SDK defines vault rotation as create-new plus delete-old; it exposes no credential-update or secret-read method. Provisioning seals an explicit expiry equal to the Neon token expiry. Extending only the database expiry cannot renew the vault credential. A production renewal flow must replace the sealed credential, update the session's credential binding without changing its provider session or budget, and recover from partial failure between the remote and database writes. Same-session credential refresh must be verified before enabling renewal.
+
+A fresh zero-outbound synthetic fixture was provisioned for that experiment, but Naïve returned HTTP 429 during the pre-start identity check. No provider session started, and no rotation occurred. Cleanup revoked the local tool credential and authority before attempting remote removal. The existing shared cooldown correctly deferred remote cleanup; the experiment does not establish that a running session refreshes its credential.
+
+After the cooldown, remote cleanup returned another 429. Database readback confirmed `no_remote_session=true`, `authority_state=revoked`, `credential_revoked=true`, and `outbound=0`. Remote vault/identity removal remains pending in the ignored `test-results/rotation-live-smoke.json` fixture; do not create a replacement fixture until cleanup finishes.

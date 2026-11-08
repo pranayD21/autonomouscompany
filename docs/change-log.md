@@ -504,3 +504,8 @@ Validation: all 34 session/approval database tests passed on the disposable bran
 ### Verify combined reply and follow-up lifecycle
 
 Added one database integration test covering a reply and due timer together, followed by authority termination and a late reply. The focused test passed on the disposable branch (1 passed, 0 failed). It proves both events survive and use the same session without resetting policy or counters, and that a stopped case cannot restart through a late reply. Provider calls are simulated; no external communications occurred. This change affects tests/documentation only and requires no backend deployment. Concurrent phone-authentication files were excluded.
+
+
+### Establish credential-renewal constraints
+
+Inspected the installed Managed Agents vault API: rotation requires create-new/delete-old and cannot be implemented by extending the Neon expiry alone. Prepared an isolated live rotation experiment under the existing zero-outbound synthetic scope. Provisioning succeeded, but the pre-start identity check returned HTTP 429; no session or rotation started. Remote cleanup also returned 429 after the shared cooldown. Read-only database verification confirmed no remote session, revoked authority, revoked credential, and zero outbound rows. Remote vault/identity deletion remains pending; resume cleanup using the ignored rotation-runner and rotation-live-smoke state, without creating another fixture. No production source, schema, auth configuration, or budget changed.
