@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-08 — Hero backdrop: real people, 5-second photo switch
+
+At the user's request the landing hero backdrop no longer scrolls, and its stock photos were replaced with nine documentary photos of real people recovering from injuries (public domain plus one CC BY 2.0 photo, credited in the new footer line). One photo shows for 5 seconds, then a quick crossfade switches to the next. The photos keep a little colour and are more visible (42% opacity instead of 20%). Sources and selection rules are in frontend.md.
+
+Verification: `tsc --noEmit` and `vite build` (placeholder `VITE_*` URLs) passed. In headless Chromium at 1440px and 390px, screenshots 5.2 seconds apart showed different photos with the wordmark, heading and button still readable. The footer credit was checked at 1440px. Live production was not checked.
+
 ## 2026-11-08 — Scrolling photo backdrop in the landing hero
 
 The user asked for a faded background of people struggling with injuries behind the hero, to add a human touch, scrolling through several images. Added `src/components/hero-backdrop.tsx`, twelve CC0 photos in `public/hero/`, and `.hero-backdrop*` styles in `src/landing.css`. The photos are grayscale at low opacity and drift slowly left behind the wordmark. Sources are listed in frontend.md.

@@ -34,7 +34,7 @@ export function Landing() {
         <div className="steps">{steps.map(step => <article className="step-row" key={step.number}><span className="step-number">{step.number}</span><div><h3>{step.title}</h3></div></article>)}</div>
       </section>
 
-      <footer className="site-footer"><a className="brand" href="#">assurance<span className="brand-period">.</span></a><span>Your case, handled.</span></footer>
+      <footer className="site-footer"><a className="brand" href="#">assurance<span className="brand-period">.</span></a><span>Your case, handled.</span><span className="photo-credit">Hero photos: public domain, and <a href="https://commons.wikimedia.org/wiki/File:Man_on_Crutches_-_San_Cristobal_de_las_Casas_-_Chiapas_-_Mexico.jpg" target="_blank" rel="noreferrer">Adam Jones</a> (<a href="https://creativecommons.org/licenses/by/2.0/" target="_blank" rel="noreferrer">CC BY 2.0</a>), color adjusted.</span></footer>
     </main>
   );
 }

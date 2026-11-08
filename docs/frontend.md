@@ -41,9 +41,15 @@ The landing hero (`src/components/strikethrough-replace.tsx`, styles in `src/lan
 
 ## Hero photo backdrop
 
-Behind the landing hero, `src/components/hero-backdrop.tsx` (rendered by `MinimalHero`, below the particle canvas) shows twelve photos of people dealing with injury, recovery and the stress around it: a worried call, an ankle cast, a wheelchair consult, paperwork, a cane, rehab, waiting rooms. They sit in one row at full hero height and drift left in a seamless loop (the list renders twice and the track moves `-50%` over 300s). Styles in `src/landing.css` (`.hero-backdrop*`) make them grayscale with a slight warm tint at 20% opacity, fade them out at the top and bottom with a mask, and wash the left and right edges into the paper colour (lighter on phones so the photo stays visible). The strip is `aria-hidden`, and reduced motion stops the drift.
+Behind the landing hero, `src/components/hero-backdrop.tsx` (rendered by `MinimalHero`, below the particle canvas) shows nine documentary photos of real people recovering from injuries: people on crutches, hand and leg therapy, a patient in a hospital lift, someone being helped into a wheelchair or down steps. One photo fills the hero at a time; every 5 seconds a 0.45s crossfade switches to the next, and the cycle repeats. It pauses while the tab is hidden, and with reduced motion only the first photo shows. Each photo has an `objectPosition` so the cover crop keeps the person in view. Styles in `src/landing.css` (`.hero-backdrop*`) keep a little colour (`saturate(.35)`) at 42% opacity, fade the top and bottom with a mask, and wash the edges toward the paper colour so the wordmark and copy stay readable. The strip is `aria-hidden`.
 
-Files are `public/hero/01-*.webp` to `12-*.webp`, 640px tall, about 280 KB together. All are CC0 photos found through Openverse, so no credit is required. Ten are from StockSnap (IDs `6WFSVFZQ9F`, `HMY3E2UQPN`, `KJIS7ELUI3`, `A5DG6YREVH`, `EDI8LWKSBB`, `JS1XAXLBPF`, `8YM7T7AERK`, `OHIFBU89LZ`, `TBEMNLXLVQ`, `NX9U9L1XRB`) and two from rawpixel ("Woman getting cast on her", "Physiotherapy hospital"). They are stock models, not customers, so they must not be captioned or presented as Assurance cases.
+Files are `public/hero/01-*.webp` to `09-*.webp` (about 820 KB together, up to 1600px). Staged stock photos were replaced with real people on 2026-11-08 at the user's request. Sources:
+
+- Public domain (US Navy / Navy Medicine on Flickr and Wikimedia Commons): hand therapy (Flickr 52033349927), wheelchair help (Commons "US Navy 070919-N-6278K-182"), patient lift (Flickr 51929649462), leg rehab (Flickr 52971670817), helped down steps (Commons "US Navy 050413-N-1485H-010"), band therapy (Flickr 52257078214).
+- Public domain mark on Flickr: crutches outdoors ("Duel Crutches", Belur Math, Howrah, 51633131050) and crutches in the city ("IMG_0037", evanizzle79, 54314915502).
+- CC BY 2.0: crutches on a street in Chiapas by Adam Jones (Commons "Man on Crutches - San Cristobal de las Casas - Chiapas - Mexico.jpg"). The licence requires credit, which `src/Landing.tsx` gives in the footer (`.photo-credit`). Keep that credit while the photo is used.
+
+These people are not Assurance customers. Never caption the photos or present them as cases, outcomes or testimonials. Film stills, staged training drills, war scenes, children, and identifiable patients photographed without evident consent were deliberately excluded.
 
 ## Copy and hierarchy rules
 

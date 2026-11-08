@@ -1,30 +1,47 @@
-// Faded, slowly scrolling strip of photos behind the landing hero.
-// Photos are CC0 (StockSnap, rawpixel); sources are listed in docs/frontend.md.
+import { useEffect, useState } from "react";
+
+// Faded photos of real people recovering from injuries, shown one at a time behind the landing hero.
+// Sources and licenses are listed in docs/frontend.md; the one CC BY photo is credited in the footer.
 const photos = [
-  "01-phone-call",
-  "02-ankle-cast",
-  "03-comforted",
-  "04-wheelchair-consult",
-  "05-paperwork",
-  "06-worried-consult",
-  "07-cane",
-  "08-waiting",
-  "09-rehab",
-  "10-frustrated",
-  "11-reassurance",
-  "12-head-in-hand",
+  { name: "01-crutches-street", position: "50% 62%" },
+  { name: "02-hand-therapy", position: "35% 75%" },
+  { name: "03-wheelchair-help", position: "50% 35%" },
+  { name: "04-crutches-outdoors", position: "50% 40%" },
+  { name: "05-patient-lift", position: "50% 40%" },
+  { name: "06-leg-rehab", position: "50% 55%" },
+  { name: "07-helped-down-steps", position: "50% 38%" },
+  { name: "08-crutches-city", position: "50% 70%" },
+  { name: "09-band-therapy", position: "50% 40%" },
 ];
 
+const holdMs = 5000;
+
 export function HeroBackdrop() {
-  // The list renders twice so the track can loop seamlessly at -50%.
-  const strip = [...photos, ...photos];
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (motion.matches) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") setActive(index => (index + 1) % photos.length);
+    }, holdMs);
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <div className="hero-backdrop" aria-hidden="true">
-      <div className="hero-backdrop-track">
-        {strip.map((name, index) => (
-          <img key={index} src={`/hero/${name}.webp`} alt="" width={960} height={640} decoding="async" loading={index < 3 ? "eager" : "lazy"} draggable={false} />
-        ))}
-      </div>
+      {photos.map((photo, index) => (
+        <img
+          key={photo.name}
+          className={index === active ? "is-active" : undefined}
+          src={`/hero/${photo.name}.webp`}
+          alt=""
+          decoding="async"
+          fetchPriority={index === 0 ? "high" : "low"}
+          style={{ objectPosition: photo.position }}
+          draggable={false}
+        />
+      ))}
     </div>
   );
 }
