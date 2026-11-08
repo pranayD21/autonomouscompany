@@ -100,10 +100,16 @@ export async function executeFirmTool(db:NodePgDatabase,role:FirmRole,name:strin
    if(!staff.budget_micro_usd){await queueFirmEvent(db,{role:'ceo',event_key:`budget-needed:${caseId}`,kind:'budget_needed',case_id:item.id});return {state:'waiting_for_ceo_budget'};}
    if(staff.state==='active'&&staff.agent_id)return {case_id:item.id,agent_id:staff.agent_id,state:'already_hired'};
    const claimed=await reserveFirmHire(db,item.id,staff.authority_id);
-   if(!claimed)throw Error('HIRING_RESERVED_RECONCILE_EXISTING_RESOURCES');
+   if(!claimed){
+    const [provisioning]=await db.select().from(firmRecords).where(eq(firmRecords.key,`advocate-provision:${staff.authority_id}`));
+    if(provisioning)return {case_id:item.id,agent_id:staff.agent_id,state:'provisioning_queued'};
+    // Finding the agent and creating the mailbox are both repeatable, so an interrupted hire resumes once its agent is saved or its attempt has gone stale.
+    const stale=Date.now()-new Date(staff.updated_at).getTime()>300000;
+    if(staff.state!=='hiring'||(!staff.agent_id&&!stale))throw Error('HIRING_RESERVED_RECONCILE_EXISTING_RESOURCES');
+   }
    const [currentAuthority]=await db.select().from(caseAuthorities).where(eq(caseAuthorities.id,staff.authority_id));
    if(!currentAuthority||!['active','waiting'].includes(currentAuthority.state))throw Error('AUTHORITY_NOT_ACTIVE');
-   const client=naiveClient(process.env.NAIVE_SETUP_API_KEY);const agentName=`assurance-advocate-${staff.authority_id}`;let agent=staff.agent_id?await client.agents.get(staff.agent_id):await findAdvocate(client,agentName);
+   const client=naiveClient(process.env.NAIVE_SETUP_API_KEY);const agentName=`assurance-advocate-${staff.authority_id}`;let agent=staff.agent_id?await firmNaive('GET',`/v1/agents/${encodeURIComponent(staff.agent_id)}`):await findAdvocate(client,agentName);
    if(!agent)agent=await client.agents.create({name:agentName,harness:firmHarness(),model:process.env.ASSURANCE_FIRM_MODEL??'openai/gpt-5.4-mini',system:`You are the exclusive Assurance advocate for case ${item.id}. ${openCaseToolInstructions}`,budget:{period:'month',cap_micro_usd:staff.budget_micro_usd,max_task_micro_usd:staff.budget_micro_usd},tools:{default_config:{permission:'deny'},configs:{}},mcp_servers:[],handoffs:false,metadata:{assurance_case:item.id,assurance_authority:staff.authority_id}});
    if(agent.metadata.assurance_case!==item.id||agent.metadata.assurance_authority!==staff.authority_id)throw Error('ADVOCATE_BINDING_MISMATCH');
    await db.update(firmStaffing).set({agent_id:agent.id,state:'hiring',updated_at:new Date()}).where(eq(firmStaffing.case_id,item.id));

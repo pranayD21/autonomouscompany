@@ -1104,3 +1104,10 @@ Verification: firm runner and case session suites on the disposable database, wi
 ## 2026-11-08 — New case after asking about an existing one
 
 A real call asked about the open case, then said it was a new case, and no case opened. The tool mark blocked it, and both categories in one call read as ambiguous. A finished call that asks for a new case now opens one from the speech after that request. Verification is recorded in that release's commit message.
+
+## 2026-11-08 — Interrupted hires resume
+
+The first real phone case's hire created its agent at about 11:27 UTC and was then interrupted before the mailbox and provisioning steps, leaving staffing in `hiring`, the operation `uncertain`, and no way to continue. A deployment went out in the same minute, but the cause is not confirmed. `hire_advocate` now resumes from a new operation ID without creating another agent. See [firm runtime](firm-runtime.md).
+
+Verification: firm service suite on the disposable database, with a mocked provider and mailbox, including repeat calls. Hosted result is recorded once observed on the phone case.
+
