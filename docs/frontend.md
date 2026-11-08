@@ -1,6 +1,6 @@
 # Frontend workspace
 
-The browser app is a React/Vite single page (`src/`). Signed-out visitors see the landing page (`src/Landing.tsx`); signed-in users get the case workspace (`src/Workspace.tsx`). Styling is plain CSS in `src/style.css` and `src/landing.css`; animation uses the `motion` package. Several components are adapted from Aceternity UI (MIT): the hover-expand sidebar (`src/ui/Sidebar.tsx`), the file drop zone (`src/ui/FileDrop.tsx`), the sliding-pill section tabs (`src/ui/SectionNav.tsx`) and the number ticker (`src/ui/motion.tsx`).
+The browser app is a React/Vite single page (`src/`). Signed-out visitors see the landing page (`src/Landing.tsx`); signed-in users get the case workspace (`src/Workspace.tsx`). Styling is plain CSS in `src/style.css` and `src/landing.css`; animation uses the `motion` package. Several components are adapted from Aceternity UI (MIT): the hover-expand sidebar (`src/ui/Sidebar.tsx`), the upload pill (`src/ui/FileDrop.tsx`, a shrunk file-upload drop zone) and the number ticker (`src/ui/motion.tsx`).
 
 ## Routes
 
@@ -14,20 +14,20 @@ The user asked for the app to be as simple as the landing page, keeping only wha
 
 **Case page** (`CaseView` in `src/Workspace.tsx`), top to bottom:
 
-1. Header: back link, case type and claim number, title, Delete. Below it, sticky sliding-pill tabs (Status, Activity, Documents, Details) track the section in view and scroll to it on click.
+1. Header: back link, case type and claim number, title, Delete.
 2. Status card (`src/Autonomy.tsx`, region "Case agent activation"): a single heading from `sessionStatus` (Getting started, Working, Waiting, Needs your attention, Agent finished, Stopped, Not started), one line of detail, the agent's goal, and **Stop agent work** while an authority is active. When the agent needs the owner, the latest `request_human_help` question appears in the card with the response box, **Send response**, and **Continue with updated information**. A Naïve session still shows **Review pending actions**. A case that has never started, or was stopped, shows **Start handling my case**; a completed case does not.
 3. Outcome (`src/Outcomes.tsx`): rendered only after an outcome exists. A savings card shows the reported reduction ("You save", animated count-up), a claim-decision pill, animated before/now bars, and refund received, followed by the summary, a collapsed explanation with quotes, and the "not a verified payout" caveat.
 4. Activity: one newest-first feed merging agent decisions (`/autonomy`), sent messages (`/actions`, matched by the decision's `action_id`) and received replies (`/replies`). Emails and calls show recipient, subject, delivery state and a collapsed message body. Replies show sender, subject, and whether they were held. Questions, waits and case closure appear as plain sentences.
-5. Documents (`src/Documents.tsx`): an animated drop zone (the upload card lifts and tilts on hover or drag) above a compact list with reading state, download, and a collapsed "What we read" transcription with optional confirmation. Dropping or choosing files uploads them immediately, one after another, with progress shown in the zone; uploads are saved as `kind: "other"` and reading starts automatically, the same as intake.
+5. Documents (`src/Documents.tsx`): an **Add documents** pill in the section header (a blue upload tile that springs up and tilts out of a dashed outline on hover or drag; the label swaps to "Drop to upload" and then upload progress) above a compact list with reading state, download, and a collapsed "What we read" transcription with optional confirmation. Dropping or choosing files uploads them immediately, one after another, with progress shown in the zone; uploads are saved as `kind: "other"` and reading starts automatically, the same as intake.
 6. Details: description, a compact fact list (insurer, employer, claim number, member ID, date, state, stage, bill and EOB amounts when given), notes, and **Edit details**, which opens the existing `CaseForm`.
 
 Removed from the signed-in app, with the reason:
 
 - The hardcoded "See what Assurance is doing for you" card was identical on every case, so it gave no information.
 - The bill/EOB "potential discrepancy" card and the overview's "$ to investigate" total subtracted two numbers the user typed in, which is not a verified discrepancy and means nothing for workplace injury. The amounts remain in Details. Money now comes only from agent-reported outcomes (savings card and overview total).
-- The Done/Next-step section tags. (The sliding tabs were restored at the user's request.)
+- The section tab bar and Done/Next-step tags. (The tabs were briefly restored, then removed again at the user's request.)
 - "Case agent setup", "Scope and controls", engine name, finish condition, and "Round N" labels were internal. The engine label helper remains in `activation-state.ts` for tests.
-- The legacy optional Naïve review and the manual draft-and-approve outreach form. Agent emails enable reply monitoring automatically (`backend/open-case-actions.ts`), and replies now appear in Activity. The backend endpoints are unchanged. `src/CrewReview.tsx`, `src/Outreach.tsx` and `src/ui/CaseSection.tsx` were deleted; `src/ui/motion.tsx` keeps only `NumberTicker`.
+- The legacy optional Naïve review and the manual draft-and-approve outreach form. Agent emails enable reply monitoring automatically (`backend/open-case-actions.ts`), and replies now appear in Activity. The backend endpoints are unchanged. `src/CrewReview.tsx`, `src/Outreach.tsx`, `src/ui/SectionNav.tsx` and `src/ui/CaseSection.tsx` were deleted; `src/ui/motion.tsx` keeps only `NumberTicker`.
 - The document-type dropdown (uploads use `kind: "other"`).
 - The visible green live dot (a hidden "Live updates connected" label remains, and a visible pill appears only while reconnecting), the workspace footer, and the per-case status text in the sidebar.
 

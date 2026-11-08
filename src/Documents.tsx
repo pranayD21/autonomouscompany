@@ -58,8 +58,8 @@ export function Documents({caseId, userId, revision}: {caseId: string; userId: s
   }
 
   return <section id="section-documents" className="case-section documents" aria-label="Documents">
-    <header className="case-section-head"><h3>Documents</h3></header>
-    <FileDrop label="Add documents" hint="Drop insurance cards, claim letters, bills or EOBs here, or click to choose · PDF or image, up to 5 MB" accept={ACCEPT} disabled={busy} busy={uploading} onFiles={files => void upload(files)}/>
+    <header className="case-section-head"><h3>Documents</h3><FileDrop label="Add documents" accept={ACCEPT} disabled={busy} busy={uploading} onFiles={files => void upload(files)}/></header>
+    {docs.length === 0 && <p className="quiet-line">No documents yet. Drop insurance cards, claim letters, bills or EOBs on the button above (PDF or image, up to 5 MB).</p>}
     {error && <p role="alert">{error}</p>}
     <ul className="doc-list"><AnimatePresence initial={false}>{docs.map(doc => {
       const result = doc.extraction_result;

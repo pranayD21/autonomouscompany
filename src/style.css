@@ -126,7 +126,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 /* ---------- Misc content ---------- */
 .surface ul, .surface ol { padding-left: 20px; }
 .surface li { padding: 5px 0; color: var(--quiet); font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
-.surface a:not(.brand):not(.skip-link):not(.sidebar-link):not(.case-tile):not(.pill-link):not(.section-nav-item):not(.back-link):not(.text-link) { color: var(--blue); text-underline-offset: 4px; }
+.surface a:not(.brand):not(.skip-link):not(.sidebar-link):not(.case-tile):not(.pill-link):not(.back-link):not(.text-link) { color: var(--blue); text-underline-offset: 4px; }
 .surface dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 20px; font-size: 12px; line-height: 1.7; }
 .surface dl > div { min-width: 0; }
 .surface dt { color: var(--quiet); }
@@ -271,31 +271,19 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .badge[data-owner="waiting"] { background: var(--blue-soft); color: var(--blue); }
 .badge[data-owner="done"] { background: #e8f3ec; color: var(--ok); }
 
-/* Section tabs (Aceternity "Animated Tabs" sliding pill) */
-.section-nav { position: sticky; top: 12px; z-index: 10; display: flex; gap: 4px; margin: 0 0 18px; padding: 5px; width: max-content; max-width: 100%; overflow-x: auto; border: 1px solid var(--rule); border-radius: 100px; background: rgba(251, 251, 248, .92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); scrollbar-width: none; }
-.section-nav-item { position: relative; padding: 9px 16px; border-radius: 100px; font-size: 12px; font-weight: 550; color: var(--quiet); white-space: nowrap; transition: color .2s; }
-.section-nav-item > span:not(.section-nav-pill) { position: relative; z-index: 1; }
-.section-nav-item[aria-current="true"] { color: var(--paper); }
-.section-nav-pill { position: absolute; inset: 0; border-radius: 100px; background: var(--ink); }
-.status-panel, .case-section { scroll-margin-top: 80px; }
+.status-panel, .case-section { scroll-margin-top: 24px; }
 
-/* File drop (Aceternity "File Upload") */
-.file-drop { position: relative; display: flex !important; flex-direction: row; align-items: center; justify-content: flex-start; gap: 22px !important; min-height: 128px; padding: 20px 26px; margin-bottom: 8px; border-radius: 18px; border: 1px solid var(--rule); background: #fff; overflow: hidden; cursor: pointer; }
+/* File drop pill (Aceternity "File Upload", shrunk) */
+.file-drop { position: relative; display: inline-flex !important; align-items: center; gap: 10px !important; max-width: 100%; padding: 5px 16px 5px 5px; border: 1px solid var(--rule); border-radius: 14px 100px 100px 14px; background: #fff; cursor: pointer; font-size: 12px !important; font-weight: 600 !important; transition: border-color .2s, box-shadow .25s var(--ease), background .2s; }
+.file-drop:hover:not([data-disabled="true"]), .file-drop[data-dragging="true"] { border-color: var(--blue); box-shadow: 0 10px 24px -16px rgba(36, 101, 239, .7); }
+.file-drop[data-dragging="true"] { background: var(--blue-soft); }
 .file-drop[data-disabled="true"] { cursor: progress; }
-.file-drop[data-dragging="true"] { border-color: var(--blue); background: #fbfcff; }
 .file-drop:focus-within { outline: 3px solid var(--blue); outline-offset: 3px; }
-.file-drop-grid { position: absolute; inset: 0; background-image: linear-gradient(var(--rule) 1px, transparent 1px), linear-gradient(90deg, var(--rule) 1px, transparent 1px); background-size: 24px 24px; opacity: .5; mask-image: radial-gradient(ellipse at 12% 50%, #000 5%, transparent 55%); -webkit-mask-image: radial-gradient(ellipse at 12% 50%, #000 5%, transparent 55%); pointer-events: none; }
-.file-drop-stage { position: relative; display: grid; place-items: center; flex-shrink: 0; width: 84px; height: 84px; }
-.file-drop-card { position: relative; z-index: 2; display: grid; place-items: center; width: 72px; height: 72px; border-radius: 14px; background: #fff; color: var(--ink); box-shadow: 0 10px 30px rgba(24, 27, 24, .12); }
-.file-drop:hover .file-drop-card { box-shadow: 0 16px 40px rgba(24, 27, 24, .18); }
-.file-drop-card--file { position: absolute; left: 0; display: flex; align-items: center; gap: 8px; width: max-content; max-width: min(70vw, 420px); height: auto; padding: 12px 14px; }
-.file-drop-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600; }
-.file-drop-now { font-size: 12px; font-weight: 600; color: var(--blue); }
-.file-drop-outline { position: absolute; z-index: 1; width: 72px; height: 72px; border-radius: 14px; border: 1.5px dashed var(--blue); }
-.file-drop-text { position: relative; display: grid; gap: 4px; }
-.file-drop-title { font-size: 15px; font-weight: 650; color: var(--ink); }
-.file-drop-hint { font-size: 12px; font-weight: 450; color: var(--quiet); line-height: 1.5; }
-.file-drop:has(.file-drop-card--file) .file-drop-text { visibility: hidden; }
+.file-drop-stage { position: relative; display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; }
+.file-drop-card { position: relative; z-index: 1; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; background: var(--blue); color: #fff; box-shadow: 0 6px 14px -6px rgba(36, 101, 239, .8); }
+.file-drop-outline { position: absolute; inset: 0; border-radius: 10px; border: 1.5px dashed var(--blue); }
+.file-drop-label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 260px; color: var(--ink); }
+.file-drop-label > span { display: inline-block; }
 
 /* Savings card */
 .savings { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 28px; align-items: center; margin-bottom: 18px; padding: 24px 26px; border: 1px solid var(--rule); border-radius: 20px; background: linear-gradient(120deg, #fff 40%, var(--blue-soft)); }
@@ -315,7 +303,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 @media (max-width: 820px) {
   .status-panel { padding: 20px 18px; }
-  .section-nav { top: 72px; }
   .savings { grid-template-columns: minmax(0, 1fr); gap: 18px; }
   .overview-stats { grid-template-columns: 1fr 1fr; }
   .overview-stats > div { padding: 16px 18px; }

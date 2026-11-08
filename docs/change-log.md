@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-08 — Remove case tabs; compact upload pill
+
+At the user's request, removed the sliding section tabs from the case page again (`src/ui/SectionNav.tsx` deleted) and shrank the document drop zone to a pill in the Documents header, about the size of the earlier "Add a document" button. It keeps the spring lift/tilt animation on hover and drag and still uploads on drop or pick. See frontend.md.
+
+Verification: `vite build` (placeholder `VITE_*` URLs), 10 logic tests and both mocked browser fixtures passed. The pill was rendered at rest and on hover against mocked data. Not deployed.
+
 ## 2026-11-08 — Restore workspace motion and add reported savings
 
 At the user's request, restored the animated file drop zone (now uploads on drop or pick, with a spring tilt on hover/drag) and the sliding-pill section tabs on the case page. Money is shown only from agent-reported outcomes: a "You save" card with count-up and before/now bars on the case page, and a reported-savings total in a new overview stat strip. The bill-minus-EOB discrepancy was not restored because it is not a verified figure. The overview also gained a greeting, staggered tile entrance, a shared hover highlight and status-colored tile accents. See frontend.md.

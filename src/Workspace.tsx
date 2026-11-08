@@ -13,7 +13,6 @@ import {Outcomes} from "./Outcomes";
 import {ArrowLeft, ArrowUpRight, Home, LogOut, Plus} from "./Icons";
 import {Sidebar, SidebarLink, SidebarSection, SidebarText} from "./ui/Sidebar";
 import {OWNER_LABEL, useProgressMap} from "./progress";
-import {SectionNav} from "./ui/SectionNav";
 import {NumberTicker} from "./ui/motion";
 
 const message = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Please try again.";
@@ -165,13 +164,6 @@ function Intake({hasCases, disabled, onCancel, onSave, live}: {hasCases: boolean
   </>;
 }
 
-const SECTIONS = [
-  {id: "section-status", label: "Status"},
-  {id: "section-activity", label: "Activity"},
-  {id: "section-documents", label: "Documents"},
-  {id: "section-details", label: "Details"},
-];
-
 export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}: {item: BillCase; userId: string; crewEnabled: boolean; busy: string | null; live: ReactNode; onSave: (d: CaseInput) => Promise<void>; onAct: (action: "delete") => Promise<boolean>}) {
   const [editing, setEditing] = useState(false);
   const i = item.intake;
@@ -194,8 +186,6 @@ export function CaseView({item, userId, crewEnabled, busy, live, onSave, onAct}:
         <button className="text-button quiet-button" disabled={busy !== null} onClick={() => { if (window.confirm("Delete this case?")) void onAct("delete"); }}>Delete</button>
       </div>
     </div>
-
-    <SectionNav sections={SECTIONS}/>
 
     <Autonomy caseId={item.id} userId={userId} enabled={crewEnabled} between={<Outcomes caseId={item.id} userId={userId} revision={item.revision}/>}/>
 
