@@ -136,3 +136,10 @@ The fresh case was created through the owner API and received a real valid saved
 `NAIVE_CASE_PROVISIONING_ENABLED=true` is now deployed for the existing approved operator. The dedicated setup key is retained in private server configuration; temporary file copies and owner authorization copies were deleted and setup tabs closed. A bundle scan confirmed the setup key is absent from frontend assets. Hosted E2E with `E2E_EXPECT_PERSISTENT_SETUP=true` passed and still proved an unlisted signup cannot authorize spending.
 
 The activation fixture was cancelled and its vault credentials, vault, identity, local session/job/authority/case rows removed, with zero outbound rows. This proves operator activation through the deployed API and real scheduler, not complete insurance claim resolution. Automatic credential renewal remains unfinished; the UI's 24-hour authority is still bounded by its expiry.
+
+
+### Authorization changes during a reply wake
+
+Before sending a queued event, the worker rereads the case, authority, and tool credential after the remote status request. A changed owner, removed operator, mismatched credential case/issuer, or changed authority approver stops the existing session and leaves the event undelivered. This extends the existing expiry and revocation check to ownership and operator access. It does not reset a session, grant, or budget.
+
+A `request_human` tool action still changes the authority to `human_required`. The scheduler cancels that session under the existing authorization rules; a later case edit or email cannot reactivate it. A separate owner-reviewed recovery flow remains unfinished. Ordinary evidence updates continue the same session only while its authorization remains active or waiting.

@@ -72,8 +72,9 @@ export async function advanceCaseAgentSession(db:NodePgDatabase,id:string,deps:C
  // A stop can arrive while the provider status read is in flight.
  const [freshAuthority]=await db.select().from(caseAuthorities).where(eq(caseAuthorities.id,run.authority_id));
  const [freshCredential]=await db.select().from(caseToolCredentials).where(eq(caseToolCredentials.id,run.credential_id));
- if(!freshAuthority||!["active","waiting"].includes(freshAuthority.state)||new Date(freshAuthority.policy.expires_at)<=new Date()||!freshCredential||freshCredential.revoked_at||freshCredential.expires_at<=new Date()){
-  await deps.cancel(run.session_id);await db.update(caseAgentSessions).set({state:"stopped",next_check_at:null,reason:"Authority or credential changed before event delivery."}).where(eq(caseAgentSessions.id,id));return;
+ const [freshCase]=await db.select().from(cases).where(eq(cases.id,run.case_id));
+ if(!freshCase||!freshAuthority||freshAuthority.approved_by!==freshCase.owner_id||!(process.env.CREW_ALLOWED_USER_IDS??"").split(",").includes(freshCase.owner_id)||!["active","waiting"].includes(freshAuthority.state)||new Date(freshAuthority.policy.expires_at)<=new Date()||!freshCredential||freshCredential.case_id!==freshCase.id||freshCredential.issued_by!==freshCase.owner_id||freshCredential.revoked_at||freshCredential.expires_at<=new Date()){
+  await deps.cancel(run.session_id);await db.update(caseAgentSessions).set({state:"stopped",next_check_at:null,reason:"Authority, credential, ownership, or operator access changed before event delivery."}).where(eq(caseAgentSessions.id,id));return;
  }
  const [event]=await db.select().from(caseAgentEvents).where(and(eq(caseAgentEvents.run_id,id),isNull(caseAgentEvents.delivered_at))).orderBy(caseAgentEvents.created_at).limit(1);
  if(event){

@@ -172,3 +172,24 @@ for(const change of ["none","authority","authority_expiry","credential","credent
   }finally{process.env.CREW_ALLOWED_USER_IDS=owner;}
  });
 }
+
+for(const change of ["owner","operator","credential_owner","credential_case","authority_owner"] as const){
+ test(`${change} change during provider read prevents event delivery`,async()=>{
+  const f=await fixture();await advanceCaseAgentSession(db,f.run.id,deps);
+  const sessionId=(await get(f.run.id)).session_id;
+  await queueCaseAgentEvent(db,f.item.id,`reply:${change}`,"reply_received",{});
+  let cancelled=0,sends=0;
+  try{
+   await advanceCaseAgentSession(db,f.run.id,{...deps,read:async()=>{
+    if(change==="owner")await db.update(cases).set({owner_id:randomUUID()}).where(eq(cases.id,f.item.id));
+    if(change==="operator")process.env.CREW_ALLOWED_USER_IDS="";
+    if(change==="credential_owner")await db.update(caseToolCredentials).set({issued_by:randomUUID()}).where(eq(caseToolCredentials.id,f.credential.id));
+    if(change==="credential_case"){const other=await fixture();await db.update(caseToolCredentials).set({case_id:other.item.id}).where(eq(caseToolCredentials.id,f.credential.id));}
+    if(change==="authority_owner")await db.update(caseAuthorities).set({approved_by:randomUUID()}).where(eq(caseAuthorities.id,f.authority.id));
+    return {status:"idle",stop_reason:"end_turn",pending_actions:[]};
+   },send:async()=>{sends++;return {accepted_seq:99};},cancel:async(id)=>{assert.equal(id,sessionId);cancelled++;}});
+   assert.equal(sends,0);assert.equal(cancelled,1);assert.equal((await get(f.run.id)).state,"stopped");
+   const [event]=await db.select().from(caseAgentEvents).where(eq(caseAgentEvents.run_id,f.run.id));assert.equal(event.delivered_at,null);
+  }finally{process.env.CREW_ALLOWED_USER_IDS=owner;}
+ });
+}
