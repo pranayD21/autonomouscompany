@@ -25,7 +25,7 @@ await check("Neon Auth", ["NEON_AUTH_JWKS_URL"], async () => { const data = awai
 await check("Neon AI Gateway", ["NEON_AI_GATEWAY_BASE_URL", "NEON_AI_GATEWAY_TOKEN"], async () => {
   const data = await get(`${process.env.NEON_AI_GATEWAY_BASE_URL}/v1/models`, { Authorization: `Bearer ${process.env.NEON_AI_GATEWAY_TOKEN}` });
   const enabled = data.data.filter((m: {enabled?: boolean}) => m.enabled);
-  if (!enabled.length) { failures++; return "BLOCKED — no enabled models; check gateway credits"; }
+  if (!enabled.length) { failures++; return "BLOCKED — no enabled models. Add a payment card and AI Gateway credits in Neon Billing (minimum $5; Free plan supported). Check account restrictions if still locked."; }
   return `CONNECTED — ${enabled.length} enabled models (no inference run)`;
 });
 await check("Naïve", ["NAIVE_API_KEY"], async () => { const client = createClient({ baseUrl: "https://api.vetta.sh", apiKey: process.env.NAIVE_API_KEY! }); const agents = await client.agents.list({limit:100}); return `CONNECTED — ${agents.data.length} agents visible; coordinator ${agents.data.some(a => a.name === "bill-advocate-coordinator") ? "present" : "not provisioned"}`; });

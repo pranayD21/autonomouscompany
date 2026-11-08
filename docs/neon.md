@@ -58,3 +58,10 @@ The hosted origin https://assurance-claims.vercel.app is configured in Function 
 Official references: https://neon.com/docs/llms.txt and the installed Neon service-specific skills. Preserve existing provider choices, project linkage, env files, and service settings when continuing setup.
 
 Deployment verification: the CLI can report a completed deployment before requests reach the new Function version. Verify an affected authenticated route after deployment, including permission changes. During the crew review test, the old response persisted briefly; waiting and rechecking the same case avoided duplicate work. Migration 0002 was tested on a temporary branch before production; that temporary branch was then deleted.
+
+
+## AI Gateway recovery clarification
+
+A fresh production catalog check returned HTTP 200, 63 models, zero enabled, and `paid_plan_required`, with recovery URL https://console.neon.tech/app/org-shy-darkness-62773978/billing. Current official guidance says directly card-billed Free organizations can add a card and purchase AI Gateway credits without upgrading. The minimum purchase is $5; new requests stop when balance falls below $2. In Billing, use the AI gateway credits card, add a payment card if needed, then Add credits. The default purchase selection is $25, so explicitly choose $5 for the minimum. No purchase was made.
+
+The earlier hackathon promotion required a paid plan; that promotion flow is distinct from purchasing gateway credits on Free. Naïve credits do not fund Neon. If Billing still requires an upgrade or models remain locked after purchase, inspect the model restriction tooltip: marketplace billing, account verification, or another restriction can require a different remedy. See https://neon.com/docs/ai-gateway/prepaid-credits and https://neon.com/docs/ai-gateway/troubleshooting.

@@ -1,5 +1,9 @@
 # Change log
 
+## 2026-11-07 — Clarify Neon AI Gateway recovery
+
+Rechecked the production catalog: HTTP 200, 63 models, zero enabled, all reporting paid_plan_required. Compared current official billing/troubleshooting guidance and corrected the diagnostic to explain that directly card-billed Free accounts can add prepaid gateway credits without a plan upgrade. The minimum is $5; the hackathon promotion is a separate flow. Updated neon.md with the exact recovery page and account-restriction caveats. No credentials, billing settings, or purchases changed.
+
 ## 2026-11-07 — Persistent case sessions and event queue
 
 Added one durable Naïve session binding per standing authority, with pinned identity/version, the existing $0.25 budget, stable create/wake identifiers, scheduler leases, and provider backoff. Incoming evidence and claimant edits enqueue events within their database transactions. Follow-ups resume the same session; unresolved provider stops require review. Revocation cancels the session, and the legacy scheduler cannot start parallel inference for a bound authority. Case tools now expose confirmed document transcriptions. See case-sessions.md for the internal activation contract and remaining gaps.
