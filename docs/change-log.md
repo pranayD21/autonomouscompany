@@ -983,3 +983,7 @@ This merge changes frontend and documentation only. At the user's request it was
 ## 2026-11-08 — Onboarding callback
 
 A real onboarding call reached voicemail, and the user asked to be able to call back. Added callback recovery for failed or incomplete attempts, a callback number on the dashboard notice, and a replacement default script for the hosted agent. See [phone onboarding](phone-onboarding.md). Verification and limits are recorded in that release's commit message.
+
+## 2026-11-08 — Accept hedged case categories from callers
+
+The first real callback was captured, but the caller said the category naturally, with hedging, and the exact-phrase check rejected it. Category detection now accepts natural wording in non-negated sentences of up to twenty words, and a saved callback is re-evaluated if it becomes sufficient. See [phone onboarding](phone-onboarding.md). Verification is recorded in that release's commit message.

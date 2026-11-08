@@ -32,10 +32,11 @@ export function extractOnboardingIntake(turns:CallTurn[]){
  const said=turns.filter(t=>t.role==='user').map(t=>t.text.trim());
  const stopped=said.some(t=>/\b(?:wrong number|not the person|changed my mind|never mind|do not proceed|don't proceed|do not continue|don't continue|stop calling|no thank you)\b|\b(?:stop|cancel|do not start|don't start|do not create|don't create|do not handle|don't handle|do not want|don't want)\b.{0,30}\b(?:case|claim|assurance|onboarding)\b|^(?:stop|cancel|do not call me|don't call me)[.!\s]*$/i.test(t.replace(/[’‘]/g,"'")));
  const types=new Set<string>();
- for(const text of said){
-  const value=text.toLowerCase().replace(/[.!?,]/g,'').trim().replace(/^(?:(?:it is|it's|this is|its)(?: about)? |a |my |i have a |i need help with (?:a )?)+/,'');
-  if(/^(?:workplace injury|work injury|workers'? compensation)(?: claim| case)?$/.test(value))types.add('workplace_injury');
-  if(/^health insurance(?: claim| case| dispute)?$/.test(value))types.add('health_insurance');
+ // People hedge when they speak, so a short sentence may state the category. Negated or long narrative sentences do not.
+ for(const sentence of said.flatMap(t=>t.replace(/[’‘]/g,"'").toLowerCase().split(/[.!?]+/))){
+  if(sentence.trim().split(/\s+/).length>20||/\b(?:not|isn't|wasn't|no|never)\b/.test(sentence))continue;
+  if(/\b(?:workplace (?:injury|accident)|work (?:injury|accident)|workers'? comp(?:ensation)?|(?:hurt|injured|burned) (?:at work|on the job|at my job)|on-the-job injury)\b/.test(sentence))types.add('workplace_injury');
+  if(/\b(?:health (?:insurance|insurer|plan)|medical (?:insurance|claim|bill))\b/.test(sentence))types.add('health_insurance');
  }
  const narrative=said.join('\n');
  const sufficient=types.size===1&&said.some(t=>t.length>=30)&&narrative.length<=4000&&!stopped;
@@ -123,7 +124,7 @@ export async function reconcilePhoneOnboarding(pool:Pool,id:string,options:Optio
   }
   if(row.state==='needs_information'||row.state==='failed'){
    const callback=await latestCallback(options.request??fetch,row);
-   if(!callback||callback.sha256===row.transcript_sha256)return;
+   if(!callback||(callback.sha256===row.transcript_sha256&&!extractOnboardingIntake(callback.turns).sufficient))return;
    turns=callback.turns;transcriptHash=callback.sha256;
    await pool.query("UPDATE advocacy_phone_onboarding SET transcript=$3::jsonb,transcript_sha256=$4,provider_status='completed',state='ready',reason=NULL,updated_at=now() WHERE id=$1 AND lease_id=$2 AND state IN ('needs_information','failed')",[id,lease,JSON.stringify(turns),callback.sha256]);
   }

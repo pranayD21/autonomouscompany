@@ -19,6 +19,11 @@ test('only caller speech supplies the category and narrative; ambiguity and stop
  assert.equal(extractOnboardingIntake([...goodTurns,{role:'user',text:'I don’t want to open this case.'}]).sufficient,false);
  assert.equal(extractOnboardingIntake([{role:'user',text:'Workplace injury.'}]).sufficient,false);
  assert.equal(extractOnboardingIntake([{role:'user',text:'This is not a workplace injury, it is not health insurance either.'}]).case_type,null);
+ assert.equal(extractOnboardingIntake([{role:'user',text:'Um, it’s a workplace injury. I guess it’s a workplace injury. I don’t know. Yeah.'}]).case_type,'workplace_injury');
+ assert.equal(extractOnboardingIntake([{role:'user',text:'It’s not a workplace injury.'}]).case_type,null);
+ assert.equal(extractOnboardingIntake([{role:'user',text:'I got hurt at work when a machine slipped.'}]).case_type,'workplace_injury');
+ assert.equal(extractOnboardingIntake([{role:'user',text:'My health plan denied the surgery.'}]).case_type,'health_insurance');
+ assert.equal(extractOnboardingIntake([{role:'user',text:'Health insurance, I think.'},{role:'user',text:'My plan refused a claim after I had a procedure at the hospital last month and I want to dispute that.'}]).sufficient,true);
 });
 
 const database=process.env.OUTREACH_TEST_DATABASE_URL;
