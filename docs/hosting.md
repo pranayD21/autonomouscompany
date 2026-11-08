@@ -93,3 +93,11 @@ The first committed E2E attempt stopped at its obsolete root sign-in assumption 
 The one-hour project-scoped deployment token was revoked (HTTP 200), subsequent project access was denied (403), its local file was deleted, and the setup tab was closed. No token value was printed.
 
 After the approval backend deployment, the updated repository E2E passed against https://assurance.claims with exit code 0, including the corrected landing/sign-out navigation and cross-user denial on both approval routes. This later run supersedes the old suite navigation failures above. The optional mocked fixture was not enabled, and the approval UI remains unpublished. Gateway inference remains unavailable with no enabled model.
+
+## Approval UI release
+
+Published commit `5b37141` as production deployment `dpl_BLKVRRBirHEN3hY5Ee81Y7WZbaB8`, Ready and aliased to https://assurance.claims. Build passed (273 modules); live HTML and `/assets/index-sFJT95aR.js` returned 200 and matched the local build. The approval backend was already deployed.
+
+`E2E_BASE_URL=https://assurance.claims E2E_AUTHORIZATION_UI=1 npm run test:e2e` exited 0. Real auth, Functions, persistence, Realtime, readiness, cross-user isolation, deletion, sign-out, and password sign-in passed. The optional mocked permission fixture now also passed, including review-only scope, consent reset on scope changes, and exact one-action approval payload. Mocked requests did not authorize a live grant or confirm a real provider action. Gateway inference remains unavailable with no enabled model.
+
+The one-hour Assurance-only token was revoked through Vercel; subsequent project access returned 403. Its private file was removed and the deployment tab closed. Website hosting persists after token revocation.

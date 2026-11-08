@@ -452,3 +452,7 @@ Moved authorization validation ahead of the human-required early return and expa
 All 29 session/approval database tests passed against the disposable branch; `npm run build` passed (273 modules, existing chunk-size warning). Updated the implementation-status summary to distinguish the current AgentPhone-only deployment and verified Naïve setup from superseded milestones.
 
 Deployed all six production Neon Functions successfully with the existing environment preserved. Read-only post-deploy checks passed: public frontend HTTP 200, anonymous case API HTTP 401, forged scheduler delivery HTTP 401. Paused-session cancellation behavior is covered by the disposable-database tests with fake provider transports; no live cancellation fixture or new external communication was created for this change. Approval frontend publication remains pending.
+
+### Published owner approval controls
+
+Released commit 5b37141 to assurance.claims as Vercel deployment dpl_BLKVRRBirHEN3hY5Ee81Y7WZbaB8. Build and the full hosted E2E with optional mocked permission/approval checks passed. This resolves the earlier optional-fixture timeout; it does not establish live provider confirmation. HTML and JS returned 200 with the expected bundle. The temporary project-only token was revoked, denied access with 403, and removed locally; the setup tab was closed. Updated hosting, session, and implementation-status documentation.
