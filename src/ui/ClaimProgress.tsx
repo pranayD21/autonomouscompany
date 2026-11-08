@@ -29,12 +29,3 @@ export function ClaimProgress({progress}: {progress: Progress | undefined}) {
     })}</ol>
   </section>;
 }
-
-/** Four-segment meter for the case header; opens the full stepper. */
-export function ClaimProgressMeter({progress, expanded, onToggle}: {progress: Progress | undefined; expanded: boolean; onToggle: () => void}) {
-  const done = progress?.loaded ? STEP_ORDER.filter(id => progress.steps[id] === "done").length : 0;
-  return <button type="button" className="cp-meter" onClick={onToggle} aria-expanded={expanded} aria-controls="chat-panel" disabled={!progress?.loaded}>
-    <span className="cp-meter-bars" aria-hidden="true">{STEP_ORDER.map(id => <i key={id} data-state={progress?.loaded ? progress.steps[id] : "todo"} data-owner={progress?.owner}/>)}</span>
-    <span className="cp-meter-label">{progress?.loaded ? <>{STEP_LABELS[progress.step]} <b>{done}/{STEP_ORDER.length}</b></> : "Progress"}</span>
-  </button>;
-}

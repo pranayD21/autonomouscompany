@@ -32,7 +32,7 @@ try{
  await expect(page.getByRole('alert')).toContainText('Temporary save failure');await expect(page.getByRole('log')).not.toContainText('The location was the lab.');
  await page.getByRole('button',{name:'Retry message',exact:true}).click();await expect(page.getByRole('log')).toContainText('The location was the lab.');expect(posts[1]).toEqual(posts[2]);
  await expect(page.getByLabel('Document file')).toHaveCount(1);await expect(page.getByLabel('Document file')).toHaveAttribute('accept',/application\/pdf/);
- state='stopped';await page.getByRole('button',{name:'Refresh messages',exact:true}).click();await expect(page.getByText('Sending a message will not restart stopped agent work.',{exact:false})).toBeVisible();
+ state='stopped';await page.getByRole('button',{name:'Refresh messages',exact:true}).click();await expect(page.getByText('they won’t restart the work.',{exact:false})).toBeVisible();
  await page.getByRole('textbox',{name:'Message Assurance',exact:true}).fill('Keep this note for later.');await page.getByRole('button',{name:'Send message',exact:true}).click();await expect(page.getByRole('log')).toContainText('Keep this note for later.');
  await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
  await page.screenshot({path:'test-results/case-chat-mobile.png',fullPage:true});

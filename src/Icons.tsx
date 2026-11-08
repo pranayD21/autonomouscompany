@@ -68,3 +68,11 @@ export function Question({size = 14, ...props}: IconProps) {
 export function Clock({size = 14, ...props}: IconProps) {
   return <svg {...base(size)} {...props}><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>;
 }
+
+export function Info({size = 16, ...props}: IconProps) {
+  return <svg {...base(size)} {...props}><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>;
+}
+
+export function ArrowUp({size = 16, ...props}: IconProps) {
+  return <svg {...base(size)} strokeWidth={2} {...props}><path d="M12 19V5m-6 6 6-6 6 6"/></svg>;
+}

@@ -32,7 +32,7 @@ async function readFeed(caseId: string, userId: string): Promise<Feed> {
 }
 
 /** Agent status and anything it needs from you, then (after `between`) everything it has done. */
-export type AutonomyParts = {status: ReactNode; activity: ReactNode; activityCount: number | null; working: boolean};
+export type AutonomyParts = {status: ReactNode; activity: ReactNode; activityCount: number | null; working: boolean; canStart: boolean; started: boolean; start: () => void; busy: boolean; error: string};
 /** `render` lets the case page place the status strip and activity feed itself (full-window chat). */
 export function Autonomy({caseId, userId, enabled, between, compact = false, render}: {caseId: string; userId: string; enabled: boolean; between?: ReactNode; compact?: boolean; render?: (parts: AutonomyParts) => ReactNode}) {
   const [feed, setFeed] = useState<Feed>(empty), [loaded, setLoaded] = useState(false), [loadError, setLoadError] = useState("");
@@ -62,7 +62,8 @@ export function Autonomy({caseId, userId, enabled, between, compact = false, ren
     catch (e) { setError(e instanceof Error ? e.message : fallback); return false; }
     finally { setBusy(false); }
   }
-  const start = (e: FormEvent) => { e.preventDefault(); if (!busy) void run(() => api(path, {method: "POST", body: JSON.stringify(activationRequest(DEFAULT_INTAKE_CONSENT))}, userId), "Could not start. Refresh before trying again."); };
+  const startWork = () => { if (!busy) void run(() => api(path, {method: "POST", body: JSON.stringify(activationRequest(DEFAULT_INTAKE_CONSENT))}, userId), "Could not start. Refresh before trying again."); };
+  const start = (e: FormEvent) => { e.preventDefault(); startWork(); };
   const stop = (id: string) => void run(() => api(`${path}/${id}/revoke`, {method: "POST"}, userId), "Could not stop the case. Refresh to check its status.");
   const resume = (id: string) => void run(() => api(`${path}/${id}/resume`, {method: "POST", body: JSON.stringify({confirm: true})}, userId), "Could not continue the case. Refresh to check its status.");
   async function reply(e: FormEvent) {
@@ -124,7 +125,7 @@ export function Autonomy({caseId, userId, enabled, between, compact = false, ren
       {loadError && <p role="alert">{loadError}</p>}
     </>}
   </section>;
-  if (render) return <>{render({status: statusSection, activity: <Activity decisions={history.decisions} actions={actions} replies={replies}/>, activityCount: loaded ? activityCount(history.decisions, replies) : null, working})}</>;
+  if (render) return <>{render({status: statusSection, activity: <Activity decisions={history.decisions} actions={actions} replies={replies}/>, activityCount: loaded ? activityCount(history.decisions, replies) : null, working, canStart: loaded && !current && available && session?.state !== "completed", started: history.authorities.length > 0, start: startWork, busy, error})}</>;
   return <>{statusSection}
   {between}
   {compact ? <details className="case-disclosure"><summary><span className="disclosure-icon" aria-hidden="true">↗</span><span>Activity log<small>Contacts, decisions, and received replies</small></span>{loaded && <span className="activity-count">{activityCount(history.decisions, replies)} {activityCount(history.decisions, replies) === 1 ? "update" : "updates"}</span>}</summary><div className="disclosure-body"><Activity decisions={history.decisions} actions={actions} replies={replies}/></div></details> : <Activity decisions={history.decisions} actions={actions} replies={replies}/>}

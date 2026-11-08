@@ -1,12 +1,14 @@
 import {useCallback,useEffect,useRef,useState,type FormEvent,type ReactNode} from 'react';
 import {api} from './services';
 import {ClaimComposer} from './ui/ClaimComposer';
-import {CaseDocumentFeedback, CaseDocumentUpload} from './Documents';
+import {CaseDocumentFeedback, CaseDocumentPlus} from './Documents';
+import {Logo} from './Icons';
 export type CaseMessage={id:string;role:'user'|'assistant';text:string;created_at:string;kind?:string};
 export type CaseConversation={messages:CaseMessage[];state?:string;waiting_on?:string|null;can_send?:boolean};
-const statusText=(state?:string)=>state==='human_required'?'Waiting for your reply':state==='running'?'Working on your case':state==='queued'||state==='starting'?'Getting started':state==='stopped'||state==='revoked'?'Agent work is stopped':state==='completed'?'Work finished':'Your case conversation';
+const statusText=(state?:string)=>state==='human_required'?'Waiting for your reply':state==='running'?'Working on your case':state==='queued'||state==='starting'?'Getting started':state==='stopped'||state==='revoked'?'Paused':state==='completed'?'Work finished':'Your case conversation';
 function timestamp(value:string){const date=new Date(value);return Number.isNaN(date.getTime())?'':date.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
-export function CaseChat({caseId,userId,revision,top}:{caseId:string;userId:string;revision:number;top?:ReactNode}){
+/** The case conversation. The case page supplies the header pieces, a banner above the composer, and an overlay (children). */
+export function CaseChat({caseId,userId,revision,title,headerStart,headerEnd,beforeCompose,pausedNote=true,children}:{caseId:string;userId:string;revision:number;title?:string;headerStart?:ReactNode;headerEnd?:ReactNode;beforeCompose?:ReactNode;pausedNote?:boolean;children?:ReactNode}){
  const [conversation,setConversation]=useState<CaseConversation>({messages:[]}),[loaded,setLoaded]=useState(false),[draft,setDraft]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const pending=useRef<{id:string;text:string}|null>(null),list=useRef<HTMLDivElement>(null),follow=useRef(true),alive=useRef(true);
  const path=`/cases/${caseId}/messages`;
@@ -23,17 +25,30 @@ export function CaseChat({caseId,userId,revision,top}:{caseId:string;userId:stri
  }
  function attach(){document.querySelector<HTMLInputElement>('#section-conversation input[type="file"]')?.click();}
  const stopped=['stopped','revoked'].includes(conversation.state??'');
+ const working=['running','queued','starting'].includes(conversation.state??'');
  return <div className="case-chat" data-state={conversation.state}>
-  {top}
-  <header className="case-chat-header"><span className="claim-orb" data-working={['running','queued','starting'].includes(conversation.state??'')} aria-hidden="true"><span/></span><div><strong>Your Assurance advocate</strong><p><span className="chat-state-dot" aria-hidden="true"/>{statusText(conversation.state)}</p></div><button type="button" className="text-button chat-refresh" aria-label="Refresh messages" title="Refresh messages" onClick={()=>{setError('');void refresh().catch(e=>setError(e instanceof Error?e.message:'Could not refresh conversation.'));}}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-1l2 6M4 12l2 6a7 7 0 0 0 12-1"/></svg></button></header>
+  <header className="case-chat-header">
+   {headerStart}
+   <div className="case-chat-heading"><strong title={title}>{title??'Your Assurance advocate'}</strong><p><span className="chat-state-dot" data-working={working} aria-hidden="true"/>{statusText(conversation.state)}</p></div>
+   {headerEnd??<button type="button" className="chat-round" aria-label="Refresh messages" title="Refresh messages" onClick={()=>{setError('');void refresh().catch(e=>setError(e instanceof Error?e.message:'Could not refresh conversation.'));}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></button>}
+  </header>
   <div ref={list} className="case-chat-log" role="log" aria-label="Messages with Assurance" aria-live="polite" aria-relevant="additions" onScroll={()=>{const el=list.current;if(el)follow.current=el.scrollHeight-el.scrollTop-el.clientHeight<80;}}>
    {!loaded&&<p className="case-chat-empty">Loading conversation…</p>}
-   {loaded&&!conversation.messages.length&&<div className="chat-welcome"><span className="welcome-mark" aria-hidden="true">✦</span><span className="eyebrow">A little less on your shoulders</span><h2>Let’s take it from here.</h2><p>Share an update, ask a question, or add a claim letter. Your conversation with Assurance stays here.</p><div className="chat-starters"><button type="button" disabled={busy||pending.current!==null||conversation.can_send===false} onClick={()=>{setDraft('What happens next with my claim?');document.querySelector<HTMLTextAreaElement>('#section-conversation textarea')?.focus();}}>What happens next? <span aria-hidden="true">↗</span></button><button type="button" onClick={attach}>Add a claim letter <span aria-hidden="true">+</span></button></div></div>}
-   {conversation.messages.map(message=><article key={message.id} className={`case-chat-message case-chat-message--${message.role}`} aria-label={`${message.role==='user'?'You':'Assurance'} message`}><div className="case-chat-bubble"><span className="case-chat-author">{message.role==='user'?'You':'Assurance'}</span><p>{message.text}</p>{message.kind?.startsWith('document_request')&&<button type="button" className="text-button" onClick={attach}>Add requested document</button>}</div><time dateTime={message.created_at}>{timestamp(message.created_at)}</time></article>)}
+   {loaded&&!conversation.messages.length&&<div className="chat-welcome">
+    <span className="welcome-mark" aria-hidden="true"><Logo size={20}/></span>
+    <p className="chat-welcome-title">Let’s take it from here.</p>
+    <p className="chat-welcome-text">Tell us anything new, ask a question, or add a letter with the + button.</p>
+   </div>}
+   {conversation.messages.map(message=><article key={message.id} className={`case-chat-message case-chat-message--${message.role}`} aria-label={`${message.role==='user'?'You':'Assurance'} message`}><div className="case-chat-bubble"><span className="case-chat-author">{message.role==='user'?'You':'Assurance'}</span><p>{message.text}</p>{message.kind?.startsWith('document_request')&&<button type="button" className="chat-bubble-action" onClick={attach}>Add the document</button>}</div><time dateTime={message.created_at}>{timestamp(message.created_at)}</time></article>)}
   </div>
-  {stopped&&<p className="case-chat-note">You can keep adding information. Sending a message will not restart stopped agent work.</p>}
-  <div className="case-chat-compose"><ClaimComposer value={draft} onChange={value=>{setDraft(value);setNotice('');}} onSubmit={send} busy={busy} disabled={!loaded||conversation.can_send===false} readOnly={pending.current!==null} needsAnswer={conversation.state==='human_required'} sendLabel={pending.current?'Retry message':'Send message'} attachment={<CaseDocumentUpload/>}/><CaseDocumentFeedback/></div>
-  {notice&&<p className="case-chat-feedback" role="status">{notice}</p>}
-  {error&&<p className="case-chat-feedback" role="alert">{error}</p>}
+  {stopped&&pausedNote&&<p className="case-chat-note">Assurance is paused on this case. Your messages are still saved, but they won’t restart the work.</p>}
+  {beforeCompose}
+  <div className="case-chat-compose">
+   <ClaimComposer value={draft} onChange={value=>{setDraft(value);setNotice('');}} onSubmit={send} busy={busy} disabled={!loaded||conversation.can_send===false} readOnly={pending.current!==null} needsAnswer={conversation.state==='human_required'} sendLabel={pending.current?'Retry message':'Send message'} attachment={<CaseDocumentPlus/>}/>
+   <CaseDocumentFeedback/>
+   {notice&&<p className="case-chat-feedback" role="status">{notice}</p>}
+   {error&&<p className="case-chat-feedback" role="alert">{error}</p>}
+  </div>
+  {children}
  </div>;
 }
