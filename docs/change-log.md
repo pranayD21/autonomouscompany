@@ -1289,3 +1289,9 @@ The user asked for all company schedules to run. `ASSURANCE_FIRM_SCHEDULES_ENABL
 These take effect on production only after the firm Function is deployed and `scripts/configure-assurance-firm.ts --apply` runs.
 
 Verification: `tsc --noEmit` and `scripts/firm-runner.test.ts` (16/16) on a throwaway Postgres with a mocked provider. No provider or production change was made.
+
+## 2026-11-08 — Growth runs the agentic go-to-market workflow
+
+The README and verification record said a Naïve GTM agent found the first user on Reddit, while the Growth role and shared company prompt banned outreach. The user confirmed the agent did find that user. The blueprint now gives Growth the go-to-market job: find and qualify public Reddit posts, save leads by post URL with a state and draft reply, reply when a posting tool is available, and record contact only with a receipt. It adds Naïve's data tools and `list_growth_leads`, and the shared prompt no longer bans this work. Naïve's `social.post` refuses Reddit, so it is not declared, and no Reddit posting tool is configured in this repository yet.
+
+Verification: `tsc --noEmit`, `scripts/firm-service.test.ts`, `scripts/firm-runner.test.ts`, and `scripts/firm-tools.test.ts` on a throwaway Postgres with mocked providers. No live Growth run or post was made.

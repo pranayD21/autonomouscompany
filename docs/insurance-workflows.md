@@ -19,7 +19,7 @@ The workflow explains the insurer's stated decision, requests clarification or m
 ## Shared system
 
 - Naïve case advocate: one isolated advocate per case chooses the claim-specific workflow, research, contacts, and next step.
-- Permanent company roles: CEO, Front Desk, Reviewer, Knowledge, Growth, and Finance handle budgets, staffing, review, playbooks, and test-mode finance. See [company runtime](firm-runtime.md).
+- Permanent company roles: CEO, Front Desk, Reviewer, Knowledge, Growth, and Finance handle budgets, staffing, review, playbooks, go-to-market, and test-mode finance. See [company runtime](firm-runtime.md).
 - Legacy review crew: intake, investigator, advocate, and verifier specialists produce plans for older review routes.
 - AgentPhone: insurer calls. New calls use AgentPhone only.
 - AgentMail: insurer correspondence. Signed webhooks route replies on dedicated case mailboxes back to the case. Advocates reach customers through the website conversation; `send_email` to a customer is refused.

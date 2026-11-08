@@ -14,6 +14,16 @@ before(async()=>{await migrate(db,{migrationsFolder:'drizzle'});process.env.ASSU
 after(async()=>{for(const id of ids){await pool.query('DELETE FROM advocacy_case_tool_credentials WHERE case_id=$1',[id]);await pool.query('DELETE FROM advocacy_case_authorities WHERE case_id=$1',[id]);await pool.query('DELETE FROM advocacy_cases WHERE id=$1',[id]);}for(const id of ops){await pool.query('DELETE FROM advocacy_firm_operations WHERE id=$1',[id]);await pool.query('DELETE FROM advocacy_firm_records WHERE key LIKE $1',[`%${id}%`]);}await pool.end();});
 async function fixture(){const id=randomUUID(),owner=randomUUID();ids.push(id);await pool.query("INSERT INTO advocacy_cases(id,owner_id,title) VALUES($1,$2,'Fictional firm test')",[id,owner]);const {rows:[a]}=await pool.query("INSERT INTO advocacy_case_authorities(case_id,approved_by,policy) VALUES($1,$2,$3::jsonb) RETURNING id",[id,owner,JSON.stringify({version:2,consent:'Handle this fictional case.'})]);const c=await issueCaseToolCredential(db,id,owner,a.id);return {id,owner,authority:a.id,identity:{id:c.id,case_id:id,owner_id:owner}};}
 function operation(){const id=randomUUID();ops.push(id);return id;}
+test('growth leads update by post URL and only Growth can read them',async()=>{
+ const url=`https://www.reddit.com/r/WorkersComp/comments/${randomUUID()}`,lead={organization:'r/WorkersComp',source_url:url,reason:'Asking for help with a denied claim.'};
+ await executeFirmTool(db,'growth','record_growth_lead',{...lead,operation_id:operation()});
+ await executeFirmTool(db,'growth','record_growth_lead',{...lead,operation_id:operation(),state:'drafted',message:'A short reply.'});
+ const saved=(await executeFirmTool(db,'growth','list_growth_leads',{}) as Record<string,unknown>[]).filter(item=>item.source_url===url);
+ assert.equal(saved.length,1);assert.equal(saved[0].state,'drafted');assert.equal(saved[0].message,'A short reply.');
+ await assert.rejects(()=>executeFirmTool(db,'finance','list_growth_leads',{}),/ROLE_TOOL_DENIED/);
+ await pool.query("DELETE FROM advocacy_firm_records WHERE kind='growth_lead' AND payload->>'source_url'=$1",[url]);
+});
+
 test('roles cannot invoke other roles or forge authentication proof records',async()=>{
  await assert.rejects(()=>executeFirmTool(db,'growth','set_case_budget',{}),/ROLE_TOOL_DENIED/);
  await assert.rejects(()=>executeFirmTool(db,'finance','email_verification',{}),/ROLE_TOOL_DENIED/);

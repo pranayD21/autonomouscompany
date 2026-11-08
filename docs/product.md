@@ -33,7 +33,7 @@ Track case outcomes, autonomous actions, human interventions, model/call/email c
 
 ## Customer acquisition
 
-Assurance got its first user through Reddit using a Naïve GTM agent. See [verification](verification.md).
+A Naïve GTM agent found Assurance's first user on Reddit. See [verification](verification.md). The Growth role runs this workflow on a schedule; see [permanent company agents](firm-blueprint.md).
 
 ## Service providers
 

@@ -2,7 +2,7 @@
 
 ## Agent architecture
 
-Each case has one isolated Naïve advocate with one persistent session. Six permanent company roles (`ceo`, `frontdesk`, `reviewer`, `knowledge`, `growth`, `finance`, declared in `backend/firm-blueprint.ts`) handle budgets, staffing, review, playbooks, and test-mode finance. The CEO funds a case and Front Desk hires its advocate. See [company runtime](firm-runtime.md) and [permanent company agents](firm-blueprint.md). Direct-model runs created earlier keep their engine; see [hosted agent](hosted-agent.md).
+Each case has one isolated Naïve advocate with one persistent session. Six permanent company roles (`ceo`, `frontdesk`, `reviewer`, `knowledge`, `growth`, `finance`, declared in `backend/firm-blueprint.ts`) handle budgets, staffing, review, playbooks, go-to-market, and test-mode finance. The CEO funds a case and Front Desk hires its advocate. See [company runtime](firm-runtime.md) and [permanent company agents](firm-blueprint.md). Direct-model runs created earlier keep their engine; see [hosted agent](hosted-agent.md).
 
 The advocate works through the case tools in `backend/case-tools.ts`. It sets its own goal and chooses research, contacts, messages, and follow-up times. The server enforces case isolation, current authority, source checks, and send-once dispatch, and deduplicates external events to avoid repeated calls and emails. See [case tool server](agent-tools.md).
 

@@ -19,7 +19,7 @@ Call transcripts and case contents stay out of this repository to protect the us
 
 ## First user
 
-Assurance got its first user through Reddit using a Naïve GTM agent, as reported by the team. The outreach itself ran outside this repository, so its messages are not stored here.
+The GTM agent works: a Naïve GTM agent found Assurance's first user on Reddit. Its messages are not stored in this repository. [Permanent company agents](firm-blueprint.md) describes the go-to-market workflow.
 
 ## Other production evidence
 

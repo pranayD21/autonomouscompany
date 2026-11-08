@@ -8,12 +8,25 @@
 | Front Desk | AgentMail lead intake and case hiring | firm_status, list_cases, read_case_summary, list_email_leads, open_email_lead, hire_advocate, update_board_card, read_playbook |
 | Reviewer | Evidence-based independent case review | firm_status, list_cases, read_case_summary, review_case, update_board_card, read_playbook |
 | Knowledge | Reusable, de-identified playbook | firm_status, list_cases, read_case_summary, read_playbook, write_playbook, update_board_card |
-| Growth | Public prospective lead research; this role itself sends no outreach (first-user acquisition used a Naïve GTM agent, see [verification](verification.md)) | firm_status, read_playbook, record_growth_lead, update_board_card |
+| Growth | Agentic go-to-market, starting on Reddit (see below) | firm_status, read_playbook, list_growth_leads, record_growth_lead, update_board_card |
 | Finance | Costs and hypothetical/test fees; no real charges | firm_status, list_cases, read_case_summary, record_test_fee, case_costs, update_board_card, read_playbook |
 
 Each agent and identity is named `assurance-firm-<role>`. The MCP namespace is `firm`; each agent receives only its role's listed tools, with default deny. The endpoint is `/mcp/<role>` on the Neon firm Function. Each identity has its own static-bearer credential in its own vault. The setup script additionally restricts each sealed credential to its agent. Tokens are never placed in MCP headers or agent configuration.
 
 The CEO is a coordinator with a company board and the other permanent roles as its team. `ASSURANCE_FIRM_WINDOW` selects the provider completion window. The default is `immediate`, because Naïve rejected `loose` for the selected model. CEO, Knowledge and Growth declare UTC schedules of every 15 minutes, every four hours at minute 17, and every six hours at minute 43, respectively. Each cycle inspects existing work and stops if nothing useful remains. Front Desk, Reviewer and Finance are delegated roles rather than periodic inference loops.
+
+## Agentic go-to-market
+
+A Naïve GTM agent found Assurance's first user on Reddit (see [verification](verification.md)). Growth carries that workflow on its six-hour schedule, or when the CEO delegates to it:
+
+1. **Check:** `list_growth_leads` shows what is already saved, so no lead is repeated.
+2. **Find:** `data_search`, `data_describe`, and `data_run` read public Reddit posts, and `web_search` and `web_fetch` cover the wider web.
+3. **Qualify:** a lead is a real person with a current workplace-injury or health-insurance claim problem, in a community whose rules allow a reply.
+4. **Record:** `record_growth_lead` saves the lead by post URL, with its community, reason, and draft reply. Saving it again updates the same record.
+5. **Reply:** Growth posts if it has a tool that can, and records `contacted` with a receipt only after posting. Otherwise the lead stays `drafted` and the next step goes on the board.
+6. **Learn:** sign-ups are recorded as `signed_up` with evidence, and the next cycle goes to the communities that bring them.
+
+Lead states are `found`, `drafted`, `contacted`, and `signed_up`. Naïve's `social.post` cannot post to Reddit, because its API has no subreddit field, so this declaration does not include it. Growth does not email or call leads, and a lead is not revenue.
 
 ## Configuration
 
