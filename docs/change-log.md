@@ -1,5 +1,9 @@
 # Change log
 
+## November 8, 2026 — Selected-engine activation documentation
+
+The independent review of the pushed evidence-handling documentation found one stale paragraph in `docs/activation-flow.md` describing all version-2 activation as direct-model execution. Corrected it to distinguish Naïve setup and optional company staffing from direct-run credential creation and registration, with each engine's readiness gate. Verification: compared the description with `activateCaseAutonomy` in `backend/autonomy-service.ts`; `git diff --check` passed. Only this documentation and its change-log entry changed; no runtime behavior or setting changed.
+
 ## November 8, 2026 — Judge-facing evidence and documentation organization
 
 Added the [judging guide](judging-guide.md), including a three-minute presentation path using prepared synthetic material or already-authorized redacted records. A usability review shifted its main decision/result example to the recorded hosted Naïve fixture and linked the SDK declaration, while preserving the separate real-case qualification. Linked it from the README and grouped the documentation index into current customer workflows, company/case runtime, operations, evidence, and historical compatibility. Preserved all previous index targets and existing file paths.
