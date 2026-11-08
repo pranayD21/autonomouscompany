@@ -269,3 +269,7 @@ Deployed the tested provider selector and AgentPhone transport to Neon productio
 ## assurance.claims reachability fixed on operator Mac
 
 Diagnosed cached NXDOMAIN in the local Tailscale resolver while multiple public resolvers and Vercel HTTPS were healthy. Applied the explicitly approved domain-only macOS resolver file using Cloudflare DNS and flushed local caches. Dia now loads Assurance. The complete hosted E2E passed through normal DNS; gateway inference remains blocked by model access. No hosting deployment or public DNS changes were needed.
+
+## Direct public fallback restored
+
+After another computer reported NXDOMAIN, removed the old Vercel hostname’s redirect and connected it directly to Production. Verified HTTPS 200 and Vercel valid configuration. No app code or credentials changed. assurance.claims remains configured and publicly resolvable on checked resolvers; the affected computer may need DNS cache expiry or a working resolver.
