@@ -9,6 +9,8 @@ import {CaseForm} from "./CaseForm";
 import type {CaseInput} from "../backend/claim-input";
 import {Documents} from "./Documents";
 import {CrewReview} from "./CrewReview";
+import {Landing} from "./Landing";
+import {Asterisk, ArrowUpRight} from "./Icons";
 
 const message = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Please try again.";
 const money = (cents: number|null) => cents===null?"Not provided": new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
@@ -24,7 +26,7 @@ function SignIn() {
     try {
       const result = signup ? await auth.signUp.email({ ...credentials, name: String(form.get("name")) }) : await auth.signIn.email(credentials);
       if (result.error) throw new Error(result.error.message ?? "Unable to sign in.");
-      window.location.assign("/");
+      window.location.assign("/#workspace");
     } catch (err) { setError(message(err)); } finally { setBusy(false); }
   }
   return <section className="auth-card"><p className="eyebrow">YOUR CLAIM WORKSPACE</p><h1>A clearer path through your insurance claim.</h1><p>Keep your case, questions, and next steps together.</p>
@@ -47,11 +49,15 @@ function CaseList({ sealed, userId }: { sealed: SealedLiveQuery<BillCase>; userI
   useEffect(()=>{api<{naive:{configured:boolean;enabledForUser:boolean}}>("/stack/status",{},userId).then(s=>setCrewEnabled(s.naive.configured&&s.naive.enabledForUser)).catch(()=>{});},[userId]);
   const [busy, setBusy] = useState<string | null>(null);
   const [editing,setEditing]=useState<BillCase|null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const selectedCase = data?.find(item => item.id === selectedId) ?? data?.[0];
   async function saveDetails(details:CaseInput,existing?:BillCase) {
     setBusy(existing?.id??"create");setNotice("");
     try {
-      const result=await api<{txid:string}>(existing?`/cases/${existing.id}`:"/cases",{method:existing?"PATCH":"POST",body:JSON.stringify({...details,...existing?{revision:existing.revision}:{}})},userId);
+      const result=await api<{id:string;txid:string}>(existing?`/cases/${existing.id}`:"/cases",{method:existing?"PATCH":"POST",body:JSON.stringify({...details,...existing?{revision:existing.revision}:{}})},userId);
       await utils.awaitTxId(result.txid,15000);setEditing(null);
+      if (!existing) { setCreating(false); setSelectedId(result.id); }
     }catch(err){setNotice(message(err));throw err;}finally{setBusy(null);}
   }
   async function act(id: string, action: "analyze" | "delete") {
@@ -62,17 +68,21 @@ function CaseList({ sealed, userId }: { sealed: SealedLiveQuery<BillCase>; userI
     } catch (err) { setNotice(message(err)); } finally { setBusy(null); }
   }
   return <>
-    <div className="section-heading"><div><p className="eyebrow">CASE WORKSPACE</p><h1>Your next step, in one place.</h1></div><span className="status">{status === "live" ? "Live updates connected" : `Live updates: ${status}`}</span></div>
+    <div className="section-heading"><div><p className="eyebrow">YOUR CLAIM WORKSPACE</p><h1>Your claim.<br/><span>Under control.</span></h1><p>One place for the paperwork. One clear next step.</p></div><span className="status" data-live={status === "live"}>{status === "live" ? "Live updates connected" : `Live updates: ${status}`}</span></div>
     <p className="demo-note">Prototype workspace. Use synthetic injury, insurance, and billing details only. Outreach requires an approved test operator, an approved recipient, and explicit authorization. No claims are submitted.</p>
-    <div className="workspace"><section className="panel"><h2>Open a case</h2><p>Start with what happened and how to contact you. Add employer, insurance, and bill details as you learn them.</p>
-      <CaseForm disabled={busy!==null||data===undefined} onSave={details=>saveDetails(details)}/>
-      </section>
-      <section className="case-column" aria-live="polite"><h2>Your cases <span className="count">{data?.length ?? 0}</span></h2>
+    <div className="workspace"><aside className="case-sidebar" aria-label="Case navigation">
+      <div className="sidebar-heading"><h2>Your cases <span className="count">{data?.length ?? 0}</span></h2></div>
+      <button className="new-case-button" onClick={() => { setCreating(true); setEditing(null); }}>Open a case <span aria-hidden="true">+</span></button>
+      <div className="case-list">{data?.map(item => <button key={item.id} className="case-select" aria-current={!creating && selectedCase?.id === item.id ? "true" : undefined} onClick={() => { setSelectedId(item.id); setCreating(false); setEditing(null); }}><span className="case-select-type">{item.case_type === "workplace_injury" ? "Workplace injury" : "Health insurance"}</span><strong>{item.title}</strong><span className="case-select-status">{item.status.replaceAll("_", " ")}</span></button>)}</div>
+      <p className="sidebar-note">Your call.<br/>Every step of the way.</p>
+      </aside>
+      <section className="case-column" aria-label="Selected case" aria-live="polite">
         {error && <p role="alert" className="error">Live updates stopped: {error.message}. Reload to reconnect.</p>}
         {notice && <p role="alert" className="error">{notice}</p>}
-        {data === undefined ? <p>Connecting to your cases…</p> : data.length === 0 ? <div className="empty">Describe the injury or insurance issue to open your first case. You can add documents and amounts as the case develops.</div> : data.map((item) => <article className="panel case" key={item.id} data-case-id={item.id}>
-          <div className="case-heading"><h3>{item.title}</h3><span className="badge">{item.status}</span></div>
-          <p>{item.case_type==="workplace_injury"?"Workplace injury":"Health-insurance dispute"} · Details revision {item.revision}</p>
+        {data === undefined ? <p role="status">Connecting to your cases…</p> : creating || data.length === 0 ? <section className="panel intake-panel"><p className="eyebrow">LET’S START WITH YOUR STORY</p><div className="case-heading"><h2>Open a case</h2>{data.length > 0 && <button className="text-button" onClick={() => setCreating(false)}>Cancel</button>}</div><p>Tell us what happened. You can add documents and details as you go.</p><CaseForm disabled={busy!==null} onSave={details=>saveDetails(details)}/></section> : [selectedCase!].map((item) => <article className="panel case" key={item.id} data-case-id={item.id}>
+          <p className="eyebrow">{item.case_type==="workplace_injury"?"Workplace injury":"Health-insurance dispute"} · Revision {item.revision}</p>
+          <div className="case-heading"><h2>{item.title}</h2><span className="badge">{item.status.replaceAll("_", " ")}</span></div>
+          <p className="case-overview-label">THE STORY SO FAR</p>
           {item.intake?.injury_description&&<p>{item.intake.injury_description}</p>}
           {item.intake?.employer_name&&<p>Employer: {item.intake.employer_name}</p>}
           {item.intake?.insurer_name&&<p>Insurer: {item.intake.insurer_name}</p>}
@@ -84,8 +94,8 @@ function CaseList({ sealed, userId }: { sealed: SealedLiveQuery<BillCase>; userI
           <small>This is an amount to investigate, not verified savings.</small>
           {item.notes && <p>{item.notes}</p>}
           {item.analysis && <div className="analysis"><h4>Questions for the insurer</h4><p>{item.analysis}</p></div>}
-          <Documents key={`documents-${item.id}`} caseId={item.id} userId={userId} revision={item.revision} enabled={crewEnabled}/>
-          <CrewReview key={`${item.id}-${item.revision}`} revision={item.revision} id={item.id} userId={userId} enabled={crewEnabled}/><div className="actions"><button disabled={busy !== null || item.status === "analyzing"} onClick={() => act(item.id, "analyze")}>{busy === item.id ? "Working…" : "Review with AI"}</button><button className="text-button" disabled={busy !== null} onClick={() => { if (window.confirm("Delete this case?")) void act(item.id, "delete"); }}>Delete</button></div>
+          <details className="workflow-section"><summary><span><span className="step-index">01</span>Documents & evidence</span><span className="disclosure-icon" aria-hidden="true">+</span></summary><div className="workflow-content"><Documents key={`documents-${item.id}`} caseId={item.id} userId={userId} revision={item.revision} enabled={crewEnabled}/></div></details>
+          <CrewReview key={`${item.id}-${item.revision}`} revision={item.revision} id={item.id} userId={userId} enabled={crewEnabled}/><div className="actions case-actions"><button disabled={busy !== null || item.status === "analyzing"} onClick={() => act(item.id, "analyze")}>{busy === item.id ? "Working…" : "Review with AI"}<ArrowUpRight size={16} aria-hidden="true"/></button><button className="text-button danger-button" disabled={busy !== null} onClick={() => { if (window.confirm("Delete this case?")) void act(item.id, "delete"); }}>Delete case</button></div>
         </article>)}
       </section></div>
   </>;
@@ -102,13 +112,28 @@ function Dashboard({ userId }: { userId: string }) {
 function App() {
   const { data: session, isPending, error } = auth.useSession();
   const [signOutError, setSignOutError] = useState("");
+  const [locationHash, setLocationHash] = useState(window.location.hash);
+  useEffect(() => {
+    const syncHash = () => {
+      setLocationHash(window.location.hash);
+      const target = document.getElementById(window.location.hash.slice(1));
+      if (target) {
+        let parent = target.parentElement;
+        while (parent) { if (parent instanceof HTMLDetailsElement) parent.open = true; parent = parent.parentElement; }
+        target.scrollIntoView({block: "start"});
+      }
+    };
+    window.addEventListener("hashchange", syncHash);
+    return () => window.removeEventListener("hashchange", syncHash);
+  }, []);
   async function signOut() {
     try { const result = await auth.signOut(); if (result.error) throw new Error(result.error.message); realtime.close(); window.location.assign("/"); }
     catch (err) { setSignOutError(message(err)); }
   }
-  return <><header><a href="/" className="brand"><span className="brand-mark">a</span>Assurance</a>{session?.user && <div className="account"><span>{session.user.name}</span><button className="text-button" onClick={signOut}>Sign out</button></div>}</header>
-    <main>{signOutError && <p role="alert" className="error">{signOutError}</p>}{isPending ? <p>Loading your session…</p> : error ? <p role="alert" className="error">Authentication is unavailable. Please reload and try again.</p> : session?.user ? <Dashboard key={session.user.id} userId={session.user.id}/> : <SignIn/>}</main>
-    <footer>Assurance · Insurance claim prototype</footer></>;
+  if (!isPending && (locationHash === "#home" || (!session?.user && locationHash !== "#workspace" && !error))) return <Landing/>;
+  return <><a className="skip-link" href="#workspace-content">Skip to content</a><header className="app-header"><a href="#home" className="brand" aria-label="Assurance home"><Asterisk strokeWidth={2.5} aria-hidden="true"/>assurance<span className="brand-period">.</span></a>{session?.user && <div className="account"><span>{session.user.name}</span><button className="text-button" onClick={signOut}>Sign out</button></div>}</header>
+    <main id="workspace-content" className="app-main">{signOutError && <p role="alert" className="error">{signOutError}</p>}{isPending ? <p role="status">Loading your session…</p> : error ? <p role="alert" className="error">Authentication is unavailable. Please reload and try again.</p> : session?.user ? <Dashboard key={session.user.id} userId={session.user.id}/> : <SignIn/>}</main>
+    <footer className="app-footer"><span>assurance<span className="brand-period">.</span></span><span>On your side. Not in your way.</span><small>Prototype · Synthetic data only</small></footer></>;
 }
 
 createRoot(document.getElementById("root")!).render(<StrictMode><RealtimeProvider client={realtime}><App/></RealtimeProvider></StrictMode>);
