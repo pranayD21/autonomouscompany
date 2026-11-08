@@ -1295,3 +1295,11 @@ Verification: `tsc --noEmit` and `scripts/firm-runner.test.ts` (16/16) on a thro
 The README and verification record said a Naïve GTM agent found the first user on Reddit, while the Growth role and shared company prompt banned outreach. The user confirmed the agent did find that user. The blueprint now gives Growth the go-to-market job: find and qualify public Reddit posts, save leads by post URL with a state and draft reply, reply when a posting tool is available, and record contact only with a receipt. It adds Naïve's data tools and `list_growth_leads`, and the shared prompt no longer bans this work. Naïve's `social.post` refuses Reddit, so it is not declared, and no Reddit posting tool is configured in this repository yet.
 
 Verification: `tsc --noEmit`, `scripts/firm-service.test.ts`, `scripts/firm-runner.test.ts`, and `scripts/firm-tools.test.ts` on a throwaway Postgres with mocked providers. No live Growth run or post was made.
+
+## 2026-11-08 — Clear stale docs and leftovers
+
+Removed the generated `hello` Function, and renamed the npm package to `assurance`. Status docs now list seven Functions and migrations through 0031, firm runtime docs say cases share the company inbox, and the verification record shows CI passing on `abc1a19`. `NEED_HELP.txt` was already removed. `bill-advocate` stays in `naive.config.ts` and on provider resources, because live cases and keys are bound to those names and a rename could replace or remove those agents.
+
+Deploying removes `hello` from production only if the Neon deploy prunes undeclared Functions; this was not checked.
+
+Verification: `npm run build` and `npm test` on a throwaway Postgres.

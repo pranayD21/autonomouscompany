@@ -39,4 +39,4 @@ The full insurer exchange (first contact, incoming reply, threaded follow-up, re
 
 ## Latest test result
 
-On November 8, 2026, with no private environment, a fresh local throwaway Postgres, and the Playwright browser installed: **all 65 test files passed** through `npm test`, and `tsc --noEmit` passed. A build with an empty environment succeeded earlier the same day. The CI workflow has not yet run on GitHub.
+On November 8, 2026, with no private environment, a fresh local throwaway Postgres, and the Playwright browser installed: **all 65 test files passed** through `npm test`, and `tsc --noEmit` passed. A build with an empty environment succeeded earlier the same day. The GitHub CI workflow also passed build and tests on that commit (`abc1a19`).

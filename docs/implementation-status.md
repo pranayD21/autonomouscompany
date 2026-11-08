@@ -8,7 +8,7 @@ Assurance is a functioning insurance claims advocacy service. The team has teste
 
 The customer path is phone-first: Twilio Verify sign-in, one requested AgentPhone onboarding call, an owner-bound transcript, automatic case creation, and an isolated Naïve advocate, followed by website chat and uploads. See [phone onboarding](phone-onboarding.md). Older email accounts and cases remain supported.
 
-The production backend has eight Functions, including `firm`, and migrations 0000–0030 (31 journal entries). Six permanent Naïve roles, their separate identities and vaults, and the company board exist. Hosted company sessions use the `immediate` completion window because the selected model rejected `loose`. GitHub main publishes the frontend automatically; Neon backend deployment is separate.
+The backend declares seven Functions, including `firm`, and migrations 0000–0031 (32 journal entries). Six permanent Naïve roles, their separate identities and vaults, and the company board exist. Hosted company sessions use the `immediate` completion window because the selected model rejected `loose`. GitHub main publishes the frontend automatically; Neon backend deployment is separate.
 
 The scoped AgentMail runtime key and five-event signed webhook are configured and deployed. Hosted checks passed public contact discovery, authentication boundaries, invalid-signature rejection, and signed unmapped-event handling without outreach. A zero-contact advocate fixture completed a real hosted question → owner answer → sourced fact continuation in its existing run; owner revoke, credential invalidation, local stop, and remote cancellation were then verified with zero outreach.
 

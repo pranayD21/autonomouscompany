@@ -12,7 +12,7 @@ Keep `PHONE_FLOW_ENABLED=false`; the outbound request uses `PHONE_ONBOARDING_ENA
 
 The repository is `pranayD21/autonomouscompany`, branch `main`. GitHub pushes deploy only the frontend.
 
-Production Neon has migrations 0000–0030 (31 journal entries) and eight explicitly deployed Functions, including `firm`. The private deployment wrapper is `test-results/deploy-naive-restoration.mjs`; it invokes deployment with `.env.local` and `--no-env-pull` and redacts output. Verify deployed behavior after each change, not just CLI success.
+The repository has migrations 0000–0031 (32 journal entries) and declares seven Functions, including `firm`. The private deployment wrapper is `test-results/deploy-naive-restoration.mjs`; it invokes deployment with `.env.local` and `--no-env-pull` and redacts output. Verify deployed behavior after each change, not just CLI success.
 
 Private `.env.local` remains ignored and mode 0600. Do not print values. Six permanent Naïve roles and isolated identities/vaults exist; the company board exists. Recurring CEO/Growth/Knowledge schedules are declared enabled and take effect when `scripts/configure-assurance-firm.ts --apply` runs after the firm Function is deployed. `ASSURANCE_FIRM_ENABLED=true`; the selected model uses `ASSURANCE_FIRM_WINDOW=immediate` because `loose` was rejected. Existing organization credit funds allocations; no credit purchase is authorized.
 
@@ -34,7 +34,7 @@ One idle direct run was migrated under unchanged authority, preserving its conve
 
 - `firm-events/service/tools/runner/worker/blueprint.ts`: company events, role tools, budget decisions, staffing, board, schedules, and finance/knowledge hooks.
 - `agentmail-webhook.ts`, `email-attachments.ts`, `email-verification.ts`, `verified-email.ts`: signed ingress, full owner email preservation, verified sender binding, durable attachment extraction, and lead claiming.
-- Per-case email inbox is saved on each outreach action and used for send/reply/status. Dedicated case mailboxes use webhook ingress; historical inbox receipts retain compatibility.
+- New cases share the company inbox. The inbox is saved on each outreach action and used for send/reply/status. Older dedicated case mailboxes use webhook ingress; historical inbox receipts retain compatibility.
 - `case-messages.ts`, `CaseChat.tsx`: owner/agent website conversation, dedupe, safe wake/resume, and uploads.
 - `gmail-connection.ts`, `gmail-policy.ts`, `GmailConnection.tsx`: case-isolated read-only OAuth, connection link/status/revocation, and native read-tool policy.
 - `naive-case-goal.ts`: initial goal, finish condition, and reasoned refinement history. Missing facts are waiting, not completion.

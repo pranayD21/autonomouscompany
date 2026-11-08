@@ -124,7 +124,6 @@ export default defineConfig({
         AGENTMAIL_INBOX_ID: { value: process.env.AGENTMAIL_INBOX_ID, required: true },
       },
     },
-    hello: { name: "Hello World", source: "./hello.ts" },
     cases: {
       name: "Medical bill case API",
       source: "./backend/api.ts",

@@ -46,7 +46,6 @@ Key paths are below. Provider configuration and scripts are documented in stack.
 | `drizzle/*.sql`, `drizzle/meta/*` | Generated migration and migration metadata; outside docs intentionally |
 | `drizzle.config.ts` | Schema/migration configuration using the unpooled URL |
 | `neon.ts` | Backend service declarations, Function environment, local origin lists, branch policy |
-| `hello.ts` | Generated hello-world Function retained from init |
 | `vite.config.ts`, `tsconfig.json` | Frontend build and TypeScript configuration |
 | `.gitignore` | Local exclusions for secrets, dependencies, and build output |
 

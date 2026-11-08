@@ -22,7 +22,7 @@ neon deploy --env .env.local --update-existing
 
 The first attempt required `--update-existing` because Realtime origins changed from an empty list to localhost ports 5173 and 4173. That specific change was inspected before applying it. Do not blindly use this flag for future configuration conflicts.
 
-`neon.ts` declares eight Functions: `cases`, `tools`, `autopoll`, `crewpoll`, `replypoll`, `phone`, `firm`, and `hello`. Their URLs follow the pattern `https://br-square-pine-bewan9j8-<name>.compute.c-9.us-east-2.aws.neon.tech/`.
+`neon.ts` declares seven Functions: `cases`, `tools`, `autopoll`, `crewpoll`, `replypoll`, `phone`, and `firm`. Their URLs follow the pattern `https://br-square-pine-bewan9j8-<name>.compute.c-9.us-east-2.aws.neon.tech/`.
 
 A deployment alone proves provisioning, not successful authenticated end-to-end operation.
 
