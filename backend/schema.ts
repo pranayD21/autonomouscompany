@@ -236,3 +236,15 @@ export const naiveCapacity = pgTable("advocacy_naive_capacity", {
  last_status:integer("last_status"),
  request_id:text("request_id"),
 });
+
+export const caseAgentApprovals=pgTable("advocacy_case_agent_approvals",{
+ id:uuid("id").primaryKey().defaultRandom(),
+ run_id:uuid("run_id").notNull().references(()=>caseAgentSessions.id,{onDelete:"cascade"}),
+ pending_hash:text("pending_hash").notNull(),
+ tool_name:text("tool_name").notNull(),
+ tool_call_id:text("tool_call_id").notNull(),
+ decision:text("decision").$type<"allow"|"deny">().notNull(),
+ approved_by:text("approved_by").notNull(),
+ state:text("state").$type<"confirmed"|"uncertain">().notNull(),
+ created_at:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
+},t=>[uniqueIndex("advocacy_case_approval_pending_idx").on(t.run_id,t.pending_hash)]);

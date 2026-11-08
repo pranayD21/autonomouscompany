@@ -1,3 +1,4 @@
+import {readCaseApprovals,confirmCaseApproval} from "./case-agent-approval";
 import {readCaseOutcomes} from "./case-outcome";
 import {queueCaseAgentEvent} from "./case-agent-events";
 import {importCallEvidence} from "./call-evidence-service";
@@ -134,6 +135,18 @@ app.post("/cases/:id/autonomy/:authorityId/revoke",async c=>{
  if(!await ownedCase(c.req.param("id"),c.get("userId"))||!z.uuid().safeParse(c.req.param("authorityId")).success)return c.json({error:"Authority not found."},404);
  try{return c.json(await revokeCaseAuthority(db,c.req.param("id"),c.req.param("authorityId"),c.get("userId")));}
  catch{return c.json({error:"Authority not found."},404);}
+});
+app.get("/cases/:id/sessions/:runId/approvals",async c=>{
+ if(!await ownedCase(c.req.param("id"),c.get("userId"))||!z.uuid().safeParse(c.req.param("runId")).success)return c.json({error:"Case session not found."},404);
+ try{return c.json(await readCaseApprovals(db,c.req.param("id"),c.req.param("runId"),c.get("userId")));}
+ catch{return c.json({error:"Pending actions are unavailable. The session must belong to an active authorized case."},409);}
+});
+app.post("/cases/:id/sessions/:runId/approvals",async c=>{
+ if(!await ownedCase(c.req.param("id"),c.get("userId"))||!z.uuid().safeParse(c.req.param("runId")).success)return c.json({error:"Case session not found."},404);
+ const parsed=z.object({confirm:z.literal(true),hash:z.string().regex(/^[a-f0-9]{64}$/),decision:z.enum(["allow","deny"])}).strict().safeParse(await c.req.json().catch(()=>null));
+ if(!parsed.success)return c.json({error:"Confirm an exact pending action and decision."},400);
+ try{return c.json(await confirmCaseApproval(db,c.req.param("id"),c.req.param("runId"),c.get("userId"),parsed.data.hash,parsed.data.decision));}
+ catch{return c.json({error:"The action changed or this case cannot be confirmed. Refresh its pending actions."},409);}
 });
 app.get("/stack/status", (c) => c.json({
   naive: { configured: !!crewConfiguration(), enabledForUser: crewAllowed(c.get("userId")) },

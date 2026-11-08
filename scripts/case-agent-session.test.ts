@@ -1,3 +1,5 @@
+import {NaiveDeferred} from "../backend/providers/naive-capacity";
+import {confirmCaseApproval,readCaseApprovals,pendingHash,type ApprovalProvider,type Pending} from "../backend/case-agent-approval";
 import {test,before,after} from "node:test";
 import assert from "node:assert/strict";
 import {randomUUID} from "node:crypto";
@@ -106,3 +108,43 @@ for(const status of ["completed","failed","cancelled"]){
   const [event]=await db.select().from(caseAgentEvents).where(eq(caseAgentEvents.run_id,f.run.id));assert.equal(event.delivered_at,null);
  });
 }
+
+async function approvalFixture(){const f=await fixture();await advanceCaseAgentSession(db,f.run.id,deps);await db.update(caseAgentSessions).set({state:"human_required"}).where(eq(caseAgentSessions.id,f.run.id));const action:Pending={kind:"tool",name:"assurance.case_get",tool_call_id:"call_demo",args:{case_id:f.item.id},parked_seq:3};let confirmations=0;const provider:ApprovalProvider={read:async()=>({status:"idle",stop_reason:"awaiting_approval",pending_actions:[action]}),confirm:async(_id,input)=>{confirmations++;assert.equal(input.scope,"call");return{status:"running",stop_reason:null,pending_actions:[]};}};return{...f,action,provider,count:()=>confirmations};}
+test("owner confirmation is audited, resumes the same session, and is not replayed",async()=>{
+ const f=await approvalFixture(),before=await get(f.run.id);
+ const review=await readCaseApprovals(db,f.item.id,f.run.id,owner,f.provider);assert.equal(review.actions[0].supported,true);
+ assert.deepEqual(await confirmCaseApproval(db,f.item.id,f.run.id,owner,review.actions[0].hash,"allow",f.provider),{state:"confirmed"});
+ await confirmCaseApproval(db,f.item.id,f.run.id,owner,review.actions[0].hash,"allow",f.provider);assert.equal(f.count(),1);
+ assert.equal((await get(f.run.id)).session_id,before.session_id);assert.equal((await get(f.run.id)).state,"running");
+ assert.equal((await readCaseApprovals(db,f.item.id,f.run.id,owner,f.provider)).history[0].state,"confirmed");
+});
+test("cross-owner and stale turn confirmations cannot reach the provider",async()=>{
+ const f=await approvalFixture();await assert.rejects(()=>readCaseApprovals(db,f.item.id,f.run.id,"other",f.provider),/NOT_FOUND/);
+ await assert.rejects(()=>confirmCaseApproval(db,f.item.id,f.run.id,"other",pendingHash(f.action),"allow",f.provider),/NOT_FOUND/);
+ const stale=pendingHash(f.action);f.action.parked_seq=9;
+ await assert.rejects(()=>confirmCaseApproval(db,f.item.id,f.run.id,owner,stale,"allow",f.provider),/STALE/);assert.equal(f.count(),0);
+});
+test("uncertain provider confirmation is recorded and never automatically replayed",async()=>{
+ const f=await approvalFixture();let calls=0;const provider={...f.provider,confirm:async()=>{calls++;throw Error("Timeout");}};
+ assert.deepEqual(await confirmCaseApproval(db,f.item.id,f.run.id,owner,pendingHash(f.action),"allow",provider),{state:"uncertain"});
+ await confirmCaseApproval(db,f.item.id,f.run.id,owner,pendingHash(f.action),"allow",provider);assert.equal(calls,1);assert.equal((await get(f.run.id)).state,"human_required");
+ await assert.rejects(()=>confirmCaseApproval(db,f.item.id,f.run.id,owner,pendingHash(f.action),"deny",provider),/CONFLICT/);
+});
+test("credential revoked during provider read prevents confirmation",async()=>{
+ const f=await approvalFixture();
+ const provider={...f.provider,read:async()=>{await db.update(caseToolCredentials).set({revoked_at:new Date()}).where(eq(caseToolCredentials.id,f.credential.id));return f.provider.read("unused");}};
+ await assert.rejects(()=>confirmCaseApproval(db,f.item.id,f.run.id,owner,pendingHash(f.action),"allow",provider),/BINDING_NOT_ACTIVE/);assert.equal(f.count(),0);
+});
+test("cross-case and unrecognized tool approvals stay unsupported",async()=>{
+ const f=await approvalFixture();f.action.args={case_id:randomUUID()};
+ await assert.rejects(()=>confirmCaseApproval(db,f.item.id,f.run.id,owner,pendingHash(f.action),"allow",f.provider),/UNSUPPORTED/);
+ f.action.args={case_id:f.item.id};f.action.name="wallet.pay";
+ assert.equal((await readCaseApprovals(db,f.item.id,f.run.id,owner,f.provider)).actions[0].supported,false);assert.equal(f.count(),0);
+});
+
+test("local capacity deferral does not record an uncertain confirmation",async()=>{
+ const f=await approvalFixture();
+ await assert.rejects(()=>confirmCaseApproval(db,f.item.id,f.run.id,owner,pendingHash(f.action),"allow",{...f.provider,confirm:async()=>{throw new NaiveDeferred(30000);}}),NaiveDeferred);
+ assert.equal((await readCaseApprovals(db,f.item.id,f.run.id,owner,f.provider)).history.length,0);
+ assert.deepEqual(await confirmCaseApproval(db,f.item.id,f.run.id,owner,pendingHash(f.action),"allow",f.provider),{state:"confirmed"});assert.equal(f.count(),1);
+});

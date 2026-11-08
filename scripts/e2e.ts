@@ -5,11 +5,12 @@ const browser = await chromium.launch({headless:true});
 const context = await browser.newContext();
 const page = await context.newPage();
 const appUrl=process.env.E2E_BASE_URL??"http://localhost:4173";
+const workspaceUrl=new URL(appUrl);workspaceUrl.hash="workspace";
 const email=`stack-${randomUUID()}@example.com`,password=randomUUID()+"aA1!";
 let authorization="", apiBase="";
 page.on("request", request=>{if(request.url().includes("-cases.compute.")&&request.headers().authorization){authorization=request.headers().authorization;apiBase=new URL(request.url()).origin;}});
 try {
-  await page.goto(appUrl);
+  await page.goto(workspaceUrl.href);
   await page.getByRole("button", {name:"New here? Create an account"}).click();
   await page.getByLabel("Name", {exact:true}).fill("Synthetic stack test");
   await page.getByLabel("Email", {exact:true}).fill(email);
@@ -84,7 +85,7 @@ try {
   try {
     const other=await otherContext.newPage();let otherAuthorization="";
     other.on("request",request=>{if(request.url().startsWith(apiBase)&&request.headers().authorization)otherAuthorization=request.headers().authorization;});
-    await other.goto(appUrl);
+    await other.goto(workspaceUrl.href);
     await other.getByRole("button",{name:"New here? Create an account"}).click();
     await other.getByLabel("Name",{exact:true}).fill("Isolation test");
     await other.getByLabel("Email",{exact:true}).fill(`isolation-${randomUUID()}@example.com`);
@@ -102,14 +103,16 @@ try {
   } finally {await otherContext.close();}
 
 
+  for(const summary of await card.locator("details.workflow-section > summary").all())if(await summary.locator("..").getAttribute("open")===null)await summary.click();
   await card.getByRole("button", {name:"Review with AI"}).click();
   await expect(page.getByRole("alert")).toContainText("AI analysis is unavailable", {timeout:25000});
   console.log("BLOCKED AI inference — gateway has no enabled model; unavailable state displayed correctly");
   page.once("dialog", dialog => dialog.accept());
-  await card.getByRole("button", {name:"Delete",exact:true}).click();
+  await card.getByRole("button", {name:/^Delete(?: case)?$/}).click();
   await expect(card).toHaveCount(0, {timeout:20000});
   console.log("PASS case deletion and live query removal");
   await page.getByRole("button", {name:"Sign out",exact:true}).click();
+  await page.getByRole("link",{name:"Open workspace",exact:true}).click({timeout:20000});
   await expect(page.getByRole("button", {name:"Sign in",exact:true})).toBeVisible({timeout:15000});
   console.log("PASS sign-out");
   await page.getByLabel("Email",{exact:true}).fill(email);
@@ -117,6 +120,7 @@ try {
   await page.getByRole("button",{name:"Sign in",exact:true}).click();
   await expect(page.getByText("Live updates connected",{exact:true})).toBeVisible({timeout:45000});
   await page.getByRole("button",{name:"Sign out",exact:true}).click();
+  await page.getByRole("link",{name:"Open workspace",exact:true}).click({timeout:20000});
   await expect(page.getByRole("button",{name:"Sign in",exact:true})).toBeVisible({timeout:15000});
   console.log("PASS password sign-in after sign-out, restored live access, and final sign-out");
 } catch (error) {

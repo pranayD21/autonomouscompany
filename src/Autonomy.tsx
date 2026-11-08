@@ -1,3 +1,4 @@
+import {SessionApprovals} from "./SessionApprovals";
 import {useEffect,useState,type FormEvent} from "react";
 import {api} from "./services";
 import type {caseAuthorities,caseDecisions} from "../backend/schema";
@@ -30,7 +31,7 @@ export function Autonomy({caseId,userId,enabled}:{caseId:string;userId:string;en
  </form>}
  {error&&<p role="alert">{error}</p>}
  {data.authorities.map(a=><div key={a.id}><p>Status: {a.state.replaceAll("_"," ")} · Decisions {a.decisions_used}/{a.policy.max_decisions} · Contacts {a.outbound_used}/{a.policy.max_outbound}</p><p>{a.reason}</p><small>Authorization expires {new Date(a.policy.expires_at).toLocaleString()}{a.next_wake_at?` · Next check due ${new Date(a.next_wake_at).toLocaleString()}`:""}</small>{["active","waiting","human_required"].includes(a.state)&&<div><button disabled={busy} onClick={()=>void stop(a.id)}>Stop autonomous work</button><p>A dispatch already in progress may finish. No new action starts after the stop is recorded.</p></div>}</div>)}
- {(data.sessions??[]).map(session=><div key={session.id}><h5>Case agent session: {session.state.replaceAll("_"," ")}</h5>{session.reason&&<p>{session.reason}</p>}{session.next_check_at&&<p>Next status check: {new Date(session.next_check_at).toLocaleString()}</p>}<p>A status check does not mean a message or call will be sent.</p></div>)}
+ {(data.sessions??[]).map(session=><div key={session.id}><h5>Case agent session: {session.state.replaceAll("_"," ")}</h5>{session.reason&&<p>{session.reason}</p>}{session.next_check_at&&<p>Next status check: {new Date(session.next_check_at).toLocaleString()}</p>}<p>A status check does not mean a message or call will be sent.</p>{session.state==="human_required"&&<SessionApprovals caseId={caseId} runId={session.id} userId={userId}/>}</div>)}
  {data.decisions.some(d=>d.decision?.tool==="request_human_help")&&<p>Recorded requests for human help: {data.decisions.filter(d=>d.decision?.tool==="request_human_help").length}</p>}
  {data.decisions.map(d=><article key={d.id}><h5>Decision {d.round}: {d.decision?.tool.replaceAll("_"," ")??d.state}</h5>{d.decision&&<p>{d.decision.reason}</p>}{d.decision&&"body" in d.decision&&<><strong>{d.decision.subject}</strong><p className="outreach-body">{d.decision.body}</p></>}{d.decision&&"question" in d.decision&&<p>{d.decision.question}</p>}{d.result&&<p>{String(d.result.reason??"")}</p>}</article>)}
  </section>;

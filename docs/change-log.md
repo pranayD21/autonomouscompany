@@ -426,3 +426,15 @@ Added a database-backed request lease and shared cooldown to the Naïve SDK tran
 - Checked current Naïve session and policy documentation while investigating `read_people` approvals. The API documents explicit per-tool session grants, but the reviewed docs did not explain a switch for the observed gate. No approval behavior or permissions were broadened.
 - Fixed the worker treating a terminal `completed` session like resumable `idle`. Completed, failed, and cancelled sessions now require review; queued events stay undelivered and no replacement session is created.
 - All 16 persistent-session database tests and the build passed. Deployed successfully to all six Neon Functions. No live session, spending cap, or approval grant was created or changed during this fix.
+
+### Explicit case-owner approval workflow prepared
+
+- Added owner/operator-scoped pending-action GET and explicit call-scoped confirmation POST, with exact action/turn hashes and active binding rechecks. Migration 0019 records confirmation decisions and uncertain outcomes. No automatic approval or future-tool grant was added.
+- Added case UI controls to inspect and approve/deny a pending Assurance action. Unsupported tools/questions remain operator work. Updated browser-test navigation for the team's landing page and collapsed workflow sections.
+- All 21 persistent-session/approval database tests passed, covering stale turns, ownership, revoked credentials, duplicate/contradictory confirmations, and uncertain transport results. Build passed. Production migration and deployment are deferred to avoid the side chat's pinned c3cf6fd deployment.
+
+### Deploy latest committed Assurance frontend
+
+Published clean commit `c3cf6fd` as Vercel production deployment `dpl_DFXTP6ik13ss4psM2qYv9Wjdu1tm` at assurance.claims, excluding ongoing shared-worktree edits. Build passed; live HTML/JS returned 200 and the JS filename matches the clean commit build. Existing backend deployment was preserved. The committed E2E initially targeted the landing page as if it were sign-in; rerunning at `/#workspace`. Temporary deployment access was revoked and removed. See docs/hosting.md for final hosted verification.
+
+Approval-workflow validation completed locally: the full E2E passed after correcting the landing-page entry, waiting for the case before expanding sections, avoiding a shrinking collapsed-section locator list, and waiting for sign-out's landing navigation. Mocked approval and authorization requests proved exact payloads without sending a real provider confirmation. The additional capacity-deferral database regression passed, bringing covered session/approval cases to 22. Production migration/deployment remain pending.
