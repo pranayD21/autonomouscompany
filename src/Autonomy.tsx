@@ -2,9 +2,10 @@ import {useEffect,useState,type FormEvent} from "react";
 import {api} from "./services";
 import type {caseAuthorities,caseDecisions} from "../backend/schema";
 type Authority=typeof caseAuthorities.$inferSelect;
+type Session={id:string;authority_id:string;state:string;next_check_at:string|null;reason:string|null;created_at:string};
 type Decision=Pick<typeof caseDecisions.$inferSelect,"id"|"round"|"state"|"decision"|"result"|"created_at">;
 export function Autonomy({caseId,userId,enabled}:{caseId:string;userId:string;enabled:boolean}){
- const [data,setData]=useState<{authorities:Authority[];decisions:Decision[]}>({authorities:[],decisions:[]});
+ const [data,setData]=useState<{authorities:Authority[];decisions:Decision[];sessions?:Session[]}>({authorities:[],decisions:[],sessions:[]});
  const [busy,setBusy]=useState(false),[error,setError]=useState("");
  const path=`/cases/${caseId}/autonomy`;
  async function refresh(){setData(await api(path,{},userId));}
@@ -27,6 +28,8 @@ export function Autonomy({caseId,userId,enabled}:{caseId:string;userId:string;en
  </form>}
  {error&&<p role="alert">{error}</p>}
  {data.authorities.map(a=><div key={a.id}><p>Status: {a.state.replaceAll("_"," ")} · Decisions {a.decisions_used}/{a.policy.max_decisions} · Contacts {a.outbound_used}/{a.policy.max_outbound}</p><p>{a.reason}</p><small>Authorization expires {new Date(a.policy.expires_at).toLocaleString()}{a.next_wake_at?` · Next check due ${new Date(a.next_wake_at).toLocaleString()}`:""}</small>{["active","waiting","human_required"].includes(a.state)&&<div><button disabled={busy} onClick={()=>void stop(a.id)}>Stop autonomous work</button><p>A dispatch already in progress may finish. No new action starts after the stop is recorded.</p></div>}</div>)}
- {data.decisions.map(d=><article key={d.id}><h5>Decision {d.round}: {d.decision?.tool.replaceAll("_"," ")??d.state}</h5>{d.decision&&<p>{d.decision.reason}</p>}{d.decision&&"body" in d.decision&&<><strong>{d.decision.subject}</strong><p className="outreach-body">{d.decision.body}</p></>}{d.result&&<p>{String(d.result.reason??"")}</p>}</article>)}
+ {(data.sessions??[]).map(session=><div key={session.id}><h5>Case agent session: {session.state.replaceAll("_"," ")}</h5>{session.reason&&<p>{session.reason}</p>}{session.next_check_at&&<p>Next status check: {new Date(session.next_check_at).toLocaleString()}</p>}<p>A status check does not mean a message or call will be sent.</p></div>)}
+ {data.decisions.some(d=>d.decision?.tool==="request_human_help")&&<p>Recorded requests for human help: {data.decisions.filter(d=>d.decision?.tool==="request_human_help").length}</p>}
+ {data.decisions.map(d=><article key={d.id}><h5>Decision {d.round}: {d.decision?.tool.replaceAll("_"," ")??d.state}</h5>{d.decision&&<p>{d.decision.reason}</p>}{d.decision&&"body" in d.decision&&<><strong>{d.decision.subject}</strong><p className="outreach-body">{d.decision.body}</p></>}{d.decision&&"question" in d.decision&&<p>{d.decision.question}</p>}{d.result&&<p>{String(d.result.reason??"")}</p>}</article>)}
  </section>;
 }

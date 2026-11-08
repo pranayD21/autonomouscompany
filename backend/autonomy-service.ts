@@ -1,4 +1,4 @@
-import {caseSources,caseAgentFacts} from "./schema";
+import {caseSources,caseAgentFacts,caseAgentSessions} from "./schema";
 import {publicCitation} from "./source-service";
 import {callEvidence} from "./schema";
 import {and,desc,eq,inArray,sql} from "drizzle-orm";
@@ -47,5 +47,6 @@ export async function readCaseAutonomy(db:NodePgDatabase,caseId:string,userId:st
  const [item]=await db.select({id:cases.id}).from(cases).where(and(eq(cases.id,caseId),eq(cases.owner_id,userId)));if(!item)throw Error("NOT_FOUND");
  const authorities=await db.select().from(caseAuthorities).where(eq(caseAuthorities.case_id,caseId)).orderBy(desc(caseAuthorities.approved_at));
  const decisions=authorities.length?await db.select({id:caseDecisions.id,authority_id:caseDecisions.authority_id,round:caseDecisions.round,state:caseDecisions.state,decision:caseDecisions.decision,result:caseDecisions.result,action_id:caseDecisions.action_id,created_at:caseDecisions.created_at}).from(caseDecisions).where(inArray(caseDecisions.authority_id,authorities.map(a=>a.id))).orderBy(desc(caseDecisions.created_at)).limit(100):[];
- return {authorities,decisions};
+ const sessions=await db.select({id:caseAgentSessions.id,authority_id:caseAgentSessions.authority_id,state:caseAgentSessions.state,next_check_at:caseAgentSessions.next_check_at,reason:caseAgentSessions.reason,created_at:caseAgentSessions.created_at}).from(caseAgentSessions).where(eq(caseAgentSessions.case_id,caseId)).orderBy(desc(caseAgentSessions.created_at));
+ return {authorities,decisions,sessions};
 }

@@ -34,14 +34,19 @@ try {
   if(process.env.E2E_OUTCOMES_UI==="1"){
     const outcomePath=`${apiBase}/cases/${caseId}/outcomes`;
     await page.route(outcomePath,route=>route.fulfill({json:[{id:randomUUID(),created_at:new Date().toISOString(),evidence_current:false,independently_verified:false,attribution:"agent_reported",report:{summary:"Synthetic UI outcome fixture",claim_decision:"partially_accepted",original_responsibility_cents:100000,final_responsibility_cents:20000,reduction_cents:80000,refund_received_cents:null,calculation_explanation:"Fictional calculation",evidence:[{source_ref:"document:synthetic",quote:"Fictional statement supporting the calculation."}]}}]}));
+    const autonomyPath=`${apiBase}/cases/${caseId}/autonomy`;
+    await page.route(autonomyPath,route=>route.fulfill({json:{authorities:[],sessions:[{id:randomUUID(),authority_id:randomUUID(),state:"human_required",next_check_at:null,reason:"Synthetic session budget needs review",created_at:new Date().toISOString()}],decisions:[{id:randomUUID(),round:1,state:"finished",decision:{tool:"request_human_help",reason:"Synthetic evidence gap",question:"Confirm the fictional claim number."},result:null}]}}));
     await page.reload();
+    await expect(card.getByText("Case agent session: human required",{exact:true})).toBeVisible();
+    await expect(card.getByText("Confirm the fictional claim number.",{exact:true})).toBeVisible();
+    await expect(card.getByText("Recorded requests for human help: 1",{exact:true})).toBeVisible();
     const results=card.getByRole("region",{name:"Case outcomes"});
     await expect(results.getByText("Synthetic UI outcome fixture")).toBeVisible();
     await expect(results.getByText("Not established",{exact:true})).toBeVisible();
     await expect(results.getByRole("alert")).toContainText("no longer current");
     await results.getByText("Supporting quotes",{exact:true}).click();
     await expect(results.getByText("Fictional statement supporting the calculation.",{exact:true})).toBeVisible();
-    await page.unroute(outcomePath);await page.reload();
+    await page.unroute(outcomePath);await page.unroute(autonomyPath);await page.reload();
     await expect(card.getByText("No outcome has been recorded.",{exact:true})).toBeVisible();
     console.log("PASS outcome UI fixture: reported values, unknown refund, stale-evidence warning, quotes, and empty state (mocked outcome response)");
   }
@@ -59,7 +64,8 @@ try {
   expect(outcomes.status).toBe(200);expect(await outcomes.json()).toEqual([]);
   const autonomy=await fetch(`${apiBase}/cases/${caseId}/autonomy`,{headers:{Authorization:authorization}});
   expect(autonomy.status).toBe(200);
-  expect(await autonomy.json()).toEqual({authorities:[],decisions:[]});
+  console.log("Autonomy API version:",autonomy.headers.get("x-assurance-autonomy-version"));
+  expect(await autonomy.json()).toEqual({authorities:[],decisions:[],sessions:[]});
   const authorize=await fetch(`${apiBase}/cases/${caseId}/autonomy`,{method:"POST",headers:{Authorization:authorization,"Content-Type":"application/json"},body:JSON.stringify({authorize:true})});
   expect(authorize.status).toBe(403);
   console.log("PASS owner can read autonomy history; unlisted signup cannot authorize autonomous spending");

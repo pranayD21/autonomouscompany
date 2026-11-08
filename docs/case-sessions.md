@@ -29,3 +29,8 @@ The existing `autopoll` Function processes call evidence, persistent sessions, a
 `case-agent-session.test.ts` uses a disposable database and fake provider transports. It checks owner/binding isolation, concurrent starts, session/identity/budget preservation, event deduplication, same-key retry after uncertain delivery, cancellation on revocation, revocation during a provider read, budget-pause handling, and backoff without a replacement session. Existing reply, call-evidence, and autonomy suites cover the changed transaction/scheduler paths.
 
 No production persistent session has been registered. Activation still requires an admin-scoped setup key for Assurance's Managed Agents organization, successful two-case vault-isolation verification, and a real start/wake test. The legacy dashboard key was incompatible and revoked. The original own-inbox grant remains human_required with its existing counts; this implementation does not reactivate it. A customer-facing activation/status interface and automatic credential renewal are not implemented.
+
+
+## Owner-visible session status
+
+The owner-only autonomy history API now returns session state, next check time, and any recorded reason. It excludes credentials, remote identity/session IDs, agent IDs, and worker leases. The prepared frontend shows this status next to the existing authority stop control. A scheduled status check is not a promise that contact will occur. Human-help decisions display the actual question and a count within the returned decision history (at most 100 decisions), not a count of all operator actions or all-time human interventions. The frontend is published at assurance.claims and hosted browser checks passed.

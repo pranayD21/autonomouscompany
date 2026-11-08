@@ -91,3 +91,6 @@ The deployed record_outcome tool stores agent-calculated amounts with exact case
 
 
 The outcome API is owner-protected and deployed. The new outcome panel is implemented and locally browser-tested, but awaits Vercel authentication for production publication. It displays agent-reported amounts and evidence, not independently verified payouts.
+
+
+The outcome and session-status frontend is now published at assurance.claims. Hosted checks passed; the temporary Vercel token was revoked. The separate Naïve activation task reports cross-session tool-result isolation failure, so shared MCP activation remains gated pending its investigation.

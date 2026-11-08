@@ -117,6 +117,7 @@ app.get("/cases/:id/outcomes",async c=>{
  return c.json(await readCaseOutcomes(db,c.req.param("id")));
 });
 app.get("/cases/:id/autonomy",async c=>{
+ c.header("X-Assurance-Autonomy-Version","2");
  if(!await ownedCase(c.req.param("id"),c.get("userId")))return c.json({error:"Case not found."},404);
  return c.json(await readCaseAutonomy(db,c.req.param("id"),c.get("userId")));
 });

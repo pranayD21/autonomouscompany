@@ -67,3 +67,11 @@ Deployment dpl_HRzhB97ZCHSVepdi4maaJQQjFtyQ is Ready on production. The upload d
 ## Outcome UI awaiting frontend deployment
 
 The owner-only outcome API is deployed on Neon. The outcome panel builds and passed local browser checks against that backend, including synthetic populated-state rendering and real API isolation. Vercel CLI reports logged out; no production frontend deployment has been made for this change. A temporary deployment token was requested privately. The existing production UI remains in place.
+
+
+The supplied replacement deployment token was rejected with HTTP 403 Not authorized by both read-only user/project access checks and deployment. No frontend change reached production. Another private token request is pending; no secret value was logged.
+
+
+## Outcomes and session status published
+
+Deployment dpl_B2grMLravUcMQWyucSQDavtzsg6M is Ready and aliased to https://assurance.claims. Hosted E2E passed signup/sign-in, persistence, Realtime, owner outcome/session-history access, cross-user denial, and explicit synthetic UI fixtures for outcome amounts, stale evidence, unknown refunds, supporting quotes, session status, and human-help questions. AI Gateway inference remains unavailable. The temporary deployment token was revoked successfully and subsequent project access returned 403; its private file and the earlier rejected token file were removed. This supersedes the pending-publication entries above.

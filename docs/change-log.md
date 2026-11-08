@@ -1,5 +1,13 @@
 # Change log
 
+## 2026-11-07 — Publish outcomes and session status
+
+Added owner-visible session state, next check time, recorded reason, and human-help questions to the autonomy API/UI. The response excludes remote identity/session IDs and credentials. Human-help counts cover the returned decision history only. Published the outcomes and session UI to assurance.claims as deployment dpl_B2grMLravUcMQWyucSQDavtzsg6M.
+
+Verification: build and local/hosted E2E passed, including mocked populated outcome/session views and real owner/cross-user API checks. Initial live checks returned the old autonomy response after deployment; after targeted redeployment, the expected sessions field was observed. The cause of the stale responses is not established. Three failed-run synthetic case fixtures were removed. A diagnostic API version header was added; the passing check did not observe that header. AI Gateway still has no enabled model.
+
+The first supplied Vercel token returned 403; its replacement passed project access, deployed successfully, and was revoked afterward (HTTP 200; subsequent project access 403). Both private local token files were removed. The separate Naïve setup task reports a cross-session tool-result isolation issue; shared MCP activation remains gated while that task investigates. No Naïve blueprint/setup edits were included in this change.
+
 ## 2026-11-07 — Owner-visible outcome view
 
 Added an owner-protected outcomes API and a case workspace panel for reported amounts, separate unknown refunds, calculation explanations, supporting quotes, and stale-evidence warnings. The panel refreshes on case revisions and every 15 seconds, ignores stale component responses, and displays refresh errors. Backend Functions deployed successfully.
