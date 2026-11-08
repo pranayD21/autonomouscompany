@@ -34,3 +34,6 @@ Provider contract: [AgentMail Get Thread](https://docs.agentmail.to/api-referenc
 The live test also exercises the distinction between correspondence and financial evidence: an acknowledgment does not change the bill/EOB arithmetic or prove payment. Review requests and corrections explicitly receive the server-computed potential difference; the existing validator still rejects any mismatched result.
 
 The real synthetic-thread reply was imported and cited by a saved review. The first review failed arithmetic validation; one correction in the same session passed. Acknowledgment remains distinct from a claim approval or payment. Content-conflict holds also persist when the message was already held before its body changed.
+
+
+UI update (2026-11-08): `src/Outreach.tsx` was removed. Received replies appear in the case Activity feed (`src/Autonomy.tsx`) with sender, subject, held/accepted state and the message body. The manual "Check replies" and monitoring toggle controls are no longer in the UI; agent-sent emails enable monitoring automatically, and the API endpoints are unchanged.

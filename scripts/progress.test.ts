@@ -32,8 +32,8 @@ test("active agent means waiting, but a request flips it to the user with the ag
   assert.equal(ask.owner, "you"); assert.equal(ask.note, "Need the visit date.");
 });
 
-test("a draft waits for approval and an outcome resolves the case", () => {
-  assert.equal(deriveProgress(base, {...empty, docs: [doc], actions: [{state: "draft"}]}, true).title, "Approve your outreach draft");
+test("a message still being sent never asks the owner to approve it, and an outcome resolves the case", () => {
+  assert.notEqual(deriveProgress(base, {...empty, docs: [doc], actions: [{state: "draft"}]}, true).title, "Approve your outreach draft");
   const done = deriveProgress(base, {...empty, docs: [doc], outcomes: [{report: {claim_decision: "accepted", original_responsibility_cents: 120000, final_responsibility_cents: 40000, reduction_cents: 80000}}]}, true);
   assert.equal(done.owner, "done"); assert.equal(done.steps.outcome, "done");
 });

@@ -29,3 +29,6 @@ Live verification on November 7: Neon delivered the 4:50 p.m. Pacific check, whi
 For an email reserved by a version-2 decision, `pollReplyMonitors` also considers the linked authority. An active, waiting, or human-required authority keeps its enabled monitor eligible after the legacy thirty-day expiry. Stopped and revoked authorities do not receive this extension. Reply ingestion can update evidence while a case needs human help, but cannot restore permission or resume autonomous work. This changes monitoring eligibility only; it does not send a message.
 
 The owner-scoped GET `/cases/:id/reply-monitors` includes `persistent` for this eligibility extension. `src/Outreach.tsx` uses that flag when displaying monitoring status and the pause control, so an enabled persistent monitor is not mislabeled expired after thirty days. Legacy monitors retain their displayed end date.
+
+
+UI update (2026-11-08): `src/Outreach.tsx` was removed. Received replies appear in the case Activity feed (`src/Autonomy.tsx`) with sender, subject, held/accepted state and the message body. The manual "Check replies" and monitoring toggle controls are no longer in the UI; agent-sent emails enable monitoring automatically, and the API endpoints are unchanged.

@@ -6,6 +6,12 @@ The user asked for a faded background of people struggling with injuries behind 
 
 Verification: `tsc --noEmit` and `vite build` (placeholder `VITE_*` URLs) passed. The built landing page was rendered in headless Chromium at 1440px and 390px, and screenshots 5.5 seconds apart showed the strip moving with the heading, wordmark and button still readable. Live production was not checked.
 
+## 2026-11-08 — Simplify the signed-in workspace
+
+The user asked for the app to be as uncluttered as the landing page. After auditing what each element shows, the case page is now: header, a status card that holds any question for the owner, the outcome (only once one exists), one activity feed, documents, and details. The overview shows case tiles with a Needs you / Waiting / Resolved badge and one summary line. Removed: the hardcoded next-step card, the bill-minus-EOB "discrepancy" and "$ to investigate" figures, the section tabs and Done/Next tags, internal agent metadata, the legacy Naïve review and manual outreach panel, the document-type dropdown, the greeting, the live dot and the workspace footer. Insurer replies were previously only inside the collapsed legacy panel and now appear in the activity feed. Six unused components were deleted. Backend and APIs are unchanged. See frontend.md.
+
+Verification: `tsc --noEmit` and `vite build` (placeholder `VITE_*` URLs) passed; 10 progress/activation-state tests passed; the mocked `activation-ui-fixture.ts` and `intake-ui-fixture.ts` browser checks passed. The case page and overview were rendered in Chromium against mocked API data (needs-you, finished-with-outcome, 390px mobile) and visually checked. `scripts/e2e.ts` assertions were updated for the removed elements but not run, since it needs the hosted backend. The legacy crew, outreach and reply smokes target removed controls.
+
 ## 2026-11-08 — Remove landing FAQ section
 
 Removed the "Questions" (FAQ) section from `src/Landing.tsx` and its `.questions` styles from `src/landing.css`, as the user requested. The page now goes from the "How it works" steps to the footer. See frontend.md.

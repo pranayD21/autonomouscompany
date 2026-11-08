@@ -1,6 +1,5 @@
-// One derived "where is this case and who moves next" model, shared by the
-// overview, sidebar, case header, next-step card and step tracker so they
-// never disagree. Built from the same per-case endpoints the sections use.
+// One derived "where is this case and who moves next" model. The overview
+// case tiles use it for their status badge and one-line summary.
 import {useEffect, useState} from "react";
 import type {BillCase} from "../backend/schema";
 
@@ -56,7 +55,6 @@ export function deriveProgress(c: BillCase, s: Snapshot | undefined, agentEnable
   const agentEnded = authorities.length > 0 && !agentActive;
   const reviewRunning = c.status === "analyzing" || (!!run && WORKING.includes(run.status) && !run.result);
   const sent = actions.filter(a => ["dispatching", "submitted"].includes(a.state));
-  const drafts = actions.filter(a => a.state === "draft");
   const needsYou = authorities.some(a => a.state === "human_required") || sessions.some(x => SESSION_NEEDS_YOU.includes(x.state));
 
   const steps: Record<StepId, StepState> = {
@@ -81,7 +79,6 @@ export function deriveProgress(c: BillCase, s: Snapshot | undefined, agentEnable
     const settled = ["accepted", "partially_accepted", "denied"].includes(o.claim_decision);
     return make("outcome", settled ? "done" : "waiting", settled ? "Review the reported outcome" : "Outcome reported — decision pending", {label: "View outcome", target: "#section-outcomes"});
   }
-  if (drafts.length) return make("agent", "you", "Approve your outreach draft", {label: "Review draft", target: "#section-outreach"}, "Nothing is sent until you approve it.");
   if (latest && SESSION_FAILED.includes(latest.state)) return make("agent", "you", "Restart agent work", agentCta, "The agent stopped before finishing. Nothing was completed for you.");
   if (agentActive && latest && SESSION_WORKING.includes(latest.state)) return make("agent", "waiting", "The agent is working on your case", agentCta, "Nothing needed from you. Add new documents anytime.");
   if (agentActive) return make("agent", "waiting", latest?.waiting_on ? `Waiting on ${latest.waiting_on}` : replies.length ? `Agent is reviewing ${who}’s reply` : sent.length ? `Waiting on ${who}’s reply` : "The agent is on your case", agentCta, "Nothing needed from you. We’ll flag anything that needs you.");
@@ -132,9 +129,4 @@ export function useProgressMap(cases: readonly BillCase[], userId: string, crewE
     return () => { live = false; clearInterval(timer); window.removeEventListener(CASE_CHANGED, onChange); window.removeEventListener("focus", all); };
   }, [key, userId]);
   return new Map(cases.map(c => [c.id, deriveProgress(c, snapshots[c.id], crewEnabled)]));
-}
-
-/** Progress for a single case (used by the case page's section tags). */
-export function useCaseProgress(c: BillCase, userId: string, agentEnabled: boolean): Progress {
-  return useProgressMap([c], userId, agentEnabled).get(c.id)!;
 }
